@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package>
+    <name>Codisto_Ebay_Sync</name>
+    <version>1.0.0.30</version>
+    <stability>stable</stability>
+    <license uri="http://opensource.org/licenses/Apache-2.0">Apache 2</license>
+    <channel>community</channel>
+    <extends/>
+    <summary>Codisto eBay plugin&#xD;
+ &#xD;
+List all your magento products on eBay without the hassle. Skyrocket your sales.</summary>
+    <description>The Codisto eBay plugin will allow you to list your products on eBay.&#xD;
+&#xD;
+Only simple products are supported.&#xD;
+&#xD;
+You will be required to authorise us to make listings on your behalf. This is easy to do and can be done in 3 steps.&#xD;
+&#xD;
+</description>
+    <notes>Stable</notes>
+    <authors><author><name>Codisto</name><user>codistodev</user><email>ebay@codisto.com</email></author></authors>
+    <date>2014-10-14</date>
+    <time>03:40:54</time>
+    <contents><target name="magecommunity"><dir name="Codisto"><dir name="Ebaypayment"><dir name="Model"><file name="Paymentmethod.php" hash="df356fadf03d8ede3de9de07faef5aa6"/></dir></dir><dir name="Sync"><dir name="Block"><dir name="Adminhtml"><dir name="Tabs"><file name="Tabid.php" hash="fadcc9ed151d207f65262de882e55b8c"/></dir><file name="Tabs.php" hash="a424f6395505a8a4488ea818b61de415"/></dir></dir><dir name="Controller"><file name="Router.php" hash="5d51cb6e40c5ce376ed1df052ad92422"/></dir><dir name="controllers"><file name="IndexController.php" hash="21cfbfa68d62e00d92a10e9e1cdecf22"/><file name="SyncController.php" hash="909743b122acebc5c326d1db9afb15ab"/></dir><dir name="etc"><file name="config.xml" hash="909e87d67b90fe7d025cfd08ed861601"/><file name="system.xml" hash="20d13e176b478e62519f3b5615a5f03c"/></dir></dir></dir></target><target name="mageetc"><dir name="modules"><file name="Codisto_Sync.xml" hash="1e09e9b26f5b44ec23b1faa91245a3aa"/></dir></target></contents>
+    <compatible/>
+    <dependencies><required><php><min>5.2.0</min><max>6.0.0</max></php></required></dependencies>
+</package>

@@ -1,0 +1,187 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * ezimerchant Payment Extension
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magentocommerce.com so we can send you a copy immediately.
+ *
+ * @category   ezimerchant
+ * @package    OnTechnology_Ezimerchant
+ * @author     On Technology
+ * @copyright  Copyright (c) 2010 On Technology Pty. Ltd. (http://www.ezimerchant.com/)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+-->
+<config>
+	<config>
+		<tabs>
+			<helloconfig translate="label" module="helloworld">
+				<label>Hello Config</label>
+				<sort_order>99999</sort_order>
+			</helloconfig>
+		</tabs>
+	</config>
+	<sections>
+		<payment translate="label" module="payment">
+			<groups>
+				<ebaypayment translate="label">
+					<label>Codisto eBay Plugin</label>
+					<frontend_type>text</frontend_type>
+					<sort_order>2</sort_order>
+					<show_in_default>1</show_in_default>
+					<show_in_website>1</show_in_website>
+					<show_in_store>0</show_in_store>
+					<fields>
+						<active translate="label">
+							<label>Enabled</label>
+							<frontend_type>select</frontend_type>
+							<source_model>adminhtml/system_config_source_yesno</source_model>
+							<sort_order>1</sort_order>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>0</show_in_store>
+						</active>
+						<order_status translate="label">
+							<label>New order status</label>
+							<frontend_type>select</frontend_type>
+							<source_model>adminhtml/system_config_source_order_status</source_model>
+							<sort_order>9</sort_order>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>0</show_in_store>
+						</order_status>
+						<!--<customer_group_access translate="label">-->
+							<!--<label>Customer Group Access</label>-->
+							<!--<frontend_type>select</frontend_type>-->
+							<!--<source_model>ezimerchant/config_customerGroupAccess</source_model>-->
+							<!--<sort_order>3</sort_order>-->
+							<!--<show_in_default>1</show_in_default>-->
+							<!--<show_in_website>1</show_in_website>-->
+							<!--<show_in_store>0</show_in_store>-->
+						<!--</customer_group_access>-->
+						<customer_group translate="label">
+							<label>Customer Group</label>
+							<frontend_type>select</frontend_type>
+							<source_model>mage_adminhtml_model_system_config_source_customer_group</source_model>
+							<sort_order>4</sort_order>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>0</show_in_store>
+						</customer_group>
+						<sort_order translate="label">
+							<label>Sort order</label>
+							<frontend_type>text</frontend_type>
+							<sort_order>100</sort_order>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>0</show_in_store>
+						</sort_order>
+						<title translate="label">
+							<label>Title</label>
+							<frontend_type>text</frontend_type>
+							<sort_order>1</sort_order>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>0</show_in_store>
+						</title>
+						<merchantid translate="label">
+							<label>Merchant ID</label>
+							<frontend_type>text</frontend_type>
+							<sort_order>20</sort_order>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>0</show_in_store>
+						</merchantid>
+						<apikey translate="label">
+							<label>API Key</label>
+							<frontend_type>text</frontend_type>
+							<sort_order>21</sort_order>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>0</show_in_store>
+						</apikey>
+						<hostkey translate="label">
+							<label>Host Key</label>
+							<frontend_type>text</frontend_type>
+							<sort_order>22</sort_order>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>0</show_in_store>
+						</hostkey>
+						<hostid translate="label">
+							<label>Host ID</label>
+							<frontend_type>text</frontend_type>
+							<sort_order>24</sort_order>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>0</show_in_store>
+						</hostid>
+						<!--<mobileenabled translate="label">-->
+							<!--<label>Mobile Enabled</label>-->
+							<!--<frontend_type>select</frontend_type>-->
+							<!--<source_model>adminhtml/system_config_source_yesno</source_model>-->
+							<!--<sort_order>25</sort_order>-->
+							<!--<show_in_default>1</show_in_default>-->
+							<!--<show_in_website>1</show_in_website>-->
+							<!--<show_in_store>0</show_in_store>-->
+						<!--</mobileenabled>-->
+						<!--<payment_action translate="label">-->
+							<!--<label>Action</label>-->
+							<!--<frontend_type>select</frontend_type>-->
+							<!--<source_model>ezimerchant/paystep_paymentAction</source_model>-->
+							<!--<sort_order>25</sort_order>-->
+							<!--<show_in_default>1</show_in_default>-->
+							<!--<show_in_website>1</show_in_website>-->
+							<!--<show_in_store>0</show_in_store>-->
+						<!--</payment_action>-->
+						<cctypes translate="label">
+							<label>Credit Card Types</label>
+							<frontend_type>multiselect</frontend_type>
+							<source_model>adminhtml/system_config_source_payment_cctype</source_model>
+							<sort_order>30</sort_order>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>0</show_in_store>
+						</cctypes>
+						<debug translate="label">
+							<label>Debug</label>
+							<frontend_type>select</frontend_type>
+							<source_model>adminhtml/system_config_source_yesno</source_model>
+							<sort_order>40</sort_order>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>0</show_in_store>
+						</debug>
+						<allowspecific translate="label">
+							<label>Payment from applicable countries</label>
+							<frontend_type>allowspecific</frontend_type>
+							<sort_order>50</sort_order>
+							<source_model>adminhtml/system_config_source_payment_allspecificcountries</source_model>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>1</show_in_store>
+						</allowspecific>
+						<specificcountry translate="label">
+							<label>Payment from Specific countries</label>
+							<frontend_type>multiselect</frontend_type>
+							<sort_order>51</sort_order>
+							<source_model>adminhtml/system_config_source_country</source_model>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>1</show_in_store>
+						</specificcountry>
+
+					</fields>
+				</ebaypayment>
+			</groups>
+		</payment>
+	</sections>
+</config>

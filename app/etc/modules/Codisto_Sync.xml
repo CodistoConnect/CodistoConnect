@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<config>
+  <modules>
+    <Codisto_Sync>
+      <active>true</active>
+      <codePool>community</codePool>
+    </Codisto_Sync>
+  </modules>
+</config>
+
