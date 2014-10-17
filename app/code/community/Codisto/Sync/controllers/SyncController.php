@@ -66,15 +66,11 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$header = substr($response, 0, $header_size);
 		$body = substr($response, $header_size);
 
-		// Drop the resopnse headers -> they are probably going to try and force a redirect or something anyway //
-
 		print_r($body);
-
 	}
 
 	public function proxyGetAction()
-	{
-	
+	{ // URL End Point: /magento/index.php/codisto-sync/sync/proxyGet
 		if(strtolower($_SERVER['REQUEST_METHOD']) == "post")
 		{
 			$this->proxyPostAction();
@@ -115,16 +111,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			if($k != "Host")
 			$headers[] = $k.": ".$v;
 		}	
-/* 		
-syslog(1, "HOSTKEY: " . $this->config['HostKey']);
-syslog(1, "HOSTKEY: " . print_r($headers, true));
-*/
+
 		//WARNING: If you edit the post body, then don't forget to update the content length as it is being set here.
 		curl_setopt($ch,CURLOPT_HTTPHEADER ,$headers);
 		curl_setopt($ch,CURLOPT_RETURNTRANSFER ,true);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE); 
 		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2); 
-		//curl_setopt($ch, CURLOPT_SSL_HOST, FALSE);
 		curl_setopt($ch,CURLOPT_VERBOSE, 1);
 		curl_setopt($ch,CURLOPT_HEADER, 1);
 
@@ -156,31 +148,30 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 		// output the headers verbatim
 		foreach(explode("\r\n", $header) as $i => $h)
 		{
-//			if(stripos($h, "Content-Length") === false``)
+			//if(stripos($h, "Content-Length") === false``)
 				header($h);
 		}
 
-//		header("Content-Length:" . strlen($body));
-//      All posts should be to the current URL only, that way we don't need to worry about Mage::BaseDir().
+		// All posts should be to the current URL only, that way we don't need to worry about Mage::BaseDir().
 		echo $body;
 	}
 
 	public function checkPluginAction()
-	{
+	{ // URL End Point: /magento/index.php/codisto-sync/sync/checkPlugin
 		$this->getConfig();
 		echo "SUCCESS";
 		die;
 	}
 
 	public function testSyncAction()
-	{
+	{ // URL End Point: /magento/index.php/codisto-sync/sync/testSync
 		$this->Sync();
 		if(isset($_GET['send']))
 			$this->Send();
 	}
 
 	public function configUpdateAction()
-	{ //http://ec2-54-79-136-204.ap-southeast-2.compute.amazonaws.com/magento/index.php/codisto-sync/sync/configUpdate
+	{ // URL End Point: /magento/index.php/codisto-sync/sync/configUpdate
 
 		if (!isset($_GET['merchantid']) || !isset($_GET['hash']) || !isset($_GET['hostid'])) {
 			die("FAIL - missing crendentials - " . print_r($_GET, true));
@@ -196,8 +187,6 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 		$result = curl_exec($ch);
 		curl_close($ch);
 		
-		//$result = file_get_contents("https://secure.ezimerchant.com/" . $MerchantID . "/proxy/" . $HostID . "/get-merchant-details?hash=" . urlencode($Hash));
-
 		try {
 			$data = json_decode($result, true);
 			if ($data['MerchantID'] == $MerchantID) {
@@ -298,11 +287,7 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 		header('Content-Type: application/octet-stream');
 		header('Content-Disposition: attachment; filename=' . basename($syncDb));
 		header('Content-Transfer-Encoding: binary');
-		//header('Expires: 0');
-		//header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-		//header('Pragma: public');
 		header('Content-Length: ' . filesize($syncDb));
-//		ob_clean();
 		while (!feof($f)) {
 			echo fread($f, 1024);
 			flush();
@@ -312,16 +297,17 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 
 	private function Sync()
 	{
+	try{ // try|catch provides visibility from the Codisto server to view any errors
 		ini_set('max_execution_time', 300);
 		
-		// clear the database
+		// Clear the temporary DB
 		$syncDb = Mage::getBaseDir("var") . "/eziimport0.db";
 		if (file_exists($syncDb))
 			unlink($syncDb);
 
 		//Catalog Category (Entity Type ID - 3), Catalog Product (Entity Type ID - 4), Customer (Entity Type ID - 1), Customer Address (Entity Type ID - 2), Order (Entity Type ID - 5),
 
-		// generate the DB
+		// Generate the temporary DB
 		$db = new PDO("sqlite:" . $syncDb);
 		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		$db->exec("BEGIN EXCLUSIVE TRANSACTION");
@@ -389,6 +375,8 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 							Type TEXT,
 							Content
 						)");
+		
+		//Log Table for data visibility
 		$insertlog = $db->prepare("INSERT INTO Log(ID, Type, Content) VALUES(?,?,?)");
 						
 		$SkuDD = $PO = $db->prepare("INSERT INTO SKU(ExternalReference, Code, ProductExternalReference, StockControl, StockLevel, Price, Enabled) VALUES(?,?,?,?,?,?,?)");
@@ -484,8 +472,7 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 			'' => 'ProductTaxClass',
 			'' => 'ProductOrdered',
 			'meta_title' => 'MetaTitle',
-			'meta_description' => 'MetaDescription',
-			//            '' => 'ProductID'
+			'meta_description' => 'MetaDescription'
 		);
 
 		$store = Mage::app()->getStore('default');
@@ -529,22 +516,19 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 			// Special fields
 			$stockData = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product['entity_id'])->getData();
 			
-//syslog(1, print_r($stockData, true));
-			
 			$configurable_product = Mage::getModel('catalog/product')->load($product['entity_id']);
 			
-//syslog(1, "configurable_product->getFinalPrice: " . print_r($configurable_product->getFinalPrice(), true));	
-//syslog(1, "product['price']: " . $product['price']);
-
 			$fields['MinBuy'] = (int)$stockData['min_sale_qty'];
 			$fields['MaxBuy'] = (int)$stockData['max_sale_qty'];
 			$fields['StockControl'] = $stockData['manage_stock']; //TODO: check whether we need to normalise the boolean value
 			$fields['StockLevel'] = (int)$stockData["qty"];
-			if($productConfigurableData->getResource()->getAttribute('manufacturer')) {
+			$fields['Manufacturer'] = '';
+			
+			try{
+				// This causes problems on some versions of Magento Enterprise
 				$fields['Manufacturer'] = $productConfigurableData->getAttributeText('manufacturer');
-			} else {
-				$fields['Manufacturer'] = '';//$productConfigurableData->getAttributeText('manufacturer');
-			}
+			}catch(Exception $e){};
+			
 			$fields['Price'] = isset($productprice) ? $productprice / (1+($percent/100))  : "";
 			$fields['TaxID'] = 1;
 
@@ -615,8 +599,6 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 				}
 			}
 
-//syslog(1, "pricesByAttributeValues: " . print_r($pricesByAttributeValues, true));
-
 			// SKUs
 			//$childProducts = Mage::getModel('catalog/product_type_configurable')->getUsedProducts(null,$productConfigurableData);
 			$childProducts =  Mage::getModel('catalog/product_type_configurable')->setProduct($productConfigurableData)
@@ -633,7 +615,6 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 				$simple = $productdata->getTypeInstance()->getUsedProducts();
 				//loop through the products
 				foreach ($simple as $sProduct){
-//syslog(1, '$sProduct: ' . print_r($sProduct['entity_id'], true));				
 					$totalPrice = $basePrice;
 					//loop through the configurable attributes
 					foreach ($attributes as $attribute){
@@ -648,9 +629,7 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 					//do what you want/need with it
 					if($sProduct['entity_id'] === $product['entity_id']) {
 						$productTotalPrice = $totalPrice / (1+($percent/100));
-//syslog(1, "productTotalPrice: " . $productTotalPrice);
 						$pricemodifier = $pricesByAttributeValues[$value];
-//syslog(1, "pricemodifier: " . $pricemodifier);
 					}
 					
 				}
@@ -663,22 +642,10 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 				$insertedProducts[] = $product['entity_id'];
 
 				// SKU Matrix
-				$candidates = array();
 				foreach($configurableAttributes as $attribute)
 				{
-				
-					if($child->getResource()->getAttribute($productAttribute->getAttributeCode())) {
-						$attrsku = $child->getAttributeText($productAttribute->getAttributeCode());
-					} else {
-						$attrsku = '';					
-					}
-								
 					$productAttribute = $attribute->getProductAttribute();
-//					$productAttributeId = $productAttribute->getId();
-					$SKUMatrixDD->execute(array($child->getId(), $product['sku'], $productAttribute->getAttributeCode(), 
-					//$child->getAttributeText($productAttribute->getAttributeCode()), 
-					$attrsku,
-					$pricemodifier ));
+					$SKUMatrixDD->execute(array($child->getId(), $productAttribute->getAttributeCode(), $child->getAttributeText($productAttribute->getAttributeCode()), $pricemodifier));
 				}
 
 				//TODO : Delete the sku options when there is only one choice.
@@ -731,38 +698,38 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 				$fields[$eziKey] = isset($product[$magentoKey]) ? $product[$magentoKey] : "";
 			}
 
-			// StockData example
-//				Array
-//				(
-//					[item_id] => 1
-//				    [product_id] => 1
-//				    [stock_id] => 1
-//				    [qty] => 10.0000
-//				    [min_qty] => 0.0000
-//				    [use_config_min_qty] => 1
-//				    [is_qty_decimal] => 0
-//				    [backorders] => 0
-//				    [use_config_backorders] => 1
-//				    [min_sale_qty] => 1.0000
-//				    [use_config_min_sale_qty] => 1
-//				    [max_sale_qty] => 0.0000
-//				    [use_config_max_sale_qty] => 1
-//				    [is_in_stock] => 1
-//				    [low_stock_date] =>
-//				    [notify_stock_qty] =>
-//				    [use_config_notify_stock_qty] => 1
-//				    [manage_stock] => 0
-//				    [use_config_manage_stock] => 1
-//				    [stock_status_changed_auto] => 0
-//				    [use_config_qty_increments] => 1
-//				    [qty_increments] => 0.0000
-//				    [use_config_enable_qty_inc] => 1
-//				    [enable_qty_increments] => 0
-//				    [is_decimal_divided] => 0
-//				    [type_id] => simple
-//				    [stock_status_changed_automatically] => 0
-//				    [use_config_enable_qty_increments] => 1
-//				)
+			/* StockData example
+			Array
+			(
+				[item_id] => 1
+				[product_id] => 1
+				[stock_id] => 1
+				[qty] => 10.0000
+				[min_qty] => 0.0000
+				[use_config_min_qty] => 1
+				[is_qty_decimal] => 0
+				[backorders] => 0
+				[use_config_backorders] => 1
+				[min_sale_qty] => 1.0000
+				[use_config_min_sale_qty] => 1
+				[max_sale_qty] => 0.0000
+				[use_config_max_sale_qty] => 1
+				[is_in_stock] => 1
+				[low_stock_date] =>
+				[notify_stock_qty] =>
+				[use_config_notify_stock_qty] => 1
+				[manage_stock] => 0
+				[use_config_manage_stock] => 1
+				[stock_status_changed_auto] => 0
+				[use_config_qty_increments] => 1
+				[qty_increments] => 0.0000
+				[use_config_enable_qty_inc] => 1
+				[enable_qty_increments] => 0
+				[is_decimal_divided] => 0
+				[type_id] => simple
+				[stock_status_changed_automatically] => 0
+				[use_config_enable_qty_increments] => 1
+			) */
 
 			// Special fields
 			$stockData = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product['entity_id'])->getData();
@@ -770,18 +737,15 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 			$fields['MaxBuy'] = (int)$stockData['max_sale_qty'];
 			$fields['StockControl'] = $stockData['manage_stock']; //TODO: check whether we need to normalise the boolean value
 			$fields['StockLevel'] = (int)$stockData["qty"];
-			//$product->getResource()->getAttribute('manufacturer')
-			if(false) {
+			$fields['Manufacturer'] = '';
+			
+			try{
+				// This causes problems on some versions of Magento Enterprise
 				$fields['Manufacturer'] = $productConfigurableData->getAttributeText('manufacturer');
-			} else {
-				$fields['Manufacturer'] = '';//$productConfigurableData->getAttributeText('manufacturer');
-			}
+			}catch(Exception $e){};
+			
 			$fields['Price'] = isset($productprice) ? $productprice / (1+($percent/100)) : "";
 			$fields['TaxID'] = 1;
-
-//              $fields['image1']
-//              Possible for out of stock?
-//              $fields['OutOfStock'] = $stockItem->getIsInStock()?0:1;
 
 			if ($product['status'] != 1)
 				$fields['Enabled'] = 0;
@@ -847,24 +811,18 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 					foreach ($option->getValues() as $optionValue) {
 						$ov = $optionValue->getData();
 
-//                      There is a thing inside the magento control panel that allows you to select fixed or percentage. not really sure how it works at this stage.
-//						$price = 0;
-//						if ($ov['price_type'] == 'percent')
-//							$price = ($ov['price'] / 100) * $fields['Price'];
-//						else
-//							$price = $fields['Price'] + ((float)$ov['price']);
-//													$ov['sort_order']
-//                      print_r($ov);
-//                      print_r($o);
-
-//syslog(1, 'productprice: ' . print_r($productprice, true));
-//syslog(1, 'optionvalue: ' . print_r($ov['price'], true));
+						/*Potential future support for fixed or percentage pricing for variations
+						$price = 0;
+						if ($ov['price_type'] == 'percent')
+							$price = ($ov['price'] / 100) * $fields['Price'];
+						else
+							$price = $fields['Price'] + ((float)$ov['price']);
+													$ov['sort_order']*/
 
 						$price = ($productprice + (float)$ov['price']) / (1+($percent/100));
 						try {
 						
 							//Cross Multiply
-							
 							$SKUID =  implode("-", array($product['entity_id'], $o['option_id'], $ov['option_type_id'])); //$ov['sku']; // $product['entity_id'] ."-" .
 							
 							$row = array();
@@ -876,7 +834,6 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 							//$PO->execute(array($SKUID, $ov['sku'], $product['entity_id'], -1, 1, $price, -1));
 							//$POV->execute(array($SKUID, $ov['sku'], $o['title'], $ov['title'], $ov['price']));
 						
-						
 						} catch (Exception $e) {
 							print_r($e);
 						}
@@ -886,13 +843,10 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 					
 				}
 				
-				//$OptionMatrix = $db->prepare("INSERT INTO OptionMatrix(SKUExternalReference, Code, OptionName, OptionValue, PriceModifier) VALUES(?,?,?,?,?)");
-				
+				//Cross Multiply all the product options and their attributes to create discreet SKUs with individuaul prices
 				$seen = array();
 				if(count($optionnames) > 0) {
-//syslog(1, '::::optionrows::::'. $product['name']);
 					foreach($optionnames as $optionname1) {
-//syslog(1, print_r($optionname1, true));
 						foreach($optionrows as $optionrow) {
 						
 							$optionname = $optionrow[0]['optionname'];
@@ -907,14 +861,8 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 							$code = $optionrow[0]['code'];
 							$optionskuid = $optionrow[0]['skuid'];
 							$price = $optionrow[0]['optionprice'];
-//syslog(1, print_r($optionname . ' : ' . $value . ' : ' . $code . ' ; ' . $optionskuid, true));
 								foreach($optionrows as $optionrow2) {
 									if($optionname != $optionrow2[0]['optionname'] && $value != $optionrow2[0]['optionvalue']) {
-
-//syslog(1, print_r($optionrow2[0]['optionname'] . ' : ' . $optionrow2[0]['optionvalue'] . ' : ' . $optionrow2[0]['code'] . ' ; ' . $optionrow2[0]['skuid'], true));
-//syslog(1, print_r($optionname . ':::' . $optionrow2[0]['optionname'], true));
-//syslog(1, print_r($optionrow2[0]['optionvalue'] . '-' . $optionrow[0]['optionvalue'], true));
-										
 										$coptionname = $optionname . '-' . $optionrow2[0]['optionname'];
 										$cvalue =  $value . '-' . $optionrow2[0]['optionvalue'];
 										$ccode =  $code. '-' . $optionrow2[0]['code'];
@@ -930,15 +878,14 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 										$seen[] = $optionrow2[0]['optionname'];
 									}
 								}
-							
-							//$POV->execute(array($coptionskuid, $code, $optionname, $value, $price));
 						}
 					}
 				}
 			}
 		}
-
-
 		$db->exec("COMMIT TRANSACTION");
+	} catch(Exception $e) {
+		print_r($e);
+	}
 	}
 }

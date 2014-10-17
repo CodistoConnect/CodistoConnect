@@ -26,8 +26,9 @@ class Codisto_Sync_Block_Adminhtml_Tabs extends Mage_Adminhtml_Block_Catalog_Pro
 //syslog(1, "baseurl:" . Mage::getUrl('',array('_forced_secure'=>true)));
 //syslog(1, "baseurl:" . Mage::getBaseUrl());
 //syslog(1, "baseurl:" . Mage::getStoreConfig(Mage_Core_Model_Store::XML_PATH_SECURE_BASE_URL));			
-		
-			$url = Mage::getUrl('',array('_forced_secure'=>true)) . "codisto-sync/sync/proxyGet/?proxy_url=" . urlencode("https://secure.ezimerchant.com/" . $MerchantID . "/frame/1/product/" . $product['entity_id'] . "/ebay/");
+//array('_forced_secure'=>true)
+
+			$url = Mage::getUrl('') . "codisto-sync/sync/proxyGet/?proxy_url=" . urlencode("https://secure.ezimerchant.com/" . $MerchantID . "/frame/1/product/" . $product['entity_id'] . "/ebay/");
 
 			//add new tab
 			$this->addTab('tabid', array(
