@@ -14,7 +14,7 @@
  *
  * @category    Codisto
  * @package     Codisto_Sync
- * @copyright   Copyright (c) 2012 On Technology (http://www.ontech.com.au)
+ * @copyright   Copyright (c) 2014 On Technology (http://www.ontech.com.au)
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 class Codisto_Codistoadmin_CodistoadminController extends Mage_Adminhtml_Controller_Action
