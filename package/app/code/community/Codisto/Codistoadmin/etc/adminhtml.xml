@@ -1,0 +1,34 @@
+<config>
+    <menu>
+        <codisto translate="title" module="Codisto_Codistoadmin">
+            <title>Codisto</title>
+            <sort_order>99</sort_order>
+            <children>
+                <example>
+                    <title>Sync Settings</title>
+                    <sort_order>1</sort_order>
+                    <action>adminhtml/codistoadmin/index</action>
+                </example>
+            </children>
+        </codisto>
+    </menu>
+    
+    <acl>
+        <resources>
+            <admin>
+                <children>                
+                    <codisto translate="title" module="Codisto_Codistoadmin">
+                        <title>Top Level Codisto Menu Item</title>
+                        <sort_order>1</sort_order>
+                        <children>
+                            <example>
+                                <title>Example Menu Item</title>
+                            </example>
+                        </children>
+                    </codisto>
+                </children>
+            </admin>
+        </resources>
+    </acl>
+    
+</config> 

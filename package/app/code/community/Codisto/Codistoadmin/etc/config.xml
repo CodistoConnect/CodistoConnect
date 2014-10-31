@@ -1,0 +1,26 @@
+<config>
+	<modules>
+		<Codisto_Codistoadmin>
+			<version>0.1.0</version>
+			<depends></depends>
+		</Codisto_Codistoadmin>
+	</modules>
+	<global>
+		<helpers>
+			<Codisto_Codistoadmin>
+				<class>Codisto_Codistoadmin_Helper</class>
+			</Codisto_Codistoadmin>
+		</helpers>
+	</global>
+    <admin>
+        <routers>
+            <adminhtml>
+                <args>
+                    <modules>
+                        <Codisto_Codistoadmin after="Mage_Adminhtml">Codisto_Codistoadmin</Codisto_Codistoadmin>
+                    </modules>
+                </args>
+            </adminhtml>
+        </routers>
+    </admin>
+</config>

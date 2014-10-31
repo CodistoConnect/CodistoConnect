@@ -1,19 +1,31 @@
 <?php
+
   class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
   {
 	public function indexAction()
 	{
 	
+
 		$method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
 		$content_type = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : "";
 		
 		if($method == 'POST')
 		{
+
+syslog(1, print_r('endpoint reached:' . $content_type, true));
+
 			if($content_type == "text/xml")
 			{
 				$xml = simplexml_load_string(file_get_contents("php://input"));
 		
 				$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
+			
+				if(!$ordercontent->reason)
+					$ordercontent->reason = "OrderCreated";
+
+syslog(1, print_r('xml: ' . print_r($xml), true));
+syslog(1, print_r('ordercontent: ' . $ordercontent, true));
+syslog(1, print_r('$ordercontent->reason: ' . $ordercontent->reason, true));
 				
 				if($ordercontent &&
 					$ordercontent->reason == "OrderCreated")
@@ -36,13 +48,15 @@
 		}
 		else
 		{
-			 include_once Mage::getBaseDir() . '/errors/404.php';
+		
+			include_once Mage::getBaseDir() . '/errors/404.php';
+			 
 		}
 	}
 
-	
 	private function ProcessOrderCreate($xml)
 	{
+	
 		$website = Mage::app()->getWebsite();
 		$websiteId = $website->getId();
 
@@ -50,6 +64,8 @@
 		$storeId = $store->getId();
 	
 		$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
+
+syslog(1, print_r($ordercontent->orderid[0], true));
 		
 		$currencyCode = $ordercontent->transactcurrency[0];
 		$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
@@ -160,6 +176,11 @@
 				
 		$quote->getPayment()->setMethod('ebaypayment');
 		
+		$quote->setCodistoOrderid($ordercontent->orderid);
+		
+syslog(1, print_r('qooo', true));
+syslog(1, $quote->getCodistoOrderid());
+		
 		$billingAddress  = $quote->getBillingAddress()->addData($addressData_billing);
 		$shippingAddress = $quote->getShippingAddress()->addData($addressData_shipping);
 		
@@ -223,6 +244,8 @@
 		$order->setShippingAddress($convertquote->addressToOrderAddress($quote->getShippingAddress()));
 		$order->setPayment($convertquote->paymentToOrderPayment($quote->getPayment()));
 		$order->setCanShipPartiallyItem(false);
+
+		$order->setCodistoOrderid($ordercontent->orderid);
 	
 		$lineidx = 0;
         foreach ($quote->getAllItems() as $item) {
@@ -262,7 +285,14 @@
 		$order->place();
 		$order->save();
 		
+syslog(1, 'codisto orderid: ' . $order->getCodistoOrderid());
+
 		$quote->setIsActive(false)->save();
+
+		$neworder = Mage::getModel('sales/order')->load($order->entity_id);
+	
+syslog(1, 'MAGENTO ORDERID: ' . $neworder->entity_id);
+syslog(1, 'CODISTO ORDERID: ' . $neworder->getCodistoOrderid());
 		
 		echo "OK";
 	}

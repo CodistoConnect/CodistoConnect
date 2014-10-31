@@ -1,29 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
-
 	<modules>
 		<Codisto_Sync>
-			<version>0.1.0</version>
+			<version>0.2.0</version>
 			<depends>
 				<Mage_Payment/>
 			</depends>
 		</Codisto_Sync>
 	</modules>
+	<frontend>
+		<routers>
+			<codisto-sync>
+				<use>standard</use>
+				<args>
+					<module>Codisto_Sync</module>
+					<frontName>codisto-sync</frontName>
+				</args>
+			</codisto-sync>
+		</routers>
+	</frontend>
 	<global>
 		<models>
 			<ebaypayment>
 				<class>Codisto_Ebaypayment_Model</class>
 			</ebaypayment>
 		</models>
+		<fieldsets>
+			<sales_convert_quote>
+				<codisto_orderid>
+					<to_order>*</to_order>
+				</codisto_orderid>
+			</sales_convert_quote>
+			<sales_convert_order>
+				<codisto_orderid>
+					<to_quote>*</to_quote>
+				</codisto_orderid>
+			</sales_convert_order>
+		</fieldsets>
 		<resources>
-			<Codisto_Sync_setup>
+			<codisto_setup>
 				<setup>
 					<module>Codisto_Sync</module>
+					<class>Codisto_Sync_Model_Resource_Mysql4_Setup</class>
 				</setup>
 				<connection>
 					<use>core_setup</use>
 				</connection>
-			</Codisto_Sync_setup>
+			</codisto_setup>
 			<Codisto_Sync_write>
 				<connection>
 					<use>local_write</use>
@@ -46,18 +69,6 @@
 			</adminhtml>
 		</blocks>
 	</global>
-	<frontend>
-		<routers>
-			<codisto-sync>
-				<use>standard</use>
-				<args>
-					<module>Codisto_Sync</module>
-					<frontName>codisto-sync</frontName>
-				</args>
-			</codisto-sync>
-		</routers>
-	</frontend>
-
 	<default>
 		<payment>
 			<ebaypayment>
@@ -70,9 +81,4 @@
 			</ebaypayment>
 		</payment>
 	</default>
-	<helpers>
-		<helloworld>
-			<class>Codisto_Sync_Helloworld_Helper</class>
-		</helloworld>
-	</helpers>
 </config>

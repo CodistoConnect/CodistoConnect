@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package>
+    <name>Codisto_Ebay_Sync</name>
+    <version>1.0.0.37</version>
+    <stability>stable</stability>
+    <license uri="http://opensource.org/licenses/Apache-2.0">Apache 2</license>
+    <channel>community</channel>
+    <extends/>
+    <summary>Codisto eBay plugin&#xD;
+ &#xD;
+List all your magento products on eBay without the hassle. Skyrocket your sales.</summary>
+    <description>The Codisto eBay plugin will allow you to list your products on eBay.&#xD;
+&#xD;
+Only simple products are supported.&#xD;
+&#xD;
+You will be required to authorise us to make listings on your behalf. This is easy to do and can be done in 3 steps.&#xD;
+&#xD;
+</description>
+    <notes>Stable</notes>
+    <authors><author><name>Codisto</name><user>codistodev</user><email>ebay@codisto.com</email></author></authors>
+    <date>2014-10-31</date>
+    <time>04:04:02</time>
+    <contents><target name="magecommunity"><dir name="Codisto"><dir name="Codistoadmin"><dir name="Helper"><file name="Data.php" hash="3bfb46af8b3650c75f0ffd0db30a80a4"/></dir><dir name="controllers"><file name="CodistoadminController.php" hash="56830d4c472cc949085e7616e9f07934"/></dir><dir name="etc"><file name="adminhtml.xml" hash="945d3a99e4e972685d308c929ae3aa04"/><file name="config.xml" hash="6e72a9f28f7087d543a3a5cc1ea620d9"/></dir></dir><dir name="Ebaypayment"><dir name="Model"><file name="Paymentmethod.php" hash="df356fadf03d8ede3de9de07faef5aa6"/></dir></dir><dir name="Sync"><dir name="Block"><dir name="Adminhtml"><dir name="Tabs"><file name="Tabid.php" hash="fadcc9ed151d207f65262de882e55b8c"/></dir><file name="Tabs.php" hash="4f2ba0a28f5292a3471dd9c5255f1ea9"/></dir></dir><dir name="Model"><dir name="Resource"><dir name="Mysql4"><file name="Setup.php" hash="712bf1c71bed17d99833b6cf450d5d5a"/></dir></dir></dir><dir name="controllers"><file name="IndexController.php" hash="eda234ca44f26968584d4f56857c2afb"/><file name="SyncController.php" hash="4bce10695a02a64ffa4b12062af3a899"/></dir><dir name="etc"><file name="config.xml" hash="eedaf107559dfdfa0a1b09a509a59be4"/><file name="system.xml" hash="20d13e176b478e62519f3b5615a5f03c"/></dir><dir name="sql"><dir name="codisto_setup"><file name="mysql4-install-0.2.0.php" hash="161ad92571b284064a5510a5a00b91a9"/></dir></dir></dir></dir></target><target name="mageetc"><dir name="modules"><file name="Codisto_Sync.xml" hash="273dbb716af79fc55060b269bd1ceffe"/><file name="Codisto_Codistoadmin.xml" hash="61068ce0fd1928b405c5b9fc16bdfd95"/></dir></target></contents>
+    <compatible/>
+    <dependencies><required><php><min>5.2.0</min><max>6.0.0</max></php></required></dependencies>
+</package>
