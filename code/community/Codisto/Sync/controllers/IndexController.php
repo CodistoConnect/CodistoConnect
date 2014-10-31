@@ -1,6 +1,6 @@
 <?php
 /**
- * Magento
+ * Codisto eBay Sync Extension
  *
  * NOTICE OF LICENSE
  *
@@ -14,7 +14,7 @@
  *
  * @category    Codisto
  * @package     Codisto_Sync
- * @copyright   Copyright (c) 2014 On Technology (http://www.ontech.com.au)
+ * @copyright   Copyright (c) 2014 On Technology Pty. Ltd. (http://codisto.com/)
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
@@ -28,9 +28,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		
 		if($method == 'POST')
 		{
-
-syslog(1, print_r('endpoint reached:' . $content_type, true));
-
 			if($content_type == "text/xml")
 			{
 				$xml = simplexml_load_string(file_get_contents("php://input"));
@@ -40,10 +37,6 @@ syslog(1, print_r('endpoint reached:' . $content_type, true));
 				if(!$ordercontent->reason)
 					$ordercontent->reason = "OrderCreated";
 
-syslog(1, print_r('xml: ' . print_r($xml), true));
-syslog(1, print_r('ordercontent: ' . $ordercontent, true));
-syslog(1, print_r('$ordercontent->reason: ' . $ordercontent->reason, true));
-				
 				if($ordercontent &&
 					$ordercontent->reason == "OrderCreated")
 				{
@@ -81,8 +74,6 @@ syslog(1, print_r('$ordercontent->reason: ' . $ordercontent->reason, true));
 		$storeId = $store->getId();
 	
 		$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
-
-syslog(1, print_r($ordercontent->orderid[0], true));
 		
 		$currencyCode = $ordercontent->transactcurrency[0];
 		$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
@@ -194,10 +185,7 @@ syslog(1, print_r($ordercontent->orderid[0], true));
 		$quote->getPayment()->setMethod('ebaypayment');
 		
 		$quote->setCodistoOrderid($ordercontent->orderid);
-		
-syslog(1, print_r('qooo', true));
-syslog(1, $quote->getCodistoOrderid());
-		
+				
 		$billingAddress  = $quote->getBillingAddress()->addData($addressData_billing);
 		$shippingAddress = $quote->getShippingAddress()->addData($addressData_shipping);
 		
@@ -302,15 +290,10 @@ syslog(1, $quote->getCodistoOrderid());
 		$order->place();
 		$order->save();
 		
-syslog(1, 'codisto orderid: ' . $order->getCodistoOrderid());
-
 		$quote->setIsActive(false)->save();
 
 		$neworder = Mage::getModel('sales/order')->load($order->entity_id);
-	
-syslog(1, 'MAGENTO ORDERID: ' . $neworder->entity_id);
-syslog(1, 'CODISTO ORDERID: ' . $neworder->getCodistoOrderid());
-		
+			
 		echo "OK";
 	}
 	

@@ -1,13 +1,31 @@
 <?php
+/**
+ * Codisto eBay Sync Extension
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magentocommerce.com so we can send you a copy immediately.
+ *
+ * @category	Codisto
+ * @package		Codisto_Sync
+ * @copyright	Copyright (c) 2014 On Technology Pty. Ltd. (http://codisto.com/)
+ * @license		http://opensource.org/licenses/osl-3.0.php	Open Software License (OSL 3.0)
+ */
 class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_Standard {
  
 	public function match(Zend_Controller_Request_Http $request)
-    {
-        //checking before even try to find out that current module
-        //should use this router
-        if (!$this->_beforeModuleMatch()) {
-            return false;
-        }	
+	{
+		//checking before even try to find out that current module
+		//should use this router
+		if (!$this->_beforeModuleMatch()) {
+			return false;
+		}	
 
 		$this->fetchDefault();
 		
@@ -87,7 +105,7 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 		}
 
 //		header("Content-Length:" . strlen($body));
-//      All posts should be to the current URL only, that way we don't need to worry about Mage::BaseDir().
+//		All posts should be to the current URL only, that way we don't need to worry about Mage::BaseDir().
 		echo $body;
 		die;
 		}
@@ -108,11 +126,11 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 		
 		return false;
 	
-        //checking before even try to find out that current module
-        //should use this router
-        if (!$this->_beforeModuleMatch()) {
-            return false;
-        }
+		//checking before even try to find out that current module
+		//should use this router
+		if (!$this->_beforeModuleMatch()) {
+			return false;
+		}
 /*		
 		$this->fetchDefault();
 		
@@ -145,150 +163,150 @@ syslog(1, "HOSTKEY: " . print_r($headers, true));
 		
 		return false;
 */ 
-        $this->fetchDefault();
+		$this->fetchDefault();
  
-        $front = $this->getFront();
-        $path = trim($request->getPathInfo(), '/');
+		$front = $this->getFront();
+		$path = trim($request->getPathInfo(), '/');
  
-        if ($path) {
-            $p = explode('/', $path);
-        } else {
-            $p = explode('/', $this->_getDefaultPath());
-        }
+		if ($path) {
+			$p = explode('/', $path);
+		} else {
+			$p = explode('/', $this->_getDefaultPath());
+		}
  
-        // get module name
-        if ($request->getModuleName()) {
-            $module = $request->getModuleName();
-        } else {
-            if (!empty($p[0])) {
-                $module = $p[0];
-            } else {
-                $module = $this->getFront()->getDefault('module');
-                $request->setAlias(Mage_Core_Model_Url_Rewrite::REWRITE_REQUEST_PATH_ALIAS, '');
-            }
-        }
-        if (!$module) {
-            if (Mage::app()->getStore()->isAdmin()) {
-                $module = 'admin';
-            } else {
-                return false;
-            }
-        }
+		// get module name
+		if ($request->getModuleName()) {
+			$module = $request->getModuleName();
+		} else {
+			if (!empty($p[0])) {
+				$module = $p[0];
+			} else {
+				$module = $this->getFront()->getDefault('module');
+				$request->setAlias(Mage_Core_Model_Url_Rewrite::REWRITE_REQUEST_PATH_ALIAS, '');
+			}
+		}
+		if (!$module) {
+			if (Mage::app()->getStore()->isAdmin()) {
+				$module = 'admin';
+			} else {
+				return false;
+			}
+		}
  
-        /**
-         * Searching router args by module name from route using it as key
-         */
+		/**
+		 * Searching router args by module name from route using it as key
+		 */
  
-        $modules = $this->getModuleByFrontName($module);
+		$modules = $this->getModuleByFrontName($module);
 echo $module;
 echo "<br/><br/>";
 print_r($modules);
 die();
 		
-        if ($modules === false) {
-            return false;
-        }
+		if ($modules === false) {
+			return false;
+		}
  
-        //checkings after we foundout that this router should be used for current module
+		//checkings after we foundout that this router should be used for current module
 /*		
-        if (!$this->_afterModuleMatch()) {
-            return false;
-        }
+		if (!$this->_afterModuleMatch()) {
+			return false;
+		}
 */
 
-        /**
-         * Going through modules to find appropriate controller
-         */
-        $found = false;
-        foreach ($modules as $realModule) {
-            $request->setRouteName($this->getRouteByFrontName($module));
+		/**
+		 * Going through modules to find appropriate controller
+		 */
+		$found = false;
+		foreach ($modules as $realModule) {
+			$request->setRouteName($this->getRouteByFrontName($module));
  
-            // get controller name
-            if ($request->getControllerName()) {
-                $controller = $request->getControllerName();
-            } else {
-                if (!empty($p[1])) {
-                    $controller = $p[1];
-                } else {
-                    $controller = $front->getDefault('controller');
-                    $request->setAlias(
-                        Mage_Core_Model_Url_Rewrite::REWRITE_REQUEST_PATH_ALIAS,
-                        ltrim($request->getOriginalPathInfo(), '/')
-                    );
-                }
-            }
+			// get controller name
+			if ($request->getControllerName()) {
+				$controller = $request->getControllerName();
+			} else {
+				if (!empty($p[1])) {
+					$controller = $p[1];
+				} else {
+					$controller = $front->getDefault('controller');
+					$request->setAlias(
+						Mage_Core_Model_Url_Rewrite::REWRITE_REQUEST_PATH_ALIAS,
+						ltrim($request->getOriginalPathInfo(), '/')
+					);
+				}
+			}
  
-            // get action name
-            if (empty($action)) {
-                if ($request->getActionName()) {
-                    $action = $request->getActionName();
-                } else {
-                    $action = !empty($p[2]) ? $p[2] : $front->getDefault('action');
-                }
-            }
+			// get action name
+			if (empty($action)) {
+				if ($request->getActionName()) {
+					$action = $request->getActionName();
+				} else {
+					$action = !empty($p[2]) ? $p[2] : $front->getDefault('action');
+				}
+			}
  
-            //checking if this place should be secure
-            $this->_checkShouldBeSecure($request, '/'.$module.'/'.$controller.'/'.$action);
+			//checking if this place should be secure
+			$this->_checkShouldBeSecure($request, '/'.$module.'/'.$controller.'/'.$action);
  
-            $controllerClassName = $this->_validateControllerClassName($realModule, $controller);
-            if (!$controllerClassName) {
-                continue;
-            }
+			$controllerClassName = $this->_validateControllerClassName($realModule, $controller);
+			if (!$controllerClassName) {
+				continue;
+			}
  echo $controllerClassName;
  echo "<br/><br/>";
-            // instantiate controller class
-            $controllerInstance = Mage::getControllerInstance($controllerClassName, $request, $front->getResponse());
+			// instantiate controller class
+			$controllerInstance = Mage::getControllerInstance($controllerClassName, $request, $front->getResponse());
  
-            if (!$controllerInstance->hasAction($action)) {
-                continue;
-            }
+			if (!$controllerInstance->hasAction($action)) {
+				continue;
+			}
  
-            $found = true;
-            break;
-        }
+			$found = true;
+			break;
+		}
  die();
-        /**
-         * if we did not found any siutibul
-         */
-        if (!$found) {
-            if ($this->_noRouteShouldBeApplied()) {
-                $controller = 'index';
-                $action = 'noroute';
+		/**
+		 * if we did not found any siutibul
+		 */
+		if (!$found) {
+			if ($this->_noRouteShouldBeApplied()) {
+				$controller = 'index';
+				$action = 'noroute';
  
-                $controllerClassName = $this->_validateControllerClassName($realModule, $controller);
-                if (!$controllerClassName) {
-                    return false;
-                }
+				$controllerClassName = $this->_validateControllerClassName($realModule, $controller);
+				if (!$controllerClassName) {
+					return false;
+				}
  
-                // instantiate controller class
-                $controllerInstance = Mage::getControllerInstance($controllerClassName, $request,
-                    $front->getResponse());
+				// instantiate controller class
+				$controllerInstance = Mage::getControllerInstance($controllerClassName, $request,
+					$front->getResponse());
  
-                if (!$controllerInstance->hasAction($action)) {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        }
+				if (!$controllerInstance->hasAction($action)) {
+					return false;
+				}
+			} else {
+				return false;
+			}
+		}
  
-        // set values only after all the checks are done
-        $request->setModuleName($module);
-        $request->setControllerName($controller);
-        $request->setActionName($action);
-        $request->setControllerModule($realModule);
+		// set values only after all the checks are done
+		$request->setModuleName($module);
+		$request->setControllerName($controller);
+		$request->setActionName($action);
+		$request->setControllerModule($realModule);
  
-        // set parameters from pathinfo
-        for ($i = 3, $l = sizeof($p); $i < $l; $i += 2) {
-            $request->setParam($p[$i], isset($p[$i+1]) ? urldecode($p[$i+1]) : '');
-        }
+		// set parameters from pathinfo
+		for ($i = 3, $l = sizeof($p); $i < $l; $i += 2) {
+			$request->setParam($p[$i], isset($p[$i+1]) ? urldecode($p[$i+1]) : '');
+		}
  
-        // dispatch action
-        $request->setDispatched(true);
-        $controllerInstance->dispatch($action);
+		// dispatch action
+		$request->setDispatched(true);
+		$controllerInstance->dispatch($action);
  
-        return true;
-    }
+		return true;
+	}
 
 	private function getAllHeaders($extra = false) {
 		foreach ($_SERVER as $name => $value)

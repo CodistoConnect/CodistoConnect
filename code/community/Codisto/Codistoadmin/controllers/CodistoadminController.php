@@ -1,6 +1,6 @@
 <?php
 /**
- * Magento
+ * Codisto eBay Sync Extension
  *
  * NOTICE OF LICENSE
  *
@@ -12,15 +12,15 @@
  * obtain it through the world-wide-web, please send an email
  * to license@magentocommerce.com so we can send you a copy immediately.
  *
- * @category    Codisto
- * @package     Codisto_Sync
- * @copyright   Copyright (c) 2014 On Technology (http://www.ontech.com.au)
- * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ * @category	Codisto
+ * @package		Codisto_Sync
+ * @copyright	Copyright (c) 2014 On Technology Pty. Ltd. (http://codisto.com/)
+ * @license		http://opensource.org/licenses/osl-3.0.php	Open Software License (OSL 3.0)
  */
 class Codisto_Codistoadmin_CodistoadminController extends Mage_Adminhtml_Controller_Action
 {
-    public function indexAction()
-    {
+	public function indexAction()
+	{
 	
 // TESTING
 	$collection = Mage::getModel('sales/quote')
@@ -43,14 +43,14 @@ class Codisto_Codistoadmin_CodistoadminController extends Mage_Adminhtml_Control
 	die;
 // END TESTING
 	
-        $this->loadLayout();
-        $this->renderLayout();
-    }
+		$this->loadLayout();
+		$this->renderLayout();
+	}
 
 	public function proxyPostAction()
 	{
 		$this->getConfig();
-	    $url = $_REQUEST['proxy_url'];
+		 $url = $_REQUEST['proxy_url'];
 
 		//open connection
 		$ch = curl_init();
@@ -105,7 +105,7 @@ class Codisto_Codistoadmin_CodistoadminController extends Mage_Adminhtml_Control
 		if($parts && isset($parts['query']))
 		{
 			parse_str($parts['query'], $res);
-			$query =  http_build_query($res);
+			$query =	 http_build_query($res);
 
 			$fragment = "";
 			if(isset($parts['fragment']))
