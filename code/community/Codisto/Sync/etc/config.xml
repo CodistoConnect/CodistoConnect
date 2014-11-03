@@ -42,7 +42,7 @@
 	<global>
 		<models>
 			<ebaypayment>
-				<class>Codisto_Ebaypayment_Model</class>
+				<class>Codisto_Sync_Ebaypayment_Model</class>
 			</ebaypayment>
 		</models>
 		<fieldsets>
@@ -90,6 +90,14 @@
 		</blocks>
 	</global>
 	<default>
+		<web>
+			<routers>
+				<codisto-sync>
+					<area>admin</area>
+					<class>Codisto_Sync_Controller_Router</class>
+				</codisto-sync>
+			</routers>
+		</web>
 		<payment>
 			<ebaypayment>
 				<active>1</active>

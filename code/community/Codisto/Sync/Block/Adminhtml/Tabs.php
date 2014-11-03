@@ -26,24 +26,19 @@ class Codisto_Sync_Block_Adminhtml_Tabs extends Mage_Adminhtml_Block_Catalog_Pro
 		//get all existing tabs
 		$this->parent = parent::_prepareLayout();
 
-		$MerchantID = Mage::getStoreConfig('codisto/merchantid');
-		$ApiKey = Mage::getStoreConfig('codisto/apikey');
-		$HostKey = Mage::getStoreConfig('codisto/hostkey');
-		$HostID = Mage::getStoreConfig('codisto/hostid');
-		$PartnerID = Mage::getStoreConfig('codisto/partnerid');
-		$PartnerKey = Mage::getStoreConfig('codisto/partnerkey');
+		$entity_id = $this->getProduct()->getEntityId();
 
-		$product = $this->getProduct()->getData();
-		if(isset($product['entity_id']))
+		if(isset($entity_id))
 		{		
-			$url = Mage::getModel('adminhtml/url')->getUrl('adminhtml/codistoadmin/proxyGet') . "?proxy_url=" . urlencode("https://secure.ezimerchant.com/" . $MerchantID . "/frame/1/product/" . $product['entity_id'] . "/ebay/?formkey=".Mage::getSingleton('core/session')->getFormKey());
+			$url = Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/', array('product' => $entity_id));
 
 			//add new tab
 			$this->addTab('tabid', array(
 				'label'     => 'Codisto eBay Plugin',
-				'content'   => "<iframe id='codisto' width=\"100%\" height=\"800\" src=\"${url}\"></iframe>"
+				'content'   => "<iframe id='codisto' width=\"100%\" height=\"800\" style=\"border: none; \" src=\"${url}\"></iframe>"
 			));
 		}
+		
 		return $this->parent;
 	}
 }
