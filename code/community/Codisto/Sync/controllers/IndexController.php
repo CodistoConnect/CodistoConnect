@@ -19,6 +19,109 @@
  */
 class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 {
+	public function calcAction()
+	{
+		$request = $this->getRequest();
+		$response = $this->getResponse();
+
+		$model = Mage::getModel('catalog/product');
+		
+		$cart = Mage::getSingleton('checkout/cart');
+
+		$postalcode = $request->getPost('POSTALCODE');
+		$division = $request->getPost('DIVISION');
+		$countrycode = $request->getPost('COUNTRYCODE');
+		
+		if($countrycode == 'AU')
+		{
+			$pc = $postalcode[0];
+
+			if ($pc == 2 || $pc == 1) {
+				$regiontext = "NSW";
+			} else if ($pc == 3 || $pc == 8) {
+				$regiontext = "VIC";
+			} else if ($pc == 4) {
+				$regiontext = "QLD";
+			} else if ($pc == 5) {
+				$regiontext = "SA";
+			} else if ($pc == 6) {
+				$regiontext = "WA";
+			} else if ($pc == 7) {
+				$regiontext = "TAS";
+			}
+
+			$pc3 = $postalcode[0] + $postalcode[1];
+			if ($pc3 == "08" || $pc3 == "09") {
+				$regiontext = "NT";
+			}
+
+			if ($postalcode == "0872") {
+				$regiontext = "SA";
+			} else if ($postalcode == "2611" || $postalcode == "3500" || $postalcode == "3585" || $postalcode == "3586" || $postalcode == "3644" || $postalcode == "3707") {
+				$regiontext = "NSW";
+			} else if ($postalcode == "2620") {
+				$regiontext = "ACT";
+			}
+
+			if ($postalcode >= 2600 && $postalcode <= 2618) {
+				$regiontext = "ACT";
+			}
+
+			$region = Mage::getModel('directory/region')->loadByCode($regiontext, $countrycode);
+			if($region)
+				$regionid = $region->getId();
+		}
+		else
+		{
+			$region = Mage::getModel('directory/region')->loadByName($division, $countrycode);
+			if($region)
+				$regionid = $region->getId();
+		}
+		
+		for($inputidx = 0; ; $inputidx++)
+		{
+			$productcode = $request->getPost('PRODUCTCODE('.$inputidx.')');
+			$id = $model->getIdBySku($productcode);
+			
+			$productqty = $request->getPost('PRODUCTQUANTITY('.$inputidx.')');
+			if(!$productqty && $productqty !=0)
+				$productqty = 1;
+			
+			if(!$productcode)
+				break;
+		
+		
+			if($id)
+			{
+				$product = $model->load($id);
+
+				$cart->addProduct($product, $productqty);
+			}
+		}
+
+		$address = $cart->getQuote()->getShippingAddress();
+		
+		$address->setCountryId($countrycode)->setPostcode($postalcode);
+
+		if($regionid)
+			$address->setRegionId($regionid);
+		
+		$cart->save();
+	
+		$rates = $cart->getQuote()->getShippingAddress()->getShippingRatesCollection();
+		
+		$output = '';
+		$outputidx = 0;
+		
+		foreach ($rates as $rate) {
+			$output .= 'FREIGHTNAME('.$outputidx.')=Freight&FREIGHTCHARGEINCTAX('.$outputidx.')='.$rate->getPrice() . '&';
+			
+			$outputidx++;
+		}
+		
+		$response->setBody($output);
+	}
+	
 	public function indexAction()
 	{
 		$method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
@@ -28,9 +131,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		{
 			if($content_type == "text/xml")
 			{
-
-syslog(1, print_r("XML", true));
-
 
 				$xml = simplexml_load_string(file_get_contents("php://input"));
 		
@@ -311,53 +411,35 @@ syslog(1, print_r("XML", true));
 
 		$neworder = Mage::getModel('sales/order')->load($order->entity_id);
 		
-syslog(1, print_r('get order id: ' . $neworder->getCodistoOrderid(), true));
-			
 		echo "OK";
 	}
 	
-	private function ProcessOrderSync($codistoorderid)
+	private function ProcessOrderSync($codistoorderid, $xml)
 	{
-	
 		$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $codistoorderid)->getFirstItem();
-		
 		try {
-			if(!$order->canInvoice())
-			{
-				Mage::throwException(Mage::helper('core')->__('Cannot create an invoice.'));
-			}
-
-			$invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
-
-			if (!$invoice->getTotalQty()) {
-				Mage::throwException(Mage::helper('core')->__('Cannot create an invoice without products.'));
-			}
-
-			$invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_ONLINE);
-			
-			$invoice->register();
-			$transactionSave = Mage::getModel('core/resource_transaction')
-			->addObject($invoice)
-			->addObject($invoice->getOrder());
-			
-			$transactionSave->save();
-			
 			$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
-		
-syslog(1, print_r($ordercontent, true));
-			
-			//If Paid AND !Shipped = 'Processing' $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true)->save();
-			//If Paid AND Shipped = 'Completed' $order->setState(Mage_Sales_Model_Order::STATE_COMPLETE, true)->save();
-			//If !Paid AND !Shipped = 'Completed' $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true)->save();
-
-			$order->setStatus("complete");
-			$order->save();
+			/* cancelled, processing, captured, inprogress, complete */
+			if($ordercontent->orderstate == 'captured') {
+				$order->setState(Mage_Sales_Model_Order::STATE_NEW, true)->save();
+			}
+			if($ordercontent->orderstate == 'cancelled') {
+				$order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true)->save();
+			}
+			if($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing' ) {
+				$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true)->save();
+			}
+			if($ordercontent->orderstate == 'complete') {
+				$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE);
+				$order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
+				$order->save();
+			}
 		}
 		catch (Mage_Core_Exception $e) {
+			syslog(1, print_r($e, true));
 		}		
 		
-		syslog(1, print_r('sync order: ' . $order, true));
-		
+		echo "OK";
 	}
 	
 	private function getRegionCollection($countryCode)
