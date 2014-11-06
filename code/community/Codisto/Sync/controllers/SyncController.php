@@ -24,14 +24,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	public function indexAction()
 	{
 		$this->getConfig();
+		$request = $this->getRequest();
 
 		if (isset($_SERVER['HTTP_X_SYNC'])) {
 			if (!isset($_SERVER['HTTP_X_ACTION']))
 				$_SERVER['HTTP_X_ACTION'] = "";
 
 			switch ($_SERVER['HTTP_X_ACTION']) {
-				case "HELLO":
-					die("Mobile");
 				case "GET":
 					if ($this->checkHash($this->config['HostKey'], $_SERVER['HTTP_X_NONCE'], $_SERVER['HTTP_X_HASH'])) {
 						$this->Send();
@@ -40,7 +39,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				case "EXECUTE":
 					if ($this->checkHash($this->config['HostKey'], $_SERVER['HTTP_X_NONCE'], $_SERVER['HTTP_X_HASH'])) {
 						$this->Sync();
-						die("done");
+						$response = $this->getResponse();
+						$response->setBody('done');
 					}
 				default:
 					die("No Action");
@@ -50,33 +50,35 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	public function checkPluginAction()
 	{ // URL End Point: /magento/index.php/codisto-sync/sync/checkPlugin
 		$this->getConfig();
-		echo "SUCCESS";
-		die;
+		$response = $this->getResponse();
+		$response->setBody('SUCCESS');
 	}
 
 	public function testSyncAction()
 	{ // URL End Point: /magento/index.php/codisto-sync/sync/testSync
+		$request = $this->getRequest();
 		$this->Sync();
-		if(isset($_GET['send']))
+		if(isset($request->getQuery('send')))
 			$this->Send();
 	}
 
 	public function configUpdateAction()
 	{ // URL End Point: /magento/index.php/codisto-sync/sync/configUpdate
+		
+		$request = $this->getRequest();
 
-		if (!isset($_GET['merchantid']) || !isset($_GET['hash']) || !isset($_GET['hostid'])) {
-			die("FAIL - missing crendentials - " . print_r($_GET, true));
+		if (!isset($request->getQuery('merchantid')) || !isset($request->getQuery('hash')) || !isset($request->getQuery('hostid'))) {
+			$response = $this->getResponse();
+			$response->setBody("FAIL - missing crendentials - " . print_r($$request->getQuery(), true));		
 		}
 
-		$Hash = $_GET['hash'];
-		$MerchantID = (int)$_GET['merchantid'];
-		$HostID = (int)$_GET['hostid'];
+		$Hash = $request->getQuery('hash');
+		$MerchantID = (int)$request->getQuery('merchantid');
+		$HostID = (int)$request->getQuery('hostid');
 
-		$ch = curl_init();
-		curl_setopt($ch,CURLOPT_URL,"https://secure.ezimerchant.com/" . $MerchantID . "/proxy/" . $HostID . "/get-merchant-details?hash=" . urlencode($Hash));
-		curl_setopt($ch,CURLOPT_RETURNTRANSFER ,true);
-		$result = curl_exec($ch);
-		curl_close($ch);
+		$client = new Zend_Http_Client();
+		$client->setUri("https://ui.codisto.com/" . $MerchantID . "/proxy/" . $HostID . "/get-merchant-details?hash=" . urlencode($Hash));
+		$result = $client->request();
 		
 		try {
 			$data = json_decode($result, true);
@@ -90,7 +92,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				Mage::app()->getCacheInstance()->cleanType('config');
 				Mage::app()->getStore()->resetConfig();
 
-				echo "SUCCESS";
+				$response = $this->getResponse();
+				$response->setBody('SUCCESS');
 			} else
 				echo "FAIL - ID Mismatch. - " . $data['MerchantID'] . " : " . $MerchantID . " : " . $result;
 		} catch (Exception $e) {
@@ -213,53 +216,53 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							'ProductOrdered' int, MetaTitle TEXT, MetaDescription TEXT)");
 		$db->query("CREATE TABLE ProductImage
 						(
-						    ProductExternalReference TEXT NOT NULL,
-						    URL TEXT,
-						    Tag TEXT NOT NULL DEFAULT '',
-						    Sequence INTEGER NOT NULL
+							ProductExternalReference TEXT NOT NULL,
+							URL TEXT,
+							Tag TEXT NOT NULL DEFAULT '',
+							Sequence INTEGER NOT NULL
 						)");
 		$db->query("CREATE TABLE SKUImage
 						(
-						    SKUExternalReference TEXT NOT NULL,
-						    URL TEXT,
-						    Tag TEXT NOT NULL DEFAULT '',
-						    Sequence INTEGER NOT NULL,
-						    PRIMARY KEY ( SKUExternalReference, Tag, Sequence )
+							SKUExternalReference TEXT NOT NULL,
+							URL TEXT,
+							Tag TEXT NOT NULL DEFAULT '',
+							Sequence INTEGER NOT NULL,
+							PRIMARY KEY ( SKUExternalReference, Tag, Sequence )
 						)");
 		$db->query("CREATE TABLE 'Configuration' ('configuration_id' int, 'configuration_title' blob, 'configuration_key' string,
 							'configuration_value' blob, 'configuration_description' blob, 'configuration_group_id' int, 'sort_order' int,
 							'last_modified' datetime, 'date_added' datetime, 'use_function' blob, 'set_function' blob)");
 		$db->query("CREATE TABLE SKU
 						(
-						    ExternalReference TEXT,
-						    Code TEXT,
-						    ProductExternalReference TEXT NOT NULL,
-						    StockControl TEXT NOT NULL,
-						    StockLevel INTEGER,
-						    Price TEXT,
+							ExternalReference TEXT,
+							Code TEXT,
+							ProductExternalReference TEXT NOT NULL,
+							StockControl TEXT NOT NULL,
+							StockLevel INTEGER,
+							Price TEXT,
 							Enabled int
 						)");
 		$db->query("CREATE TABLE SKUMatrix
 						(
-						    SKUExternalReference TEXT NOT NULL,
-						    Code TEXT NOT NULL,
-						    OptionName TEXT NOT NULL,
-						    OptionValue TEXT NOT NULL,
-						    PriceModifier TEXT
+							SKUExternalReference TEXT NOT NULL,
+							Code TEXT NOT NULL,
+							OptionName TEXT NOT NULL,
+							OptionValue TEXT NOT NULL,
+							PriceModifier TEXT
 						)");
 
 		$db->query("CREATE TABLE OptionMatrix
 						(
-						    SKUExternalReference TEXT NOT NULL,
-						    Code TEXT NOT NULL,
-						    OptionName TEXT NOT NULL,
-						    OptionValue TEXT NOT NULL,
-						    PriceModifier TEXT
+							SKUExternalReference TEXT NOT NULL,
+							Code TEXT NOT NULL,
+							OptionName TEXT NOT NULL,
+							OptionValue TEXT NOT NULL,
+							PriceModifier TEXT
 						)");
 
 		$db->query("CREATE TABLE Log
 						(
-						    ID,
+							ID,
 							Type TEXT,
 							Content
 						)");

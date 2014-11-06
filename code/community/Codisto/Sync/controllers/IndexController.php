@@ -371,34 +371,34 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$lineidx = 0;
 		foreach ($quote->getAllItems() as $item) {
 		
-        	while(true)
-        	{
-	        	$orderline = $ordercontent->orderlines->orderline[$lineidx];
-	        	if($orderline->productcode[0] == 'FREIGHT')
-	        	{
-		        	$lineidx++;
-		        	continue;
-	        	}
-	        	
-	        	break;
-	        }
-        
-            $orderItem = $convertquote->itemToOrderItem($item);
-            if ($item->getParentItem()) {
-                $orderItem->setParentItem($order->getItemByQuoteItemId($item->getParentItem()->getId()));
-            }
-            
-            $taxamount = $store->roundPrice(floatval($orderline->linetotalinctax[0]) - floatval($orderline->linetotal[0]));
-            
-            $orderItem->setBaseTaxAmount($taxamount);
-            $orderItem->setTaxAmount($taxamount);
+			while(true)
+			{
+				$orderline = $ordercontent->orderlines->orderline[$lineidx];
+				if($orderline->productcode[0] == 'FREIGHT')
+				{
+					$lineidx++;
+					continue;
+				}
+				
+				break;
+			}
+
+			$orderItem = $convertquote->itemToOrderItem($item);
+			if ($item->getParentItem()) {
+				$orderItem->setParentItem($order->getItemByQuoteItemId($item->getParentItem()->getId()));
+			}
+			
+			$taxamount = $store->roundPrice(floatval($orderline->linetotalinctax[0]) - floatval($orderline->linetotal[0]));
+			
+			$orderItem->setBaseTaxAmount($taxamount);
+			$orderItem->setTaxAmount($taxamount);
 			$orderItem->setTaxPercent(round(floatval($orderline->priceinctax[0]) / floatval($orderline->price[0]) - 1.0, 2) * 100);
 			$orderItem->setRowTotal(floatval($orderline->linetotal[0]));
-            
-            $order->addItem($orderItem);
-            
-            $lineidx++;
-        }
+			
+			$order->addItem($orderItem);
+			
+			$lineidx++;
+		}
 		
 		if($ebaysalesrecordnumber)
 			$order->addStatusToHistory($order->getStatus(), "Order $ebaysalesrecordnumber received from eBay");
@@ -411,7 +411,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$neworder = Mage::getModel('sales/order')->load($order->entity_id);
 		
-		echo "OK";
+		$response = $this->getResponse();
+		$response->setBody('OK');
 	}
 	
 	private function ProcessOrderSync($codistoorderid, $xml)
@@ -458,7 +459,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setBaseShippingTaxAmount($taxpercent);
 
 		/* cancelled, processing, captured, inprogress, complete */
- 		if($ordercontent->orderstate == 'captured' && $orderstatus!='pending') {
+		if($ordercontent->orderstate == 'captured' && $orderstatus!='pending') {
 			$order->setState(Mage_Sales_Model_Order::STATE_NEW, true);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
 		}
@@ -484,7 +485,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			syslog(1, print_r($e, true));
 		}
 		
-		echo "OK";
+		$response = $this->getResponse();
+		$response->setBody('OK');
 	}
 	
 	private function getRegionCollection($countryCode)

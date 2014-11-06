@@ -52,7 +52,6 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				// proxy request
 				$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true ));
 				
-				
 				// set proxied headers
 				foreach($this->getAllHeaders() as $k=>$v)
 				{
