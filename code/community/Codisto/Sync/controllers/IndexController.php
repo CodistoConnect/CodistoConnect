@@ -182,7 +182,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 	}
 
-	private function ProcessOrderCreate($xml)
+	private function ProcessOrderCreate($xml, $codisto_orderid)
 	{
 		$website = Mage::app()->getWebsite();
 		$websiteId = $website->getId();
@@ -419,22 +419,69 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $codistoorderid)->getFirstItem();
 		
 		$orderstatus = $order->getState();
-		
 		$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
+		$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
+
+		$freightcarrier = $ordercontent->freightcarrier[0];
+		$freightservice = $ordercontent->freightservice[0];
+		$freighttotal =  0;
+		$freighttotalextax =  0;
+		$taxpercent =  0;
+		$taxrate =  1;
+
+		foreach($ordercontent->orderlines->orderline as $orderline)
+		{
+			if($orderline->productcode[0] == 'FREIGHT')
+			{
+				$freighttotal += floatval($orderline->linetotalinctax[0]);
+				$freighttotalextax += floatval($orderline->linetotalextax[0]);
+			}
+		}
+		
+		try{
+		
+		$order->setShippingDescription($freightservice);
+		$order->setBaseShippingAmount($freighttotal);
+		$order->setShippingAmount($freighttotal);
+		
+		if($freighttotalextax != 0) {
+			$taxrate = floatval($freighttotal / $freighttotalextax);
+			$taxpercent = (($freighttotal / $freighttotalextax) -1) * 100;
+		}
+
+		$basegrandtotal = $order->getGrandTotal();
+		$subtotal = $order->getSubtotal();
+		
+		$order->setBaseSubtotalInclTax($subtotal + $freighttotal);
+		$order->setGrandTotal($subtotal + $freighttotal);
+		$order->setBaseGrandTotal($subtotal + $freighttotal);
+		$order->setBaseShippingTaxAmount($taxpercent);
+
 		/* cancelled, processing, captured, inprogress, complete */
-		if($ordercontent->orderstate == 'captured' && $orderstatus!='pending') {
-			$order->setState(Mage_Sales_Model_Order::STATE_NEW, true)->save();
+ 		if($ordercontent->orderstate == 'captured' && $orderstatus!='pending') {
+			$order->setState(Mage_Sales_Model_Order::STATE_NEW, true);
+			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
 		}
 		if($ordercontent->orderstate == 'cancelled' && $orderstatus!='canceled') {
-			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true)->save();
+			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true);
+			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been cancelled");
 		}
 		if(($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') && $orderstatus!='processing') {
-			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true)->save();
+			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true);
+			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is in progress");
 		}
 		if($ordercontent->orderstate == 'complete' && $orderstatus!='complete') {
 			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE);
 			$order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
-			$order->save();
+			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
+		}
+		
+		$order->setMethod('ebaypayment');
+		
+		$order->save();
+		
+		} catch(Exception $e) {
+			syslog(1, print_r($e, true));
 		}
 		
 		echo "OK";
