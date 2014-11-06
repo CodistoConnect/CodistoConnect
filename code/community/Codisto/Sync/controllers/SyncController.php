@@ -82,12 +82,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			$data = json_decode($result, true);
 			if ($data['MerchantID'] == $MerchantID) {
 				Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['MerchantID']);
-				Mage::getModel("core/config")->saveConfig("codisto/apikey", $data['ApiKey']);
 				Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['HostKey']);
 				Mage::getModel("core/config")->saveConfig("codisto/hostid", $data['HostID']);
-				Mage::getModel("core/config")->saveConfig("codisto/partnerid", $data['PartnerID']);
-				Mage::getModel("core/config")->saveConfig("codisto/partnerkey", $data['PartnerKey']);
-
+				
 				//Mage::app()->cleanCache();
 				Mage::app()->removeCache('config_store_data');
 				Mage::app()->getCacheInstance()->cleanType('config');
@@ -370,7 +367,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		
 		// Products: CONFIGURABLE
 		$configurableCollection = Mage::getModel('catalog/product')->getCollection()
-			->addAttributeToSelect(array('*', 'name', 'image', 'description', 'product_url', 'price', 'special_price', 'main'))
+			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
 			->addAttributeToFilter('type_id', array('eq' => 'configurable'));
 
 		$insertedProducts = array();
@@ -388,10 +385,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			
 			$productprice = $productloader->getFinalPrice();
 			
-			if(!$product['description']) {
-				$product['description'] = $productloader->description;
-			}
-
+			$product['description'] = $productloader->description;
+			
 			// Extract the fields from Product
 			$fields = array();
 			foreach ($insertData as $magentoKey => $eziKey) {
@@ -416,9 +411,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			}
 						
 			$fields['StockLevel'] = (int)$stockData["qty"];
-			
 			$fields['Manufacturer'] = $productloader->manufacturer;
-			
+			$fields['ListPrice'] = $product['price'] / (1+($percent/100));
 			$fields['Price'] = isset($productprice) ? $productprice / (1+($percent/100))  : "";
 			$fields['TaxID'] = 1;
 
@@ -559,10 +553,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		// Products: SIMPLE
 		$collection = Mage::getModel('catalog/product')->getCollection()
-			->addAttributeToSelect(array('*', 'name', 'image', 'description', 'product_url', 'price', 'special_price', 'main'))
+			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
 			->addAttributeToFilter('type_id', array('eq' => 'simple'));
-		
-		//$yo = false;
 		
 		foreach ($collection as $productData) {
 			$product = $productData->getData();
@@ -575,9 +567,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			if($percent === 0 || !$percent)
 				$percent = 10;
 
-			if(!$product['description']) {
-				$product['description'] = $_product->description;
-			}
+			$product['description'] = $productloader->description;
 			
 			$productprice = $productloader->getFinalPrice();
 
@@ -636,8 +626,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			
 			$fields['StockLevel'] = (int)$stockData["qty"];
 			$fields['Manufacturer'] = $productloader->manufacturer;
-
-			$fields['Price'] = isset($productprice) ? $productprice / (1+($percent/100)) : "";
+			$fields['ListPrice'] = $product['price'] / (1+($percent/100));
+			$fields['Price'] = isset($productprice) ? $productprice / (1+($percent/100))  : "";
 			$fields['TaxID'] = 1;
 
 			if ($product['status'] != 1)

@@ -369,8 +369,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setCodistoOrderid($ordercontent->orderid);
 	
 		$lineidx = 0;
-        foreach ($quote->getAllItems() as $item) {
-        
+		foreach ($quote->getAllItems() as $item) {
+		
         	while(true)
         	{
 	        	$orderline = $ordercontent->orderlines->orderline[$lineidx];
@@ -417,27 +417,25 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 	private function ProcessOrderSync($codistoorderid, $xml)
 	{
 		$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $codistoorderid)->getFirstItem();
-		try {
-			$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
-			/* cancelled, processing, captured, inprogress, complete */
-			if($ordercontent->orderstate == 'captured') {
-				$order->setState(Mage_Sales_Model_Order::STATE_NEW, true)->save();
-			}
-			if($ordercontent->orderstate == 'cancelled') {
-				$order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true)->save();
-			}
-			if($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing' ) {
-				$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true)->save();
-			}
-			if($ordercontent->orderstate == 'complete') {
-				$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE);
-				$order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
-				$order->save();
-			}
+		
+		$orderstatus = $order->getState();
+		
+		$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
+		/* cancelled, processing, captured, inprogress, complete */
+		if($ordercontent->orderstate == 'captured' && $orderstatus!='pending') {
+			$order->setState(Mage_Sales_Model_Order::STATE_NEW, true)->save();
 		}
-		catch (Mage_Core_Exception $e) {
-			syslog(1, print_r($e, true));
-		}		
+		if($ordercontent->orderstate == 'cancelled' && $orderstatus!='canceled') {
+			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true)->save();
+		}
+		if(($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') && $orderstatus!='processing') {
+			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true)->save();
+		}
+		if($ordercontent->orderstate == 'complete' && $orderstatus!='complete') {
+			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE);
+			$order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
+			$order->save();
+		}
 		
 		echo "OK";
 	}

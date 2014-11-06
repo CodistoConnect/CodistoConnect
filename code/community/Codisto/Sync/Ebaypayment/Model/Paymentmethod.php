@@ -20,7 +20,7 @@
 class Codisto_Sync_Ebaypayment_Model_Paymentmethod extends Mage_Payment_Model_Method_Abstract
 {
 
-    protected $_code  = 'ebaypayment';
+	protected $_code  = 'ebaypayment';
 
 	protected $_isGateway = false;
 	protected $_canAuthorize = false;
