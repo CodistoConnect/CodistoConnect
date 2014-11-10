@@ -459,7 +459,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setBaseShippingTaxAmount($taxpercent);
 
 		/* cancelled, processing, captured, inprogress, complete */
-		if($ordercontent->orderstate == 'captured' && $orderstatus!='pending') {
+		if($ordercontent->orderstate == 'captured' && ($orderstatus!='pending' || $orderstatus!='new')) {
 			$order->setState(Mage_Sales_Model_Order::STATE_NEW, true);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
 		}
@@ -486,7 +486,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 		
 		$response = $this->getResponse();
-		$response->setBody('OK');
+		$response->setBody("OK");
 	}
 	
 	private function getRegionCollection($countryCode)

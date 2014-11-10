@@ -22,7 +22,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 	public function match(Zend_Controller_Request_Http $request)
 	{
 		$path = $request->getPathInfo();
-		
+	
 		if(0 === strpos($path, '/admin/codisto/'))
 		{
 			$request->setDispatched(true);
@@ -30,23 +30,32 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			$front = $this->getFront();
 			$response = $front->getResponse();
 
+			$MerchantID = Mage::getStoreConfig('codisto/merchantid');
+			$HostID = Mage::getStoreConfig('codisto/hostid');
+			$HostKey = Mage::getStoreConfig('codisto/hostkey');
+		
 			Mage::getSingleton('core/session', array('name'=>'adminhtml'));
-			
+				
 			if(Mage::getSingleton('admin/session')->isLoggedIn())
 			{
-				$MerchantID = Mage::getStoreConfig('codisto/merchantid');
-				$HostID = Mage::getStoreConfig('codisto/hostid');
-				$HostKey = Mage::getStoreConfig('codisto/hostkey');
+				if (preg_match("/\.css|\.js|\.woff|\.ttf|\/images\//i", $path)) {
+					
+					$remotePath = preg_replace('/^\/admin\/codisto\/ebaytab\/product\/\d+\/?|key\/[a-zA-z0-9]*\//', '', $path);
+
+					$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/' . $remotePath;
 				
-				$remotePath = preg_replace('/^\/admin\/codisto\/ebaytab\/?|key\/.*\/$/', '', $path);
+				} else {
 				
-				if($MerchantID && $HostID)
-				{
-					$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/frame/' . $HostID . $remotePath;
-				}
-				else
-				{
-					$remoteUrl = 'https://ui.codisto.com/' . $remotePath;
+					$remotePath = preg_replace('/^\/admin\/codisto\/ebaytab\/?|key\/[a-zA-z0-9]*\//', '', $path);
+					
+					if($MerchantID && $HostID)
+					{
+						$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/frame/' . $HostID . '/' . $remotePath;
+					}
+					else
+					{
+						$remoteUrl = 'https://ui.codisto.com/' . $remotePath;
+					}
 				}
 				
 				// proxy request
@@ -61,11 +70,11 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				
 				if($HostKey)
 					$client->setHeaders(array('X-HostKey' => $HostKey));
-				
+
 				$requestBody = $request->getRawBody();
 				if($requestBody)
 					$client->setRawData($requestBody);
-				
+	
 				$remoteResponse = $client->request($request->getMethod());
 				
 				if($remoteResponse->getStatus() == 403 &&
@@ -102,7 +111,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 	
 					// set proxied output
 					$response->setBody($remoteResponse->getRawBody());
-				}
+				}	
 	
 				return true;
 			}
