@@ -51,15 +51,16 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			}
 		}
 	}
+	
 	public function checkPluginAction()
-	{ // URL End Point: index.php/codisto-sync/sync/checkPlugin
+	{ // End Point: index.php/codisto-sync/sync/checkPlugin
 		$this->getConfig();
 		$response = $this->getResponse();
 		$response->setBody('SUCCESS');
 	}
 
 	public function testSyncAction()
-	{ // URL End Point: index.php/codisto-sync/sync/testSync
+	{ // End Point: index.php/codisto-sync/sync/testSync
 		$request = $this->getRequest();
 		$this->Sync();
 		if($request->getQuery('send'))
@@ -67,35 +68,28 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	}
 	
 	public function resetPluginAction () 
-	{ // URL End Poinst index.php/codisto-sync/sync/resetPlugin
-		Mage::getModel("core/config")->saveConfig("codisto/merchantid", null);
-		Mage::getModel("core/config")->saveConfig("codisto/hostkey", null);
-		Mage::getModel("core/config")->saveConfig("codisto/hostid", null);
-		
-		//Mage::app()->cleanCache();
-		Mage::app()->removeCache('config_store_data');
-		Mage::app()->getCacheInstance()->cleanType('config');
-		Mage::app()->getStore()->resetConfig();
-
+	{ // End Point index.php/codisto-sync/sync/resetPlugin
+	
 		$response = $this->getResponse();
-		$response->setBody('CONFIG RESET');
-	}
-	
-	public function registerCompleteAction() {
-		
-		/*$request = $this->getRequest();
-		
-		$merchantid = $request->getQuery('merchantid');
-		
-		$client->setUri("https://ui.codisto.com/" . $merchantid . "/proxy/" . $HostID . "/get-merchant-details?hash=" . urlencode($Hash));*/
+		if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
+			Mage::getModel("core/config")->saveConfig("codisto/merchantid", null);
+			Mage::getModel("core/config")->saveConfig("codisto/hostkey", null);
+			Mage::getModel("core/config")->saveConfig("codisto/hostid", null);
+			
+			//Mage::app()->cleanCache();
+			Mage::app()->removeCache('config_store_data');
+			Mage::app()->getCacheInstance()->cleanType('config');
+			Mage::app()->getStore()->resetConfig();
 
-		die("Register");
-	
+			$response->setBody('SUCCESS');
+		} else {
+			$response->setBody('Invalid Request');
+		}
+		
 	}
 	
 	public function configUpdateAction()
-	{ // URL End Point: index.php/codisto-sync/sync/configUpdate
-		
+	{ // End Point: index.php/codisto-sync/sync/configUpdate
 		$request = $this->getRequest();
 		$response = $this->getResponse();
 
@@ -134,8 +128,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		}
 	}
 
-	private function getAllHeaders($extra = false) {
-
+	private function getAllHeaders($extra = false) 
+	{
 		$server = $this->$getRequest()->getServer();
 	
 		foreach ($server as $name => $value)
@@ -180,6 +174,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		if (!$this->config['PartnerKey'] || $this->config['PartnerKey'] == "")
 			$response->setBody("Config Error - Missing PartnerKey");
 	}
+	
 	public function testHashAction()
 	{
 		$server = $this->$getRequest()->getServer();
@@ -189,6 +184,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			$response->setBody("OK");
 
 	}
+	
 	private function checkHash($HostKey, $Nonce, $Hash)
 	{
 		$response = $this->getResponse();
@@ -225,15 +221,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	private function Sync()
 	{
-	//try{ // try|catch provides visibility from the Codisto server to view any errors
 		ini_set('max_execution_time', 300);
 		
 		// Clear the temporary DB
 		$syncDb = Mage::getBaseDir("var") . "/eziimport0.db";
 		if (file_exists($syncDb))
 			unlink($syncDb);
-
-		//Catalog Category (Entity Type ID - 3), Catalog Product (Entity Type ID - 4), Customer (Entity Type ID - 1), Customer Address (Entity Type ID - 2), Order (Entity Type ID - 5),
 
 		// Generate the temporary DB
 		$db = new PDO("sqlite:" . $syncDb);
@@ -801,8 +794,5 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			}
 		}
 		$db->exec("COMMIT TRANSACTION");
-	//} catch(Exception $x) {
-	//	print_r($x);
-	//}
 	}
 }

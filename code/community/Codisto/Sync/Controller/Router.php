@@ -58,8 +58,6 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					}
 				}
 				
-syslog(1, 'remoteurl: ' . $remoteUrl);				
-				
 				// proxy request
 				$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true ));
 				
@@ -91,18 +89,27 @@ syslog(1, 'remoteurl: ' . $remoteUrl);
 					{
 						$client->setUri("https://ui.codisto.com/register");
 						
-						$returnurl = 'http://' . $_SERVER['SERVER_NAME'] . $request->getRequestUri();
-						$returnurl = preg_replace('/\/admin\/codisto\/.*/', '/codisto-sync/sync/registerComplete/', $returnurl);
-
-syslog(1, $returnurl);
-
-//						$remotePath = preg_replace('/^\/admin\/codisto\/ebaytab\/?|key\/[a-zA-z0-9]*\//', '', $path);
-
-						$remoteResponse = $client->setRawData('{"returnurl" : "' . $returnurl . '"}', 'application/json')->request('POST');
+						$baseurl = Mage::getBaseUrl();
 						
-						die('<html><head></head><body><h1>Almost done!</h1><h3><a target="_blank" href="' . $client->getUri()->__toString() . '">Click here to Register</a></h3></body></html>');
+						$emailaddress = Mage::getStoreConfig('trans_email/ident_general/value') ? 
+							Mage::getStoreConfig('trans_email/ident_general/value') : 
+							Mage::getSingleton('core/config')->init()->getXpath('/config/default/trans_email/ident_general/email');						
+
+						$remoteResponse = $client->setRawData('{"type" : "magentoplugin","baseurl" : "' . $baseurl . '", "emailaddress" : "' . $emailaddress . '"}', 'application/json')->request('POST');
 						
-						$response->setRedirect($client->getUri()->__toString());
+						$data = $remoteResponse->getRawBody(); //json_decode($remoteResponse->getRawBody(), true);
+						
+						if(!isset($data['hostid']))
+							$data['hostid'] = 1;
+						
+						if($data['merchantid'] && $data['userid'] && $data['hostid']) {
+							Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['MerchantID']);
+							Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['HostKey']);
+							Mage::getModel("core/config")->saveConfig("codisto/hostid", $data['HostID']);
+							Mage::app()->removeCache('config_store_data');
+							Mage::app()->getCacheInstance()->cleanType('config');
+							Mage::app()->getStore()->resetConfig();
+						}
 						
 						if($remoteResponse->getStatus() == 200)
 						{

@@ -194,9 +194,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		
 		$currencyCode = $ordercontent->transactcurrency[0];
 		$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
-		$freightcarrier = $ordercontent->freightcarrier[0];
-		$freightservice = $ordercontent->freightservice[0];
-		
+		$freightcarrier = 'Post';
+		$freightservice = 'Freight';
 
 		$billing_address = $ordercontent->orderaddresses->orderaddress[0];
 		$billing_name = explode(" ", $billing_address->name, 2);
@@ -341,6 +340,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$freighttotal += floatval($orderline->linetotalinctax[0]);
 				/*$totalinc += floatval($orderline->linetotalinctax[0]);
 				$totalex += floatval($orderline->linetotal[0]);*/
+				$freightservice = $orderline->productname[0];
 			}
 		}
 		
@@ -445,8 +445,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
 		$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
 
-		$freightcarrier = $ordercontent->freightcarrier[0];
-		$freightservice = $ordercontent->freightservice[0];
+		$freightcarrier = 'Post';
+		$freightservice = 'Freight';
 		$freighttotal =  0;
 		$freighttotalextax =  0;
 		$taxpercent =  0;
@@ -458,6 +458,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			{
 				$freighttotal += floatval($orderline->linetotalinctax[0]);
 				$freighttotalextax += floatval($orderline->linetotalextax[0]);
+				$freightservice = $orderline->productname[0];
 			}
 		}
 		
