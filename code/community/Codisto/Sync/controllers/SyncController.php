@@ -27,19 +27,21 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	
 		$this->getConfig();
 		$request = $this->getRequest();
+		$server = $request->getServer();
 
-		if (isset($_SERVER['HTTP_X_SYNC'])) {
-			if (!isset($_SERVER['HTTP_X_ACTION']))
-				$_SERVER['HTTP_X_ACTION'] = "";
+		if (isset($server['HTTP_X_SYNC'])) {
+			if (!isset($server['HTTP_X_ACTION'])) {
+				$server['HTTP_X_ACTION'] = "";
+			}
 
-			switch ($_SERVER['HTTP_X_ACTION']) {
+			switch ($server['HTTP_X_ACTION']) {
 				case "GET":
-					if ($this->checkHash($this->config['HostKey'], $_SERVER['HTTP_X_NONCE'], $_SERVER['HTTP_X_HASH'])) {
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
 						$this->Send();
 						die;
 					}
 				case "EXECUTE":
-					if ($this->checkHash($this->config['HostKey'], $_SERVER['HTTP_X_NONCE'], $_SERVER['HTTP_X_HASH'])) {
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
 						$this->Sync();
 						$response = $this->getResponse();
 						$response->setBody('done');
@@ -133,7 +135,10 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	}
 
 	private function getAllHeaders($extra = false) {
-		foreach ($_SERVER as $name => $value)
+
+		$server = $this->$getRequest()->getServer();
+	
+		foreach ($server as $name => $value)
 		{
 			if (substr($name, 0, 5) == 'HTTP_')
 			{
@@ -177,9 +182,10 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	}
 	public function testHashAction()
 	{
+		$server = $this->$getRequest()->getServer();
 		$response = $this->getResponse();
 		$this->getConfig();
-		if($this->checkHash($this->config['HostKey'], $_SERVER['HTTP_X_NONCE'], $_SERVER['HTTP_X_HASH']))
+		if($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 			$response->setBody("OK");
 
 	}
