@@ -1,6 +1,6 @@
 <?php
 /**
- * Codisto eBay Sync Extension
+ * Magento
  *
  * NOTICE OF LICENSE
  *
@@ -14,9 +14,24 @@
  *
  * @category    Codisto
  * @package     Codisto_Sync
- * @copyright   Copyright (c) 2014 On Technology Pty. Ltd. (http://codisto.com/)
+ * @copyright   Copyright (c) 2014 On Technology (http://www.ontech.com.au)
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
-class Codisto_Codistoadmin_Helper_Data extends Mage_Core_Helper_Abstract
+class Codisto_Sync_Ebaypayment_Model_Paymentmethod extends Mage_Payment_Model_Method_Abstract
 {
+
+	protected $_code  = 'ebaypayment';
+
+	protected $_isGateway = false;
+	protected $_canAuthorize = false;
+	protected $_canCapture = false;
+	protected $_canCapturePartial = false;
+	protected $_canRefund = false;
+	protected $_canVoid = false;
+	protected $_canUseInternal = true;
+	protected $_canUseCheckout = false;
+	protected $_canUseForMultiShipping = true;
+	protected $_canSaveCc = false;
+
 }
+

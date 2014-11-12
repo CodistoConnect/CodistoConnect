@@ -22,7 +22,7 @@
 <config>
 	<modules>
 		<Codisto_Codistoadmin>
-			<active>true</active>
+			<active>false</active>
 			<codePool>community</codePool>
 		</Codisto_Codistoadmin>
 	</modules>
