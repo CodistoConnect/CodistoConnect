@@ -140,7 +140,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				$ordermatch = false;
 				foreach ($orders as $order) {
-					syslog(1, print_r('matching order: ' . $order->getCodistoOrderid(), true));
+					//syslog(1, print_r('matching order: ' . $order->getCodistoOrderid(), true));
 					$ordermatch = true;
 				}
 
@@ -156,7 +156,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					if($ordercontent &&
 						$ordercontent->reason == "OrderCreated")
 					{
-						$this->ProcessOrderCreate($xml);
+						$this->ProcessOrderCreate($xml, null);
 					}
 					
 					else if($ordercontent &&
@@ -301,10 +301,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				
 		$quote->getPayment()->setMethod('ebaypayment');
 		
-		//$quote->setCodistoOrderid($ordercontent->orderid);
-				
 		$billingAddress  = $quote->getBillingAddress()->addData($addressData_billing);
 		$shippingAddress = $quote->getShippingAddress()->addData($addressData_shipping);
+		
+		/*$totalinc = 0;
+		$totalex = 0;*/
 		
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
@@ -325,6 +326,10 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$item->setOriginalCustomPrice($orderline->listpriceinctax[0]);
 			
 				$quote->addItem($item);
+				
+				/*
+				$totalinc += floatval($orderline->linetotalinctax[0]);
+				$totalex += floatval($orderline->linetotal[0]);*/
 			}
 		}
 		
@@ -334,6 +339,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			if($orderline->productcode[0] == 'FREIGHT')
 			{
 				$freighttotal += floatval($orderline->linetotalinctax[0]);
+				/*$totalinc += floatval($orderline->linetotalinctax[0]);
+				$totalex += floatval($orderline->linetotal[0]);*/
 			}
 		}
 		
@@ -352,6 +359,12 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$shippingAddress->setShippingAmountForDiscount(0);
 
 		$quote->collectTotals();
+		
+		/*$quote->setSubtotal($totalinc);
+		$quote->setBaseSubtotal($totalinc);
+		$quote->setGrandTotal($totalinc);
+		$quote->setBaseGrandTotal($totalinc);*/
+		
 		$quote->save();
 		
 		$convertquote = Mage::getSingleton('sales/convert_quote');
@@ -402,8 +415,17 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		
 		if($ebaysalesrecordnumber)
 			$order->addStatusToHistory($order->getStatus(), "Order $ebaysalesrecordnumber received from eBay");
-
-	
+			
+		/*$taxamount = $store->roundPrice(floatval($totalinc) - floatval($totalex));
+		$taxpercent = round(floatval($totalinc) / floatval($totalex) - 1.0, 2) * 100;
+		$order->setBaseTaxAmount($taxamount);
+		$order->setTaxAmount($taxamount);
+		$order->setTaxPercent($taxpercent);
+		$order->setSubtotal($totalinc);
+		$order->setBaseSubtotal($totalinc);
+		$order->setGrandTotal($totalinc);
+		$order->setBaseGrandTotal($totalinc);*/
+		
 		$order->place();
 		$order->save();
 
@@ -439,8 +461,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 		}
 		
-		try{
-		
 		$order->setShippingDescription($freightservice);
 		$order->setBaseShippingAmount($freighttotal);
 		$order->setShippingAmount($freighttotal);
@@ -457,6 +477,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setGrandTotal($subtotal + $freighttotal);
 		$order->setBaseGrandTotal($subtotal + $freighttotal);
 		$order->setBaseShippingTaxAmount($taxpercent);
+
 
 		/* cancelled, processing, captured, inprogress, complete */
 		if($ordercontent->orderstate == 'captured' && ($orderstatus!='pending' || $orderstatus!='new')) {
@@ -477,16 +498,20 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
 		}
 		
+		if($ordercontent->paymentstatus == 'paid') {
+			$order->setBaseTotalPaid($basegrandtotal);
+			$order->setTotalPaid($basegrandtotal);
+			$order->setBaseTotalDue('0');
+			$order->setTotalDue('0');
+			$order->setDue('0');
+		}
+		
 		$order->setMethod('ebaypayment');
 		
 		$order->save();
 		
-		} catch(Exception $e) {
-			syslog(1, print_r($e, true));
-		}
-		
 		$response = $this->getResponse();
-		$response->setBody("OK");
+		$response->setBody(print_r($ordercontent));
 	}
 	
 	private function getRegionCollection($countryCode)

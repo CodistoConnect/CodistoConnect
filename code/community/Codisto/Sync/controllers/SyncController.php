@@ -23,6 +23,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	public function indexAction()
 	{
+		$response = $this->getResponse();
+	
 		$this->getConfig();
 		$request = $this->getRequest();
 
@@ -43,32 +45,59 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$response->setBody('done');
 					}
 				default:
-					die("No Action");
+					$response->setBody("No Action");
 			}
 		}
 	}
 	public function checkPluginAction()
-	{ // URL End Point: /magento/index.php/codisto-sync/sync/checkPlugin
+	{ // URL End Point: index.php/codisto-sync/sync/checkPlugin
 		$this->getConfig();
 		$response = $this->getResponse();
 		$response->setBody('SUCCESS');
 	}
 
 	public function testSyncAction()
-	{ // URL End Point: /magento/index.php/codisto-sync/sync/testSync
+	{ // URL End Point: index.php/codisto-sync/sync/testSync
 		$request = $this->getRequest();
 		$this->Sync();
-		if(isset($request->getQuery('send')))
+		if($request->getQuery('send'))
 			$this->Send();
 	}
+	
+	public function resetPluginAction () 
+	{ // URL End Poinst index.php/codisto-sync/sync/resetPlugin
+		Mage::getModel("core/config")->saveConfig("codisto/merchantid", null);
+		Mage::getModel("core/config")->saveConfig("codisto/hostkey", null);
+		Mage::getModel("core/config")->saveConfig("codisto/hostid", null);
+		
+		//Mage::app()->cleanCache();
+		Mage::app()->removeCache('config_store_data');
+		Mage::app()->getCacheInstance()->cleanType('config');
+		Mage::app()->getStore()->resetConfig();
 
+		$response = $this->getResponse();
+		$response->setBody('CONFIG RESET');
+	}
+	
+	public function registerCompleteAction() {
+		
+		/*$request = $this->getRequest();
+		
+		$merchantid = $request->getQuery('merchantid');
+		
+		$client->setUri("https://ui.codisto.com/" . $merchantid . "/proxy/" . $HostID . "/get-merchant-details?hash=" . urlencode($Hash));*/
+
+		die("Register");
+	
+	}
+	
 	public function configUpdateAction()
-	{ // URL End Point: /magento/index.php/codisto-sync/sync/configUpdate
+	{ // URL End Point: index.php/codisto-sync/sync/configUpdate
 		
 		$request = $this->getRequest();
+		$response = $this->getResponse();
 
-		if (!isset($request->getQuery('merchantid')) || !isset($request->getQuery('hash')) || !isset($request->getQuery('hostid'))) {
-			$response = $this->getResponse();
+		if (!$request->getQuery('merchantid') || !$request->getQuery('hash') || !$request->getQuery('hostid')) {
 			$response->setBody("FAIL - missing crendentials - " . print_r($$request->getQuery(), true));		
 		}
 
@@ -79,28 +108,28 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$client = new Zend_Http_Client();
 		$client->setUri("https://ui.codisto.com/" . $MerchantID . "/proxy/" . $HostID . "/get-merchant-details?hash=" . urlencode($Hash));
 		$result = $client->request();
-		
+
 		try {
-			$data = json_decode($result, true);
+			//$data = json_decode($result, true);
+			$data = json_decode($result->getRawBody(), true);
 			if ($data['MerchantID'] == $MerchantID) {
 				Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['MerchantID']);
 				Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['HostKey']);
 				Mage::getModel("core/config")->saveConfig("codisto/hostid", $data['HostID']);
+
 				
 				//Mage::app()->cleanCache();
 				Mage::app()->removeCache('config_store_data');
 				Mage::app()->getCacheInstance()->cleanType('config');
 				Mage::app()->getStore()->resetConfig();
 
-				$response = $this->getResponse();
 				$response->setBody('SUCCESS');
-			} else
-				echo "FAIL - ID Mismatch. - " . $data['MerchantID'] . " : " . $MerchantID . " : " . $result;
+			} else {
+				$response->setBody("FAIL - ID Mismatch. - " . $data['MerchantID'] . " : " . $MerchantID . " : " . $result);
+			}
 		} catch (Exception $e) {
-			print_r($e);
-			echo "FAIL - exception";
+			$response->setBody("Exeption: " . print_r($e));
 		}
-		die;
 	}
 
 	private function getAllHeaders($extra = false) {
@@ -123,6 +152,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	private function getConfig()
 	{
+		$response = $this->getResponse();
 		$this->config = array(
 			"MerchantID" => Mage::getStoreConfig('codisto/merchantid'),
 			"ApiKey" => Mage::getStoreConfig('codisto/apikey'),
@@ -133,33 +163,35 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		);
 
 		if (!$this->config['MerchantID'] || $this->config['MerchantID'] == "")
-			die("Config Error - Missing MerchantID");
+			$response->setBody("Config Error - Missing MerchantID");
 		if (!$this->config['ApiKey'] || $this->config['ApiKey'] == "")
-			die("Config Error - Missing ApiKey");
+			$response->setBody("Config Error - Missing ApiKey");
 		if (!$this->config['HostKey'] || $this->config['HostKey'] == "")
-			die("Config Error - Missing HostKey");
+			$response->setBody("Config Error - Missing HostKey");
 		if (!$this->config['HostID'] || $this->config['HostID'] == "")
-			die("Config Error - Missing HostID");
+			$response->setBody("Config Error - Missing HostID");
 		if (!$this->config['PartnerID'] || $this->config['PartnerID'] == "")
-			die("Config Error - Missing PartnerID");
+			$response->setBody("Config Error - Missing PartnerID");
 		if (!$this->config['PartnerKey'] || $this->config['PartnerKey'] == "")
-			die("Config Error - Missing PartnerKey");
+			$response->setBody("Config Error - Missing PartnerKey");
 	}
 	public function testHashAction()
 	{
+		$response = $this->getResponse();
 		$this->getConfig();
 		if($this->checkHash($this->config['HostKey'], $_SERVER['HTTP_X_NONCE'], $_SERVER['HTTP_X_HASH']))
-			echo "OK";
+			$response->setBody("OK");
 
 	}
 	private function checkHash($HostKey, $Nonce, $Hash)
 	{
+		$response = $this->getResponse();
 		$r = $HostKey . $Nonce;
 		$base = hash("sha256", $r, true);
 		$checkHash = base64_encode($base);
 		if ($Hash != $checkHash)
 		{
-			die('Hash Mismatch Error.');
+			$response->setBody('Hash Mismatch Error.');
 		}
 		return true;
 	}
@@ -169,16 +201,15 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$syncDb = Mage::getBaseDir("var") . "/eziimport0.db";
 		$f = fopen($syncDb, "rb");
 
-
 		header("Cache-Control: no-cache, must-revalidate"); //HTTP 1.1
 		header("Pragma: no-cache"); //HTTP 1.0
 		header("Expires: Thu, 01 Jan 1970 00:00:00 GMT"); // Date in the past		
-		
 		header('Content-Description: File Transfer');
 		header('Content-Type: application/octet-stream');
 		header('Content-Disposition: attachment; filename=' . basename($syncDb));
 		header('Content-Transfer-Encoding: binary');
 		header('Content-Length: ' . filesize($syncDb));
+
 		while (!feof($f)) {
 			echo fread($f, 1024);
 			flush();
@@ -748,8 +779,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 										$coptionname = $optionname . '-' . $optionrow2[0]['optionname'];
 										$cvalue =  $value . '-' . $optionrow2[0]['optionvalue'];
 										$ccode =  $code. '-' . $optionrow2[0]['code'];
-										//if($ccode === '-')
-										//	$ccode = null;
 										$coptionskuid =  $optionskuid . '-' . $optionrow2[0]['skuid'];
 										$cprice =  $productprice + $price + $optionrow2[0]['optionprice']; // (1+($percent/100)
 									

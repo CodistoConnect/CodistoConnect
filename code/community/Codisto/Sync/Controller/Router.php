@@ -58,6 +58,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					}
 				}
 				
+syslog(1, 'remoteurl: ' . $remoteUrl);				
+				
 				// proxy request
 				$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true ));
 				
@@ -82,12 +84,25 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				{
 					if($request->getQuery('retry'))
 					{
-						$response->setBody("could not register codisto account please contact blah blah");
+						$response->setBody("<html><head></head><body><h1>Unable to Register</h1><p>Sorry, we were unable to register your Codisto account,
+						please contact <a href=\"mailto:support@codisto.com\">support@codisto.com</a> and our team will help to resolve the issue</p></body></html>");
 					}
 					else
 					{
 						$client->setUri("https://ui.codisto.com/register");
-						$remoteResponse = $client->setRawData('{}', 'application/json')->request('POST');
+						
+						$returnurl = 'http://' . $_SERVER['SERVER_NAME'] . $request->getRequestUri();
+						$returnurl = preg_replace('/\/admin\/codisto\/.*/', '/codisto-sync/sync/registerComplete/', $returnurl);
+
+syslog(1, $returnurl);
+
+//						$remotePath = preg_replace('/^\/admin\/codisto\/ebaytab\/?|key\/[a-zA-z0-9]*\//', '', $path);
+
+						$remoteResponse = $client->setRawData('{"returnurl" : "' . $returnurl . '"}', 'application/json')->request('POST');
+						
+						die('<html><head></head><body><h1>Almost done!</h1><h3><a target="_blank" href="' . $client->getUri()->__toString() . '">Click here to Register</a></h3></body></html>');
+						
+						$response->setRedirect($client->getUri()->__toString());
 						
 						if($remoteResponse->getStatus() == 200)
 						{
