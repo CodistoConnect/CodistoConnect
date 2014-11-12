@@ -1,7 +1,17 @@
+.htaccess
 .idea
 .project
 .metadata
 bin/
 tmp/
+locale/
+etc/*
+design/
+code/core/
+code/community/
+!code/community/Codisto
+etc/modules/
+!etc/modules/Codisto*
 *.tmp
 *.bak
+Mage.php

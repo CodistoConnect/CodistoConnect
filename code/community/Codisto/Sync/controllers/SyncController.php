@@ -1,219 +1,138 @@
 <?php
+/**
+ * Codisto eBay Sync Extension
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magentocommerce.com so we can send you a copy immediately.
+ *
+ * @category    Codisto
+ * @package     Codisto_Sync
+ * @copyright   Copyright (c) 2014 On Technology Pty. Ltd. (http://codisto.com/)
+ * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
 class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 {
 	var $config = array();
 
 	public function indexAction()
 	{
+		$response = $this->getResponse();
+	
 		$this->getConfig();
+		$request = $this->getRequest();
+		$server = $request->getServer();
 
-		if (isset($_SERVER['HTTP_X_SYNC'])) {
-			if (!isset($_SERVER['HTTP_X_ACTION']))
-				$_SERVER['HTTP_X_ACTION'] = "";
+		if (isset($server['HTTP_X_SYNC'])) {
+			if (!isset($server['HTTP_X_ACTION'])) {
+				$server['HTTP_X_ACTION'] = "";
+			}
 
-			switch ($_SERVER['HTTP_X_ACTION']) {
-				case "HELLO":
-					die("Mobile");
+			switch ($server['HTTP_X_ACTION']) {
 				case "GET":
-					if ($this->checkHash($this->config['HostKey'], $_SERVER['HTTP_X_NONCE'], $_SERVER['HTTP_X_HASH'])) {
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
 						$this->Send();
 						die;
 					}
 				case "EXECUTE":
-					if ($this->checkHash($this->config['HostKey'], $_SERVER['HTTP_X_NONCE'], $_SERVER['HTTP_X_HASH'])) {
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
 						$this->Sync();
-						die("done");
+						$response = $this->getResponse();
+						$response->setBody('done');
 					}
 				default:
-					die("No Action");
+					$response->setBody("No Action");
 			}
 		}
 	}
-
-	public function proxyPostAction()
-	{
-		$this->getConfig();
-	    $url = $_REQUEST['proxy_url'];
-
-		//open connection
-		$ch = curl_init();
-
-		//set the url, number of POST vars, POST data
-		curl_setopt($ch,CURLOPT_URL, $url);
-		curl_setopt($ch,CURLOPT_POST, count($_REQUEST));
-		curl_setopt($ch,CURLOPT_POSTFIELDS, http_build_query($_POST));
-
-		$headers = array();
-
-		foreach($this->getAllHeaders(array("X-HostKey" => $this->config['HostKey'])) as $k=>$v)
-		{
-			if($k != "Host")
-			$headers[] = $k.": ".$v;
-		}
-		
-		curl_setopt($ch,CURLOPT_HTTPHEADER ,$headers);
-		curl_setopt($ch,CURLOPT_RETURNTRANSFER ,true);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE); 
-		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2); 
-		curl_setopt($ch,CURLOPT_VERBOSE, 1);
-		curl_setopt($ch,CURLOPT_HEADER, 1);
-
-		//execute post
-		$response = curl_exec($ch);
-
-		//get response data
-		$header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-		$header = substr($response, 0, $header_size);
-		$body = substr($response, $header_size);
-
-		print_r($body);
-	}
-
-	public function proxyGetAction()
-	{ // URL End Point: /magento/index.php/codisto-sync/sync/proxyGet
-		if(strtolower($_SERVER['REQUEST_METHOD']) == "post")
-		{
-			$this->proxyPostAction();
-			die;
-		}
-
-		$this->getConfig();
-		$url = $_REQUEST['proxy_url'];
-
-		if(substr($url, 0, 4) !== "http")
-			$url = base64_decode($url);
-
-
-		$parts = parse_url($url);
-		if($parts && isset($parts['query']))
-		{
-			parse_str($parts['query'], $res);
-			$query =  http_build_query($res);
-
-			$fragment = "";
-			if(isset($parts['fragment']))
-				$fragment = "#" . $parts['fragment'];
-
-			$url = $parts['scheme'] . "://" . $parts['host'] . $parts['path'] . ($query?"?" .$query : "")  ;
-		}
-
-
-		//open connection
-		$ch = curl_init();
-
-		//set the url, number of POST vars, POST data
-		curl_setopt($ch,CURLOPT_URL, $url);
-		
-		$headers = array();
-
-		foreach($this->getAllHeaders(array("X-HostKey" => $this->config['HostKey'])) as $k=>$v)
-		{
-			if($k != "Host")
-			$headers[] = $k.": ".$v;
-		}	
-
-		//WARNING: If you edit the post body, then don't forget to update the content length as it is being set here.
-		curl_setopt($ch,CURLOPT_HTTPHEADER ,$headers);
-		curl_setopt($ch,CURLOPT_RETURNTRANSFER ,true);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE); 
-		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2); 
-		curl_setopt($ch,CURLOPT_VERBOSE, 1);
-		curl_setopt($ch,CURLOPT_HEADER, 1);
-
-		//execute post
-		$response = curl_exec($ch);
-		
-		if($response === false)
-		{
-			echo 'Oops, there was an error: ' . curl_error($ch);
-		}
-
-		//get response data
-		$header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-		$header = substr($response, 0, $header_size);
-		$body = substr($response, $header_size);
-
-		if(stripos($header, "Location") !== false)
-		{
-			preg_match("/Location:(.*)/i", $header, $matches);
-			if($matches && isset($matches[1]))
-			{
-				$location = $matches[1];
-				header("Location:/index.php/codisto-sync/sync/proxyGet?proxy_url=" . $matches[1]);
-			}
-			echo $body;
-			die;
-
-		}
-		// output the headers verbatim
-		foreach(explode("\r\n", $header) as $i => $h)
-		{
-			//if(stripos($h, "Content-Length") === false``)
-				header($h);
-		}
-
-		// All posts should be to the current URL only, that way we don't need to worry about Mage::BaseDir().
-		echo $body;
-	}
-
+	
 	public function checkPluginAction()
-	{ // URL End Point: /magento/index.php/codisto-sync/sync/checkPlugin
+	{ // End Point: index.php/codisto-sync/sync/checkPlugin
 		$this->getConfig();
-		echo "SUCCESS";
-		die;
+		$response = $this->getResponse();
+		$response->setBody('SUCCESS');
 	}
 
 	public function testSyncAction()
-	{ // URL End Point: /magento/index.php/codisto-sync/sync/testSync
+	{ // End Point: index.php/codisto-sync/sync/testSync
+		$request = $this->getRequest();
 		$this->Sync();
-		if(isset($_GET['send']))
+		if($request->getQuery('send'))
 			$this->Send();
 	}
+	
+	public function resetPluginAction () 
+	{ // End Point index.php/codisto-sync/sync/resetPlugin
+	
+		$response = $this->getResponse();
+		if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
+			Mage::getModel("core/config")->saveConfig("codisto/merchantid", null);
+			Mage::getModel("core/config")->saveConfig("codisto/hostkey", null);
+			Mage::getModel("core/config")->saveConfig("codisto/hostid", null);
+			
+			//Mage::app()->cleanCache();
+			Mage::app()->removeCache('config_store_data');
+			Mage::app()->getCacheInstance()->cleanType('config');
+			Mage::app()->getStore()->resetConfig();
 
+			$response->setBody('SUCCESS');
+		} else {
+			$response->setBody('Invalid Request');
+		}
+		
+	}
+	
 	public function configUpdateAction()
-	{ // URL End Point: /magento/index.php/codisto-sync/sync/configUpdate
+	{ // End Point: index.php/codisto-sync/sync/configUpdate
+		$request = $this->getRequest();
+		$response = $this->getResponse();
 
-		if (!isset($_GET['merchantid']) || !isset($_GET['hash']) || !isset($_GET['hostid'])) {
-			die("FAIL - missing crendentials - " . print_r($_GET, true));
+		if (!$request->getQuery('merchantid') || !$request->getQuery('hash') || !$request->getQuery('hostid')) {
+			$response->setBody("FAIL - missing crendentials - " . print_r($$request->getQuery(), true));		
 		}
 
-		$Hash = $_GET['hash'];
-		$MerchantID = (int)$_GET['merchantid'];
-		$HostID = (int)$_GET['hostid'];
+		$Hash = $request->getQuery('hash');
+		$MerchantID = (int)$request->getQuery('merchantid');
+		$HostID = (int)$request->getQuery('hostid');
 
-		$ch = curl_init();
-		curl_setopt($ch,CURLOPT_URL,"https://secure.ezimerchant.com/" . $MerchantID . "/proxy/" . $HostID . "/get-merchant-details?hash=" . urlencode($Hash));
-		curl_setopt($ch,CURLOPT_RETURNTRANSFER ,true);
-		$result = curl_exec($ch);
-		curl_close($ch);
-		
+		$client = new Zend_Http_Client();
+		$client->setUri("https://ui.codisto.com/" . $MerchantID . "/proxy/" . $HostID . "/get-merchant-details?hash=" . urlencode($Hash));
+		$result = $client->request();
+
 		try {
-			$data = json_decode($result, true);
+			//$data = json_decode($result, true);
+			$data = json_decode($result->getRawBody(), true);
 			if ($data['MerchantID'] == $MerchantID) {
 				Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['MerchantID']);
-				Mage::getModel("core/config")->saveConfig("codisto/apikey", $data['ApiKey']);
 				Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['HostKey']);
 				Mage::getModel("core/config")->saveConfig("codisto/hostid", $data['HostID']);
-				Mage::getModel("core/config")->saveConfig("codisto/partnerid", $data['PartnerID']);
-				Mage::getModel("core/config")->saveConfig("codisto/partnerkey", $data['PartnerKey']);
 
+				
 				//Mage::app()->cleanCache();
 				Mage::app()->removeCache('config_store_data');
 				Mage::app()->getCacheInstance()->cleanType('config');
 				Mage::app()->getStore()->resetConfig();
 
-				echo "SUCCESS";
-			} else
-				echo "FAIL - ID Mismatch. - " . $data['MerchantID'] . " : " . $MerchantID . " : " . $result;
+				$response->setBody('SUCCESS');
+			} else {
+				$response->setBody("FAIL - ID Mismatch. - " . $data['MerchantID'] . " : " . $MerchantID . " : " . $result);
+			}
 		} catch (Exception $e) {
-			print_r($e);
-			echo "FAIL - exception";
+			$response->setBody("Exeption: " . print_r($e));
 		}
-		die;
 	}
 
-	private function getAllHeaders($extra = false) {
-		foreach ($_SERVER as $name => $value)
+	private function getAllHeaders($extra = false) 
+	{
+		$server = $this->$getRequest()->getServer();
+	
+		foreach ($server as $name => $value)
 		{
 			if (substr($name, 0, 5) == 'HTTP_')
 			{
@@ -232,6 +151,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	private function getConfig()
 	{
+		$response = $this->getResponse();
 		$this->config = array(
 			"MerchantID" => Mage::getStoreConfig('codisto/merchantid'),
 			"ApiKey" => Mage::getStoreConfig('codisto/apikey'),
@@ -242,33 +162,38 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		);
 
 		if (!$this->config['MerchantID'] || $this->config['MerchantID'] == "")
-			die("Config Error - Missing MerchantID");
+			$response->setBody("Config Error - Missing MerchantID");
 		if (!$this->config['ApiKey'] || $this->config['ApiKey'] == "")
-			die("Config Error - Missing ApiKey");
+			$response->setBody("Config Error - Missing ApiKey");
 		if (!$this->config['HostKey'] || $this->config['HostKey'] == "")
-			die("Config Error - Missing HostKey");
+			$response->setBody("Config Error - Missing HostKey");
 		if (!$this->config['HostID'] || $this->config['HostID'] == "")
-			die("Config Error - Missing HostID");
+			$response->setBody("Config Error - Missing HostID");
 		if (!$this->config['PartnerID'] || $this->config['PartnerID'] == "")
-			die("Config Error - Missing PartnerID");
+			$response->setBody("Config Error - Missing PartnerID");
 		if (!$this->config['PartnerKey'] || $this->config['PartnerKey'] == "")
-			die("Config Error - Missing PartnerKey");
+			$response->setBody("Config Error - Missing PartnerKey");
 	}
+	
 	public function testHashAction()
 	{
+		$server = $this->$getRequest()->getServer();
+		$response = $this->getResponse();
 		$this->getConfig();
-		if($this->checkHash($this->config['HostKey'], $_SERVER['HTTP_X_NONCE'], $_SERVER['HTTP_X_HASH']))
-			echo "OK";
+		if($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+			$response->setBody("OK");
 
 	}
+	
 	private function checkHash($HostKey, $Nonce, $Hash)
 	{
+		$response = $this->getResponse();
 		$r = $HostKey . $Nonce;
 		$base = hash("sha256", $r, true);
 		$checkHash = base64_encode($base);
 		if ($Hash != $checkHash)
 		{
-			die('Hash Mismatch Error.');
+			$response->setBody('Hash Mismatch Error.');
 		}
 		return true;
 	}
@@ -278,16 +203,15 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$syncDb = Mage::getBaseDir("var") . "/eziimport0.db";
 		$f = fopen($syncDb, "rb");
 
-
 		header("Cache-Control: no-cache, must-revalidate"); //HTTP 1.1
 		header("Pragma: no-cache"); //HTTP 1.0
 		header("Expires: Thu, 01 Jan 1970 00:00:00 GMT"); // Date in the past		
-		
 		header('Content-Description: File Transfer');
 		header('Content-Type: application/octet-stream');
 		header('Content-Disposition: attachment; filename=' . basename($syncDb));
 		header('Content-Transfer-Encoding: binary');
 		header('Content-Length: ' . filesize($syncDb));
+
 		while (!feof($f)) {
 			echo fread($f, 1024);
 			flush();
@@ -297,15 +221,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	private function Sync()
 	{
-	try{ // try|catch provides visibility from the Codisto server to view any errors
 		ini_set('max_execution_time', 300);
 		
 		// Clear the temporary DB
 		$syncDb = Mage::getBaseDir("var") . "/eziimport0.db";
 		if (file_exists($syncDb))
 			unlink($syncDb);
-
-		//Catalog Category (Entity Type ID - 3), Catalog Product (Entity Type ID - 4), Customer (Entity Type ID - 1), Customer Address (Entity Type ID - 2), Order (Entity Type ID - 5),
 
 		// Generate the temporary DB
 		$db = new PDO("sqlite:" . $syncDb);
@@ -325,53 +246,53 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							'ProductOrdered' int, MetaTitle TEXT, MetaDescription TEXT)");
 		$db->query("CREATE TABLE ProductImage
 						(
-						    ProductExternalReference TEXT NOT NULL,
-						    URL TEXT,
-						    Tag TEXT NOT NULL DEFAULT '',
-						    Sequence INTEGER NOT NULL
+							ProductExternalReference TEXT NOT NULL,
+							URL TEXT,
+							Tag TEXT NOT NULL DEFAULT '',
+							Sequence INTEGER NOT NULL
 						)");
 		$db->query("CREATE TABLE SKUImage
 						(
-						    SKUExternalReference TEXT NOT NULL,
-						    URL TEXT,
-						    Tag TEXT NOT NULL DEFAULT '',
-						    Sequence INTEGER NOT NULL,
-						    PRIMARY KEY ( SKUExternalReference, Tag, Sequence )
+							SKUExternalReference TEXT NOT NULL,
+							URL TEXT,
+							Tag TEXT NOT NULL DEFAULT '',
+							Sequence INTEGER NOT NULL,
+							PRIMARY KEY ( SKUExternalReference, Tag, Sequence )
 						)");
 		$db->query("CREATE TABLE 'Configuration' ('configuration_id' int, 'configuration_title' blob, 'configuration_key' string,
 							'configuration_value' blob, 'configuration_description' blob, 'configuration_group_id' int, 'sort_order' int,
 							'last_modified' datetime, 'date_added' datetime, 'use_function' blob, 'set_function' blob)");
 		$db->query("CREATE TABLE SKU
 						(
-						    ExternalReference TEXT,
-						    Code TEXT,
-						    ProductExternalReference TEXT NOT NULL,
-						    StockControl TEXT NOT NULL,
-						    StockLevel INTEGER,
-						    Price TEXT,
+							ExternalReference TEXT,
+							Code TEXT,
+							ProductExternalReference TEXT NOT NULL,
+							StockControl TEXT NOT NULL,
+							StockLevel INTEGER,
+							Price TEXT,
 							Enabled int
 						)");
 		$db->query("CREATE TABLE SKUMatrix
 						(
-						    SKUExternalReference TEXT NOT NULL,
-						    Code TEXT NOT NULL,
-						    OptionName TEXT NOT NULL,
-						    OptionValue TEXT NOT NULL,
-						    PriceModifier TEXT
+							SKUExternalReference TEXT NOT NULL,
+							Code TEXT NOT NULL,
+							OptionName TEXT NOT NULL,
+							OptionValue TEXT NOT NULL,
+							PriceModifier TEXT
 						)");
 
 		$db->query("CREATE TABLE OptionMatrix
 						(
-						    SKUExternalReference TEXT NOT NULL,
-						    Code TEXT NOT NULL,
-						    OptionName TEXT NOT NULL,
-						    OptionValue TEXT NOT NULL,
-						    PriceModifier TEXT
+							SKUExternalReference TEXT NOT NULL,
+							Code TEXT NOT NULL,
+							OptionName TEXT NOT NULL,
+							OptionValue TEXT NOT NULL,
+							PriceModifier TEXT
 						)");
 
 		$db->query("CREATE TABLE Log
 						(
-						    ID,
+							ID,
 							Type TEXT,
 							Content
 						)");
@@ -479,7 +400,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		
 		// Products: CONFIGURABLE
 		$configurableCollection = Mage::getModel('catalog/product')->getCollection()
-			->addAttributeToSelect(array('*', 'name', 'image', 'description', 'product_url', 'price', 'special_price', 'main'))
+			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
 			->addAttributeToFilter('type_id', array('eq' => 'configurable'));
 
 		$insertedProducts = array();
@@ -497,13 +418,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			
 			$productprice = $productloader->getFinalPrice();
 			
-			$insertlog->execute(array($product['entity_id'], 'product', print_r($product, true)));
+			$product['description'] = $productloader->description;
 			
-			if(!$product['description']) {
-				$_product = Mage::getModel('catalog/product')->load($product['entity_id']);
-				$product['description'] = $_product->description;
-			}
-
 			// Extract the fields from Product
 			$fields = array();
 			foreach ($insertData as $magentoKey => $eziKey) {
@@ -520,15 +436,16 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			
 			$fields['MinBuy'] = (int)$stockData['min_sale_qty'];
 			$fields['MaxBuy'] = (int)$stockData['max_sale_qty'];
-			$fields['StockControl'] = $stockData['manage_stock']; //TODO: check whether we need to normalise the boolean value
+			
+			if($stockData['use_config_manage_stock'] != 0) {
+				$fields['StockControl'] = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
+			} else {
+				$fields['StockControl'] = $stockData['manage_stock']; //TODO: check whether we need to normalise the boolean value
+			}
+						
 			$fields['StockLevel'] = (int)$stockData["qty"];
-			$fields['Manufacturer'] = '';
-			
-			try{
-				// This causes problems on some versions of Magento Enterprise
-				$fields['Manufacturer'] = $productConfigurableData->getAttributeText('manufacturer');
-			}catch(Exception $e){};
-			
+			$fields['Manufacturer'] = $productloader->manufacturer;
+			$fields['ListPrice'] = $product['price'] / (1+($percent/100));
 			$fields['Price'] = isset($productprice) ? $productprice / (1+($percent/100))  : "";
 			$fields['TaxID'] = 1;
 
@@ -634,8 +551,14 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					
 				}
 				
+				if($stockData['use_config_manage_stock'] != 0) {
+					$StockControl = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
+				} else {
+					$StockControl = $stockData['manage_stock']; //TODO: check whether we need to normalise the boolean value
+				}
+				
 				//SKU(ExternalReference, Code, ProductExternalReference, StockControl, StockLevel, Price)
-				$SkuDD->execute(array($product['entity_id'], $product['sku'], $parentProductExternalReference, $stockData['manage_stock'],
+				$SkuDD->execute(array($product['entity_id'], $product['sku'], $parentProductExternalReference, $StockControl,
 					(int)$stockData["qty"], isset($productTotalPrice) ? $productTotalPrice : "", $product['status'] != 1 ? 0 : -1));
 
 				// Add the product id to the list of already processed products
@@ -661,14 +584,14 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			}
 		}
 
-
 		// Products: SIMPLE
 		$collection = Mage::getModel('catalog/product')->getCollection()
-			->addAttributeToSelect(array('*', 'name', 'image', 'description', 'product_url', 'price', 'special_price', 'main'))
+			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
 			->addAttributeToFilter('type_id', array('eq' => 'simple'));
-
+		
 		foreach ($collection as $productData) {
 			$product = $productData->getData();
+			$productloader = Mage::getModel('catalog/product')->load($product['entity_id']);
 			
 			$taxCalculation = Mage::getModel('tax/calculation');
 			$request = $taxCalculation->getRateRequest(null, null, null, $store);
@@ -677,16 +600,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			if($percent === 0 || !$percent)
 				$percent = 10;
 
-			if(!$product['description']) {
-				$_product = Mage::getModel('catalog/product')->load($product['entity_id']);
-				$product['description'] = $_product->description;
-			}
-				
-			$insertlog->execute(array($product['entity_id'], 'product', print_r($product, true)));
-			$insertlog->execute(array($product['entity_id'], 'attr', $productData->getDescription()));
+			$product['description'] = $productloader->description;
 			
-			$productloader = Mage::getModel('catalog/product')->load($product['entity_id']);
-
 			$productprice = $productloader->getFinalPrice();
 
 			if(in_array($product['entity_id'], $insertedProducts))
@@ -735,16 +650,17 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			$stockData = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product['entity_id'])->getData();
 			$fields['MinBuy'] = (int)$stockData['min_sale_qty'];
 			$fields['MaxBuy'] = (int)$stockData['max_sale_qty'];
-			$fields['StockControl'] = $stockData['manage_stock']; //TODO: check whether we need to normalise the boolean value
+			
+			if($stockData['use_config_manage_stock'] != 0) {
+				$fields['StockControl'] = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
+			} else {
+				$fields['StockControl'] = $stockData['manage_stock']; //TODO: check whether we need to normalise the boolean value
+			}
+			
 			$fields['StockLevel'] = (int)$stockData["qty"];
-			$fields['Manufacturer'] = '';
-			
-			try{
-				// This causes problems on some versions of Magento Enterprise
-				$fields['Manufacturer'] = $productConfigurableData->getAttributeText('manufacturer');
-			}catch(Exception $e){};
-			
-			$fields['Price'] = isset($productprice) ? $productprice / (1+($percent/100)) : "";
+			$fields['Manufacturer'] = $productloader->manufacturer;
+			$fields['ListPrice'] = $product['price'] / (1+($percent/100));
+			$fields['Price'] = isset($productprice) ? $productprice / (1+($percent/100))  : "";
 			$fields['TaxID'] = 1;
 
 			if ($product['status'] != 1)
@@ -762,7 +678,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			}
 			$query[] = implode(array_keys($data), ",");
 			$query[] = ")";
-
 
 			try {
 				$insert = $db->prepare(implode($query));
@@ -830,9 +745,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							$row[] = array('skuid' => $SKUID, 'code' => $ov['sku'], 'optionname' => $o['title'], 'optionvalue' => $ov['title'], 'optionprice' => $ov['price']);
 							
 							$optionrows[] = $row;
-							
-							//$PO->execute(array($SKUID, $ov['sku'], $product['entity_id'], -1, 1, $price, -1));
-							//$POV->execute(array($SKUID, $ov['sku'], $o['title'], $ov['title'], $ov['price']));
 						
 						} catch (Exception $e) {
 							print_r($e);
@@ -866,8 +778,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 										$coptionname = $optionname . '-' . $optionrow2[0]['optionname'];
 										$cvalue =  $value . '-' . $optionrow2[0]['optionvalue'];
 										$ccode =  $code. '-' . $optionrow2[0]['code'];
-										//if($ccode === '-')
-										//	$ccode = null;
 										$coptionskuid =  $optionskuid . '-' . $optionrow2[0]['skuid'];
 										$cprice =  $productprice + $price + $optionrow2[0]['optionprice']; // (1+($percent/100)
 									
@@ -884,8 +794,5 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			}
 		}
 		$db->exec("COMMIT TRANSACTION");
-	} catch(Exception $e) {
-		print_r($e);
-	}
 	}
 }
