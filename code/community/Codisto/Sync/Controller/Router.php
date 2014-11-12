@@ -33,7 +33,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			$MerchantID = Mage::getStoreConfig('codisto/merchantid');
 			$HostID = Mage::getStoreConfig('codisto/hostid');
 			$HostKey = Mage::getStoreConfig('codisto/hostkey');
-		
+
 			Mage::getSingleton('core/session', array('name'=>'adminhtml'));
 				
 			if(Mage::getSingleton('admin/session')->isLoggedIn())
@@ -97,15 +97,16 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 						$remoteResponse = $client->setRawData('{"type" : "magentoplugin","baseurl" : "' . $baseurl . '", "emailaddress" : "' . $emailaddress . '"}', 'application/json')->request('POST');
 						
-						$data = $remoteResponse->getRawBody(); //json_decode($remoteResponse->getRawBody(), true);
+						$data = json_decode($remoteResponse->getRawBody(), true);
+						$result = $data['result'];
 						
-						if(!isset($data['hostid']))
-							$data['hostid'] = 1;
+						if(!isset($result['hostid']))
+							$result['hostid'] = 1;
 						
-						if($data['merchantid'] && $data['userid'] && $data['hostid']) {
-							Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['MerchantID']);
-							Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['HostKey']);
-							Mage::getModel("core/config")->saveConfig("codisto/hostid", $data['HostID']);
+						if($result['merchantid'] && $result['hostkey'] && $result['hostid']) {
+							Mage::getModel("core/config")->saveConfig("codisto/merchantid", $result['merchantid']);
+							Mage::getModel("core/config")->saveConfig("codisto/hostkey", $result['hostkey']);
+							Mage::getModel("core/config")->saveConfig("codisto/hostid", $result['hostid']);
 							Mage::app()->removeCache('config_store_data');
 							Mage::app()->getCacheInstance()->cleanType('config');
 							Mage::app()->getStore()->resetConfig();
