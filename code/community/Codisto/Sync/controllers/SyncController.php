@@ -27,13 +27,14 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	
 		$this->getConfig();
 		$request = $this->getRequest();
+		$request->setDispatched(true);
 		$server = $request->getServer();
 
 		if (isset($server['HTTP_X_SYNC'])) {
 			if (!isset($server['HTTP_X_ACTION'])) {
 				$server['HTTP_X_ACTION'] = "";
 			}
-
+			
 			switch ($server['HTTP_X_ACTION']) {
 				case "GET":
 					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
@@ -43,11 +44,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				case "EXECUTE":
 					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
 						$this->Sync();
-						$response = $this->getResponse();
 						$response->setBody('done');
+						$response->sendResponse();
+						die;
 					}
 				default:
 					$response->setBody("No Action");
+					$response->sendResponse();
 			}
 		}
 	}
@@ -57,6 +60,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$this->getConfig();
 		$response = $this->getResponse();
 		$response->setBody('SUCCESS');
+		$response->sendResponse();
 	}
 
 	public function testSyncAction()
@@ -85,6 +89,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		} else {
 			$response->setBody('Invalid Request');
 		}
+		$response->sendResponse();
 		
 	}
 	
@@ -112,9 +117,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['MerchantID']);
 				Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['HostKey']);
 				Mage::getModel("core/config")->saveConfig("codisto/hostid", $data['HostID']);
-
 				
-				//Mage::app()->cleanCache();
 				Mage::app()->removeCache('config_store_data');
 				Mage::app()->getCacheInstance()->cleanType('config');
 				Mage::app()->getStore()->resetConfig();
@@ -126,11 +129,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		} catch (Exception $e) {
 			$response->setBody("Exeption: " . print_r($e));
 		}
+		$response->sendResponse();
 	}
 
 	private function getAllHeaders($extra = false) 
 	{
-		$server = $this->$getRequest()->getServer();
+		$server = $this->getRequest()->getServer();
 	
 		foreach ($server as $name => $value)
 		{
@@ -177,7 +181,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	
 	public function testHashAction()
 	{
-		$server = $this->$getRequest()->getServer();
+		$server = $this->getRequest()->getServer();
 		$response = $this->getResponse();
 		$this->getConfig();
 		if($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
