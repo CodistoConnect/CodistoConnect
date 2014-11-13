@@ -134,7 +134,6 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 	
 					// set proxied output
 					$response->setBody($remoteResponse->getRawBody());
-					$response->sendResponse();
 				}	
 	
 				return true;
