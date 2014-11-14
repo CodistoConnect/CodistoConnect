@@ -499,12 +499,16 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
 		}
 		
-		if($ordercontent->paymentstatus == 'paid') {
+		if($ordercontent->paymentstatus == 'complete') {
 			$order->setBaseTotalPaid($basegrandtotal);
 			$order->setTotalPaid($basegrandtotal);
 			$order->setBaseTotalDue('0');
 			$order->setTotalDue('0');
 			$order->setDue('0');
+			$order->getAllPayments();
+			foreach($payments as $key=>$payment) {
+				$payment->setBaseAmountPaid($totalinc);
+			}
 		}
 		
 		$order->setMethod('ebaypayment');
