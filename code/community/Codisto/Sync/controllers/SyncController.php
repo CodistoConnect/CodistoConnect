@@ -401,401 +401,418 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		);
 
 		$store = Mage::app()->getStore('default');
+
+		$pageSize = 20;
 		
 		// Products: CONFIGURABLE
 		$configurableCollection = Mage::getModel('catalog/product')->getCollection()
 			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
-			->addAttributeToFilter('type_id', array('eq' => 'configurable'));
+			->addAttributeToFilter('type_id', array('eq' => 'configurable'))
+			->setPageSize($pageSize);
 
-		$insertedProducts = array();
-
-		foreach ($configurableCollection as $productConfigurableData) {
-			$product = $productConfigurableData->getData();
-			$productloader = Mage::getModel('catalog/product')->load($product['entity_id']);
-
-			$taxCalculation = Mage::getModel('tax/calculation');
-			$request = $taxCalculation->getRateRequest(null, null, null, $store);
-			$taxClassId = $productloader->getTaxClassId();
-			$percent = $taxCalculation->getRate($request->setProductClassId($taxClassId));
-			if($percent === 0 || !$percent)
-				$percent = 10;			
+		$pages = $configurableCollection->getLastPageNumber();
 			
-			$productprice = $productloader->getFinalPrice();
-			
-			$product['description'] = $productloader->description;
-			
-			// Extract the fields from Product
-			$fields = array();
-			foreach ($insertData as $magentoKey => $eziKey) {
-				$fields[$eziKey] = isset($product[$magentoKey]) ? $product[$magentoKey] : "";
-			}
-			/*$_product = Mage::getModel('catalog/product')->load($productId);
-			$_priceIncludingTax = $this->helper('tax')
-			->getPrice($_product, $_product->getFinalPrice());*/
+		for($i=1; $i<=$pages; $i++) {
 
-			// Special fields
-			$stockData = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product['entity_id'])->getData();
-			
-			$configurable_product = Mage::getModel('catalog/product')->load($product['entity_id']);
-			
-			$fields['MinBuy'] = (int)$stockData['min_sale_qty'];
-			$fields['MaxBuy'] = (int)$stockData['max_sale_qty'];
-			
-			if($stockData['use_config_manage_stock'] != 0) {
-				$fields['StockControl'] = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
-			} else {
-				$fields['StockControl'] = $stockData['manage_stock']; //TODO: check whether we need to normalise the boolean value
-			}
-						
-			$fields['StockLevel'] = (int)$stockData["qty"];
-			$fields['Manufacturer'] = $productloader->manufacturer;
-			$fields['ListPrice'] = $product['price'] / (1+($percent/100));
-			$fields['Price'] = isset($productprice) ? $productprice / (1+($percent/100))  : "";
-			$fields['TaxID'] = 1;
+			$configurableCollection->setCurPage($i);
+			$insertedProducts = array();
 
-			if ($product['status'] != 1)
-				$fields['Enabled'] = 0;
-			else
-				$fields['Enabled'] = -1;
-
-			$query = array();
-			$query[] = "INSERT INTO Product(";
-			$query[] = implode(array_keys($fields), ",");
-			$query[] = ") VALUES(";
-			$data = array();
-			foreach (array_keys($fields) as $key) {
-				$data[":" . $key] = $fields[$key];
-			}
-			$query[] = implode(array_keys($data), ",");
-			$query[] = ")";
-
-			try {
-				$insert = $db->prepare(implode($query));
-				$insert->execute($data);
-			} catch (Exception $e) {
-				print_r($e);
-			}
-
-			// Add the product id to the list of already processed products
-			$insertedProducts[] = $product['entity_id'];
-			$parentProductExternalReference =  $product['entity_id'];
-			// CategoryProductMM
-			$insertCategory = $db->prepare("INSERT INTO CategoryProduct('ProductExternalReference', 'CategoryExternalReference', Sequence) VALUES(?,?,?)");
-			$product = Mage::getModel('catalog/product')->load($product['entity_id']);
-			
-			$categoryIds = $product->getCategoryIds();
-			foreach ($categoryIds as $categoryId) {
-				$insertCategory->execute(array($product['entity_id'], $categoryId, 0));
-			}
-
-			// ProductImages
-			$productConfigurableData->load('media_gallery');
-			foreach ($productConfigurableData->getMediaGalleryImages() as $image) {
-				if ($image->getDisabled() != 0) continue;
-				$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
-			}
-			
-			//the configurable product id
-			$productId = $product['entity_id']; 
-			//load the product - this may not be needed if you get the product from a collection with the prices loaded.
-			$productdata = Mage::getModel('catalog/product')->load($productId); 
-			//get all configurable attributes
-			$attributes = $productdata->getTypeInstance(true)->getConfigurableAttributes($product);
-			//array to keep the price differences for each attribute value
-			$pricesByAttributeValues = array();
-			//base price of the configurable product 
-			$basePrice = $productdata->getFinalPrice();
-			//loop through the attributes and get the price adjustments specified in the configurable product admin page
-			foreach ($attributes as $attribute) {
-			
-				$prices = $attribute->getPrices();
-
-				foreach ($prices as $price){
-					if ($price['is_percent']){ //if the price is specified in percents
-						$pricesByAttributeValues[$price['value_index']] = (float)$price['pricing_value'] * $basePrice / 100;
-					}
-					else { //if the price is absolute value
-						$pricesByAttributeValues[$price['value_index']] = (float)$price['pricing_value'];
-					}
-				}
-			}
-
-			// SKUs
-			//$childProducts = Mage::getModel('catalog/product_type_configurable')->getUsedProducts(null,$productConfigurableData);
-			$childProducts =  Mage::getModel('catalog/product_type_configurable')->setProduct($productConfigurableData)
-				->getUsedProductCollection()->addAttributeToSelect('*')->addFilterByRequiredOptions();
-
-			$configurableAttributes = $product->getTypeInstance(true)->getConfigurableAttributes($productConfigurableData);
-			foreach($childProducts as $child)
-			{
-				$product = $child->getData();
-				$stockData = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product['entity_id'])->getData();
-				$pricemodifier = 0;
+			foreach ($configurableCollection as $productConfigurableData) {
+				$product = $productConfigurableData->getData();
+				$productloader = Mage::getModel('catalog/product')->load($product['entity_id']);
 				
-				//get all simple products
-				$simple = $productdata->getTypeInstance()->getUsedProducts();
-				//loop through the products
-				foreach ($simple as $sProduct){
-					$totalPrice = $basePrice;
-					//loop through the configurable attributes
-					foreach ($attributes as $attribute){
-						//get the value for a specific attribute for a simple product
-						$value = $sProduct->getData($attribute->getProductAttribute()->getAttributeCode());
-						//add the price adjustment to the total price of the simple product
-						if (isset($pricesByAttributeValues[$value])){
-							$totalPrice += $pricesByAttributeValues[$value];
-						}
-					}
-					//in $totalPrice you should have now the price of the simple product
-					//do what you want/need with it
-					if($sProduct['entity_id'] === $product['entity_id']) {
-						$productTotalPrice = $totalPrice / (1+($percent/100));
-						$pricemodifier = $pricesByAttributeValues[$value];
-					}
-					
+				$taxCalculation = Mage::getModel('tax/calculation');
+				$request = $taxCalculation->getRateRequest(null, null, null, $store);
+				$taxClassId = $productloader->getTaxClassId();
+				$percent = $taxCalculation->getRate($request->setProductClassId($taxClassId));
+				if($percent === 0 || !$percent)
+					$percent = 10;			
+				
+				$productprice = $productloader->getFinalPrice();
+				
+				$product['description'] = $productloader->description;
+				
+				// Extract the fields from Product
+				$fields = array();
+				foreach ($insertData as $magentoKey => $eziKey) {
+					$fields[$eziKey] = isset($product[$magentoKey]) ? $product[$magentoKey] : "";
 				}
+				/*$_product = Mage::getModel('catalog/product')->load($productId);
+				$_priceIncludingTax = $this->helper('tax')
+				->getPrice($_product, $_product->getFinalPrice());*/
+
+				// Special fields
+				$stockData = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product['entity_id'])->getData();
+				
+				$configurable_product = Mage::getModel('catalog/product')->load($product['entity_id']);
+				
+				$fields['MinBuy'] = (int)$stockData['min_sale_qty'];
+				$fields['MaxBuy'] = (int)$stockData['max_sale_qty'];
 				
 				if($stockData['use_config_manage_stock'] != 0) {
-					$StockControl = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
+					$fields['StockControl'] = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
 				} else {
-					$StockControl = $stockData['manage_stock']; //TODO: check whether we need to normalise the boolean value
+					$fields['StockControl'] = $stockData['manage_stock']; //TODO: check whether we need to normalise the boolean value
 				}
-				
-				//SKU(ExternalReference, Code, ProductExternalReference, StockControl, StockLevel, Price)
-				$SkuDD->execute(array($product['entity_id'], $product['sku'], $parentProductExternalReference, $StockControl,
-					(int)$stockData["qty"], isset($productTotalPrice) ? $productTotalPrice : "", $product['status'] != 1 ? 0 : -1));
+							
+				$fields['StockLevel'] = (int)$stockData["qty"];
+				$fields['Manufacturer'] = $productloader->manufacturer;
+				$fields['ListPrice'] = $product['price'] / (1+($percent/100));
+				$fields['Price'] = isset($productprice) ? $productprice / (1+($percent/100))  : "";
+				$fields['TaxID'] = 1;
+
+				if ($product['status'] != 1)
+					$fields['Enabled'] = 0;
+				else
+					$fields['Enabled'] = -1;
+
+				$query = array();
+				$query[] = "INSERT INTO Product(";
+				$query[] = implode(array_keys($fields), ",");
+				$query[] = ") VALUES(";
+				$data = array();
+				foreach (array_keys($fields) as $key) {
+					$data[":" . $key] = $fields[$key];
+				}
+				$query[] = implode(array_keys($data), ",");
+				$query[] = ")";
+
+				try {
+					$insert = $db->prepare(implode($query));
+					$insert->execute($data);
+				} catch (Exception $e) {
+					print_r($e);
+				}
 
 				// Add the product id to the list of already processed products
 				$insertedProducts[] = $product['entity_id'];
-
-				// SKU Matrix
-				foreach($configurableAttributes as $attribute)
-				{
-					$productAttribute = $attribute->getProductAttribute();
-					$SKUMatrixDD->execute(array($child->getId(), $productAttribute->getAttributeCode(), $child->getAttributeText($productAttribute->getAttributeCode()), $pricemodifier));
+				$parentProductExternalReference =  $product['entity_id'];
+				// CategoryProductMM
+				$insertCategory = $db->prepare("INSERT INTO CategoryProduct('ProductExternalReference', 'CategoryExternalReference', Sequence) VALUES(?,?,?)");
+				$product = Mage::getModel('catalog/product')->load($product['entity_id']);
+				
+				$categoryIds = $product->getCategoryIds();
+				foreach ($categoryIds as $categoryId) {
+					$insertCategory->execute(array($product['entity_id'], $categoryId, 0));
 				}
 
-				//TODO : Delete the sku options when there is only one choice.
-
-				// SKUImage
-				$child->load('media_gallery');
-				foreach ($child->getMediaGalleryImages() as $image) {
+				// ProductImages
+				$productConfigurableData->load('media_gallery');
+				foreach ($productConfigurableData->getMediaGalleryImages() as $image) {
 					if ($image->getDisabled() != 0) continue;
+					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+				}
+				
+				//the configurable product id
+				$productId = $product['entity_id']; 
+				//load the product - this may not be needed if you get the product from a collection with the prices loaded.
+				$productdata = Mage::getModel('catalog/product')->load($productId); 
+				//get all configurable attributes
+				$attributes = $productdata->getTypeInstance(true)->getConfigurableAttributes($product);
+				//array to keep the price differences for each attribute value
+				$pricesByAttributeValues = array();
+				//base price of the configurable product 
+				$basePrice = $productdata->getFinalPrice();
+				//loop through the attributes and get the price adjustments specified in the configurable product admin page
+				foreach ($attributes as $attribute) {
+				
+					$prices = $attribute->getPrices();
 
-					$insertSKUImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+					foreach ($prices as $price){
+						if ($price['is_percent']){ //if the price is specified in percents
+							$pricesByAttributeValues[$price['value_index']] = (float)$price['pricing_value'] * $basePrice / 100;
+						}
+						else { //if the price is absolute value
+							$pricesByAttributeValues[$price['value_index']] = (float)$price['pricing_value'];
+						}
+					}
 				}
 
+				// SKUs
+				//$childProducts = Mage::getModel('catalog/product_type_configurable')->getUsedProducts(null,$productConfigurableData);
+				$childProducts =  Mage::getModel('catalog/product_type_configurable')->setProduct($productConfigurableData)
+					->getUsedProductCollection()->addAttributeToSelect('*')->addFilterByRequiredOptions();
+
+				$configurableAttributes = $product->getTypeInstance(true)->getConfigurableAttributes($productConfigurableData);
+				foreach($childProducts as $child)
+				{
+					$product = $child->getData();
+					$stockData = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product['entity_id'])->getData();
+					$pricemodifier = 0;
+					
+					//get all simple products
+					$simple = $productdata->getTypeInstance()->getUsedProducts();
+					//loop through the products
+					foreach ($simple as $sProduct){
+						$totalPrice = $basePrice;
+						//loop through the configurable attributes
+						foreach ($attributes as $attribute){
+							//get the value for a specific attribute for a simple product
+							$value = $sProduct->getData($attribute->getProductAttribute()->getAttributeCode());
+							//add the price adjustment to the total price of the simple product
+							if (isset($pricesByAttributeValues[$value])){
+								$totalPrice += $pricesByAttributeValues[$value];
+							}
+						}
+						//in $totalPrice you should have now the price of the simple product
+						//do what you want/need with it
+						if($sProduct['entity_id'] === $product['entity_id']) {
+							$productTotalPrice = $totalPrice / (1+($percent/100));
+							$pricemodifier = $pricesByAttributeValues[$value];
+						}
+						
+					}
+					
+					if($stockData['use_config_manage_stock'] != 0) {
+						$StockControl = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
+					} else {
+						$StockControl = $stockData['manage_stock']; //TODO: check whether we need to normalise the boolean value
+					}
+					
+					//SKU(ExternalReference, Code, ProductExternalReference, StockControl, StockLevel, Price)
+					$SkuDD->execute(array($product['entity_id'], $product['sku'], $parentProductExternalReference, $StockControl,
+						(int)$stockData["qty"], isset($productTotalPrice) ? $productTotalPrice : "", $product['status'] != 1 ? 0 : -1));
+
+					// Add the product id to the list of already processed products
+					$insertedProducts[] = $product['entity_id'];
+
+					// SKU Matrix
+					foreach($configurableAttributes as $attribute)
+					{
+						$productAttribute = $attribute->getProductAttribute();
+						$SKUMatrixDD->execute(array($child->getId(), $productAttribute->getAttributeCode(), $child->getAttributeText($productAttribute->getAttributeCode()), $pricemodifier));
+					}
+
+					//TODO : Delete the sku options when there is only one choice.
+
+					// SKUImage
+					$child->load('media_gallery');
+					foreach ($child->getMediaGalleryImages() as $image) {
+						if ($image->getDisabled() != 0) continue;
+
+						$insertSKUImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+					}
+
+				}
 			}
+			$configurableCollection->clear();
 		}
 
 		// Products: SIMPLE
 		$collection = Mage::getModel('catalog/product')->getCollection()
 			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
 			->addAttributeToFilter('type_id', array('eq' => 'simple'));
-		
-		foreach ($collection as $productData) {
-			$product = $productData->getData();
-			$productloader = Mage::getModel('catalog/product')->load($product['entity_id']);
 			
-			$taxCalculation = Mage::getModel('tax/calculation');
-			$request = $taxCalculation->getRateRequest(null, null, null, $store);
-			$taxClassId = $productData->getTaxClassId();
-			$percent = $taxCalculation->getRate($request->setProductClassId($taxClassId));
-			if($percent === 0 || !$percent)
-				$percent = 10;
+		$pages = $collection->getLastPageNumber();		
+		for($i=1; $i<=$pages; $i++) {
 
-			$product['description'] = $productloader->description;
-			
-			$productprice = $productloader->getFinalPrice();
+			$collection->setCurPage($i);		
 
-			if(in_array($product['entity_id'], $insertedProducts))
-					continue;
+			foreach ($collection as $productData) {
+				$product = $productData->getData();
+				$productloader = Mage::getModel('catalog/product')->load($product['entity_id']);
+				
+				$taxCalculation = Mage::getModel('tax/calculation');
+				$request = $taxCalculation->getRateRequest(null, null, null, $store);
+				$taxClassId = $productData->getTaxClassId();
+				$percent = $taxCalculation->getRate($request->setProductClassId($taxClassId));
+				if($percent === 0 || !$percent)
+					$percent = 10;
 
-			// Extract the fields from Product
-			$fields = array();
-			foreach ($insertData as $magentoKey => $eziKey) {
-				$fields[$eziKey] = isset($product[$magentoKey]) ? $product[$magentoKey] : "";
-			}
+				$product['description'] = $productloader->description;
+				
+				$productprice = $productloader->getFinalPrice();
 
-			/* StockData example
-			Array
-			(
-				[item_id] => 1
-				[product_id] => 1
-				[stock_id] => 1
-				[qty] => 10.0000
-				[min_qty] => 0.0000
-				[use_config_min_qty] => 1
-				[is_qty_decimal] => 0
-				[backorders] => 0
-				[use_config_backorders] => 1
-				[min_sale_qty] => 1.0000
-				[use_config_min_sale_qty] => 1
-				[max_sale_qty] => 0.0000
-				[use_config_max_sale_qty] => 1
-				[is_in_stock] => 1
-				[low_stock_date] =>
-				[notify_stock_qty] =>
-				[use_config_notify_stock_qty] => 1
-				[manage_stock] => 0
-				[use_config_manage_stock] => 1
-				[stock_status_changed_auto] => 0
-				[use_config_qty_increments] => 1
-				[qty_increments] => 0.0000
-				[use_config_enable_qty_inc] => 1
-				[enable_qty_increments] => 0
-				[is_decimal_divided] => 0
-				[type_id] => simple
-				[stock_status_changed_automatically] => 0
-				[use_config_enable_qty_increments] => 1
-			) */
+				if(in_array($product['entity_id'], $insertedProducts))
+						continue;
 
-			// Special fields
-			$stockData = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product['entity_id'])->getData();
-			$fields['MinBuy'] = (int)$stockData['min_sale_qty'];
-			$fields['MaxBuy'] = (int)$stockData['max_sale_qty'];
-			
-			if($stockData['use_config_manage_stock'] != 0) {
-				$fields['StockControl'] = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
-			} else {
-				$fields['StockControl'] = $stockData['manage_stock']; //TODO: check whether we need to normalise the boolean value
-			}
-			
-			$fields['StockLevel'] = (int)$stockData["qty"];
-			$fields['Manufacturer'] = $productloader->manufacturer;
-			$fields['ListPrice'] = $product['price'] / (1+($percent/100));
-			$fields['Price'] = isset($productprice) ? $productprice / (1+($percent/100))  : "";
-			$fields['TaxID'] = 1;
+				// Extract the fields from Product
+				$fields = array();
+				foreach ($insertData as $magentoKey => $eziKey) {
+					$fields[$eziKey] = isset($product[$magentoKey]) ? $product[$magentoKey] : "";
+				}
 
-			if ($product['status'] != 1)
-				$fields['Enabled'] = 0;
-			else
-				$fields['Enabled'] = -1;
+				/* StockData example
+				Array
+				(
+					[item_id] => 1
+					[product_id] => 1
+					[stock_id] => 1
+					[qty] => 10.0000
+					[min_qty] => 0.0000
+					[use_config_min_qty] => 1
+					[is_qty_decimal] => 0
+					[backorders] => 0
+					[use_config_backorders] => 1
+					[min_sale_qty] => 1.0000
+					[use_config_min_sale_qty] => 1
+					[max_sale_qty] => 0.0000
+					[use_config_max_sale_qty] => 1
+					[is_in_stock] => 1
+					[low_stock_date] =>
+					[notify_stock_qty] =>
+					[use_config_notify_stock_qty] => 1
+					[manage_stock] => 0
+					[use_config_manage_stock] => 1
+					[stock_status_changed_auto] => 0
+					[use_config_qty_increments] => 1
+					[qty_increments] => 0.0000
+					[use_config_enable_qty_inc] => 1
+					[enable_qty_increments] => 0
+					[is_decimal_divided] => 0
+					[type_id] => simple
+					[stock_status_changed_automatically] => 0
+					[use_config_enable_qty_increments] => 1
+				) */
 
-			$query = array();
-			$query[] = "INSERT INTO Product(";
-			$query[] = implode(array_keys($fields), ",");
-			$query[] = ") VALUES(";
-			$data = array();
-			foreach (array_keys($fields) as $key) {
-				$data[":" . $key] = $fields[$key];
-			}
-			$query[] = implode(array_keys($data), ",");
-			$query[] = ")";
-
-			try {
-				$insert = $db->prepare(implode($query));
-				$insert->execute($data);
-			} catch (Exception $e) {
-				print_r($e);
-			}
-
-			// CategoryProductMM
-			$insertCategory = $db->prepare("INSERT INTO CategoryProduct('ProductExternalReference', 'CategoryExternalReference', Sequence) VALUES(?,?,?)");
-			$product = Mage::getModel('catalog/product')->load($product['entity_id']);
-			$categoryIds = $product->getCategoryIds();
-			foreach ($categoryIds as $categoryId) {
-				$insertCategory->execute(array($product['entity_id'], $categoryId, 0));
-			}
-
-			// ProductImages
-			$productData->load('media_gallery');
-			$insertImages = $db->prepare("INSERT INTO ProductImage(ProductExternalReference, URL, Sequence) VALUES(?,?,?)");
-			foreach ($productData->getMediaGalleryImages() as $image) {
-				if ($image->getDisabled() != 0) continue;
-				$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
-			}
-
-			// ProductOptions
-			$options = $product->getOptions();
-			$optionrows = array();
-			$optionnames = array();
-			
-			if (count($options) > 0) {
-
-				foreach ($options as $option) {
-					$o = $option->getData();
-
-					switch (strtolower($o['type'])) {
-						case "textarea":
-						case "field":
-							$type = "text";
-							break;
-						case "drop_down":
-						case "radio":
-						default:
-							$type = "select";
-					}
-
-					foreach ($option->getValues() as $optionValue) {
-						$ov = $optionValue->getData();
-
-						/*Potential future support for fixed or percentage pricing for variations
-						$price = 0;
-						if ($ov['price_type'] == 'percent')
-							$price = ($ov['price'] / 100) * $fields['Price'];
-						else
-							$price = $fields['Price'] + ((float)$ov['price']);
-													$ov['sort_order']*/
-
-						$price = ($productprice + (float)$ov['price']) / (1+($percent/100));
-						try {
-						
-							//Cross Multiply
-							$SKUID =  implode("-", array($product['entity_id'], $o['option_id'], $ov['option_type_id'])); //$ov['sku']; // $product['entity_id'] ."-" .
-							
-							$row = array();
-							
-							$row[] = array('skuid' => $SKUID, 'code' => $ov['sku'], 'optionname' => $o['title'], 'optionvalue' => $ov['title'], 'optionprice' => $ov['price']);
-							
-							$optionrows[] = $row;
-						
-						} catch (Exception $e) {
-							print_r($e);
-						}
-					}
-					
-					$optionnames[] = $o['title'];
-					
+				// Special fields
+				$stockData = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product['entity_id'])->getData();
+				$fields['MinBuy'] = (int)$stockData['min_sale_qty'];
+				$fields['MaxBuy'] = (int)$stockData['max_sale_qty'];
+				
+				if($stockData['use_config_manage_stock'] != 0) {
+					$fields['StockControl'] = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
+				} else {
+					$fields['StockControl'] = $stockData['manage_stock']; //TODO: check whether we need to normalise the boolean value
 				}
 				
-				//Cross Multiply all the product options and their attributes to create discreet SKUs with individuaul prices
-				$seen = array();
-				if(count($optionnames) > 0) {
-					foreach($optionnames as $optionname1) {
-						foreach($optionrows as $optionrow) {
-						
-							$optionname = $optionrow[0]['optionname'];
+				$fields['StockLevel'] = (int)$stockData["qty"];
+				$fields['Manufacturer'] = $productloader->manufacturer;
+				$fields['ListPrice'] = $product['price'] / (1+($percent/100));
+				$fields['Price'] = isset($productprice) ? $productprice / (1+($percent/100))  : "";
+				$fields['TaxID'] = 1;
 
-							if($optionname != $optionname1)
-								continue;
+				if ($product['status'] != 1)
+					$fields['Enabled'] = 0;
+				else
+					$fields['Enabled'] = -1;
+
+				$query = array();
+				$query[] = "INSERT INTO Product(";
+				$query[] = implode(array_keys($fields), ",");
+				$query[] = ") VALUES(";
+				$data = array();
+				foreach (array_keys($fields) as $key) {
+					$data[":" . $key] = $fields[$key];
+				}
+				$query[] = implode(array_keys($data), ",");
+				$query[] = ")";
+
+				try {
+					$insert = $db->prepare(implode($query));
+					$insert->execute($data);
+				} catch (Exception $e) {
+					print_r($e);
+				}
+
+				// CategoryProductMM
+				$insertCategory = $db->prepare("INSERT INTO CategoryProduct('ProductExternalReference', 'CategoryExternalReference', Sequence) VALUES(?,?,?)");
+				$product = Mage::getModel('catalog/product')->load($product['entity_id']);
+				$categoryIds = $product->getCategoryIds();
+				foreach ($categoryIds as $categoryId) {
+					$insertCategory->execute(array($product['entity_id'], $categoryId, 0));
+				}
+
+				// ProductImages
+				$productData->load('media_gallery');
+				$insertImages = $db->prepare("INSERT INTO ProductImage(ProductExternalReference, URL, Sequence) VALUES(?,?,?)");
+				foreach ($productData->getMediaGalleryImages() as $image) {
+					if ($image->getDisabled() != 0) continue;
+					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+				}
+
+				// ProductOptions
+				$options = $product->getOptions();
+				$optionrows = array();
+				$optionnames = array();
+				
+				if (count($options) > 0) {
+
+					foreach ($options as $option) {
+						$o = $option->getData();
+
+						switch (strtolower($o['type'])) {
+							case "textarea":
+							case "field":
+								$type = "text";
+								break;
+							case "drop_down":
+							case "radio":
+							default:
+								$type = "select";
+						}
+
+						foreach ($option->getValues() as $optionValue) {
+							$ov = $optionValue->getData();
+
+							/*Potential future support for fixed or percentage pricing for variations
+							$price = 0;
+							if ($ov['price_type'] == 'percent')
+								$price = ($ov['price'] / 100) * $fields['Price'];
+							else
+								$price = $fields['Price'] + ((float)$ov['price']);
+														$ov['sort_order']*/
+
+							$price = ($productprice + (float)$ov['price']) / (1+($percent/100));
+							try {
+							
+								//Cross Multiply
+								$SKUID =  implode("-", array($product['entity_id'], $o['option_id'], $ov['option_type_id'])); //$ov['sku']; // $product['entity_id'] ."-" .
 								
-							if(in_array($optionname, $seen))
-								continue;
-										
-							$value = $optionrow[0]['optionvalue'];
-							$code = $optionrow[0]['code'];
-							$optionskuid = $optionrow[0]['skuid'];
-							$price = $optionrow[0]['optionprice'];
-								foreach($optionrows as $optionrow2) {
-									if($optionname != $optionrow2[0]['optionname'] && $value != $optionrow2[0]['optionvalue']) {
-										$coptionname = $optionname . '-' . $optionrow2[0]['optionname'];
-										$cvalue =  $value . '-' . $optionrow2[0]['optionvalue'];
-										$ccode =  $code. '-' . $optionrow2[0]['code'];
-										$coptionskuid =  $optionskuid . '-' . $optionrow2[0]['skuid'];
-										$cprice =  $productprice + $price + $optionrow2[0]['optionprice']; // (1+($percent/100)
+								$row = array();
+								
+								$row[] = array('skuid' => $SKUID, 'code' => $ov['sku'], 'optionname' => $o['title'], 'optionvalue' => $ov['title'], 'optionprice' => $ov['price']);
+								
+								$optionrows[] = $row;
+							
+							} catch (Exception $e) {
+								print_r($e);
+							}
+						}
+						
+						$optionnames[] = $o['title'];
+						
+					}
+					
+					//Cross Multiply all the product options and their attributes to create discreet SKUs with individuaul prices
+					$seen = array();
+					if(count($optionnames) > 0) {
+						foreach($optionnames as $optionname1) {
+							foreach($optionrows as $optionrow) {
+							
+								$optionname = $optionrow[0]['optionname'];
+
+								if($optionname != $optionname1)
+									continue;
 									
-										$POV->execute(array($coptionskuid, $ccode, $optionrow2[0]['optionname'], $optionrow2[0]['optionvalue'], $optionrow2[0]['optionprice']));
-										$POV->execute(array($coptionskuid, $ccode, $optionname, $value, $price));
-										$PO->execute(array($coptionskuid, $ccode, $product['entity_id'], -1, 1, $cprice, -1));
+								if(in_array($optionname, $seen))
+									continue;
+											
+								$value = $optionrow[0]['optionvalue'];
+								$code = $optionrow[0]['code'];
+								$optionskuid = $optionrow[0]['skuid'];
+								$price = $optionrow[0]['optionprice'];
+									foreach($optionrows as $optionrow2) {
+										if($optionname != $optionrow2[0]['optionname'] && $value != $optionrow2[0]['optionvalue']) {
+											$coptionname = $optionname . '-' . $optionrow2[0]['optionname'];
+											$cvalue =  $value . '-' . $optionrow2[0]['optionvalue'];
+											$ccode =  $code. '-' . $optionrow2[0]['code'];
+											$coptionskuid =  $optionskuid . '-' . $optionrow2[0]['skuid'];
+											$cprice =  $productprice + $price + $optionrow2[0]['optionprice']; // (1+($percent/100)
 										
-										$seen[] = $optionrow2[0]['optionname'];
+											$POV->execute(array($coptionskuid, $ccode, $optionrow2[0]['optionname'], $optionrow2[0]['optionvalue'], $optionrow2[0]['optionprice']));
+											$POV->execute(array($coptionskuid, $ccode, $optionname, $value, $price));
+											$PO->execute(array($coptionskuid, $ccode, $product['entity_id'], -1, 1, $cprice, -1));
+											
+											$seen[] = $optionrow2[0]['optionname'];
+										}
 									}
-								}
+							}
 						}
 					}
 				}
 			}
+			$collection->clear();
 		}
 		$db->exec("COMMIT TRANSACTION");
 	}
