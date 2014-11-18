@@ -34,7 +34,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		
 		if($countrycode == 'AU')
 		{
-			$pc = $postalcode[0];
+			$pc = $postalcode{0};
 
 			if ($pc == 2 || $pc == 1) {
 				$regiontext = "NSW";
@@ -50,7 +50,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$regiontext = "TAS";
 			}
 
-			$pc3 = $postalcode[0] + $postalcode[1];
+			$pc3 = $postalcode{0} . $postalcode{1};
 			if ($pc3 == "08" || $pc3 == "09") {
 				$regiontext = "NT";
 			}
@@ -63,7 +63,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$regiontext = "ACT";
 			}
 
-			if ($postalcode >= 2600 && $postalcode <= 2618) {
+			if (intval($postalcode) >= 2600 && intval($postalcode) <= 2618) {
 				$regiontext = "ACT";
 			}
 
@@ -89,8 +89,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			
 			if(!$productcode)
 				break;
-		
-		
+
 			if($id)
 			{
 				$product = $model->load($id);
@@ -99,12 +98,13 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 		}
 
-		$address = $cart->getQuote()->getShippingAddress();
-		
-		$address->setCountryId($countrycode)->setPostcode($postalcode);
+		$address = $cart->getQuote()
+		->getShippingAddress()
+		->setCountryId((string) $countrycode)
+		->setPostcode((string) $postalcode);
 
 		if($regionid)
-			$address->setRegionId($regionid);
+			$address->setRegionId((string) $regionid);
 		
 		$cart->save();
 	
