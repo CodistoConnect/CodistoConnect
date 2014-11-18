@@ -99,14 +99,13 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						
 						$data = json_decode($remoteResponse->getRawBody(), true);
 						$result = $data['result'];
-						
-						if(!isset($result['hostid']))
-							$result['hostid'] = 1;
-						
-						if($result['merchantid'] && $result['hostkey'] && $result['hostid']) {
+						if(!isset($result['result']['hostid']))
+							$result['result']['hostid'] = 1;
+
+						if($result['merchantid'] && $result['result']['hostkey'] && $result['result']['hostid']) {
 							Mage::getModel("core/config")->saveConfig("codisto/merchantid", $result['merchantid']);
-							Mage::getModel("core/config")->saveConfig("codisto/hostkey", $result['hostkey']);
-							Mage::getModel("core/config")->saveConfig("codisto/hostid", $result['hostid']);
+							Mage::getModel("core/config")->saveConfig("codisto/hostkey", $result['result']['hostkey']);
+							Mage::getModel("core/config")->saveConfig("codisto/hostid", $result['result']['hostid']);
 							Mage::app()->removeCache('config_store_data');
 							Mage::app()->getCacheInstance()->cleanType('config');
 							Mage::app()->getStore()->resetConfig();
