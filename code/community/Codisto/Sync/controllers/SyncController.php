@@ -420,12 +420,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			foreach ($configurableCollection as $productConfigurableData) {
 				$product = $productConfigurableData->getData();
 				$productloader = Mage::getModel('catalog/product')->load($product['entity_id']);
-				
-				$taxCalculation = Mage::getModel('tax/calculation');
-				$request = $taxCalculation->getRateRequest(null, null, null, $store);
-				$taxClassId = $productloader->getTaxClassId();
-				$percent = $taxCalculation->getRate($request->setProductClassId($taxClassId));
-				if($percent === 0 || !$percent)
+
+                $percent = $productConfigurableData->getData('tax_percent');
+                if($percent === 0 || !$percent)
 					$percent = 10;			
 				
 				$productprice = $productloader->getFinalPrice();
@@ -611,11 +608,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			foreach ($collection as $productData) {
 				$product = $productData->getData();
 				$productloader = Mage::getModel('catalog/product')->load($product['entity_id']);
-				
-				$taxCalculation = Mage::getModel('tax/calculation');
-				$request = $taxCalculation->getRateRequest(null, null, null, $store);
-				$taxClassId = $productData->getTaxClassId();
-				$percent = $taxCalculation->getRate($request->setProductClassId($taxClassId));
+
+                $percent = $productData->getData('tax_percent');
 				if($percent === 0 || !$percent)
 					$percent = 10;
 
