@@ -315,14 +315,21 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$product->setName($orderline->productname[0]);
 				
 				$qty = $orderline->quantity[0];
+
+				$taxamount = $store->roundPrice(floatval($orderline->linetotalinctax[0]) - floatval($orderline->linetotal[0]));
+				$item->setBaseTaxAmount($taxamount);
+				$item->setTaxAmount($taxamount);
 				
 				$item = Mage::getModel('sales/quote_item');
 				$item->setProduct($product);
 				$item->setSku($orderline->productcode[0]);
 				$item->setName($orderline->productname[0]);
 				$item->setQty($qty);
-				$item->setPrice($orderline->priceinctax[0]);
+				$item->setPrice($orderline->price[0]);
+				$item->setPriceInclTax($orderline->priceinctax[0]);
 				$item->setOriginalPrice($orderline->listpriceinctax[0]);
+				$item->setDiscountAmount('0');
+				$item->setWeight($orderline->weight[0]);
 				$item->setCustomPrice($orderline->priceinctax[0]);
 				$item->setOriginalCustomPrice($orderline->listpriceinctax[0]);
 				$item->setBasePriceInclTax(floatval(($orderline->listpriceinctax[0] * $qty)));
