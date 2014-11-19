@@ -140,7 +140,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				$ordermatch = false;
 				foreach ($orders as $order) {
-					//syslog(1, print_r('matching order: ' . $order->getCodistoOrderid(), true));
 					$ordermatch = true;
 				}
 
@@ -194,6 +193,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		
 		$currencyCode = $ordercontent->transactcurrency[0];
 		$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
+		if(!$ebaysalesrecordnumber)
+			$ebaysalesrecordnumber = '';
 		$freightcarrier = 'Post';
 		$freightservice = 'Freight';
 
@@ -303,9 +304,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$billingAddress  = $quote->getBillingAddress()->addData($addressData_billing);
 		$shippingAddress = $quote->getShippingAddress()->addData($addressData_shipping);
 		
-		/*$totalinc = 0;
-		$totalex = 0;*/
-		
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
 			if($orderline->productcode[0] != 'FREIGHT')
@@ -316,10 +314,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				
 				$qty = $orderline->quantity[0];
 
-				$taxamount = $store->roundPrice(floatval($orderline->linetotalinctax[0]) - floatval($orderline->linetotal[0]));
-				$item->setBaseTaxAmount($taxamount);
-				$item->setTaxAmount($taxamount);
-				
 				$item = Mage::getModel('sales/quote_item');
 				$item->setProduct($product);
 				$item->setSku($orderline->productcode[0]);
@@ -334,13 +328,36 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$item->setOriginalCustomPrice($orderline->listpriceinctax[0]);
 				$item->setBasePriceInclTax(floatval(($orderline->listpriceinctax[0] * $qty)));
 				$item->setBaseRowTotalInclTax(floatval(($orderline->listpriceinctax[0] * $qty)));
-				$item->setLineTotalIncTax(floatval(($$orderline->listpriceinctax[0] * $qty)));
 
 				$quote->addItem($item);
 				
-				/*
-				$totalinc += floatval($orderline->linetotalinctax[0]);
-				$totalex += floatval($orderline->linetotal[0]);*/
+				if($ordercontent->orderstate != 'cancelled') {
+					$catalog = Mage::getModel('catalog/product');
+					$prodid = $catalog->getIdBySku((string)$orderline->productcode[0]);
+					$product = Mage::getModel('catalog/product')->load($prodid);
+					
+					if (!($stockItem = $product->getStockItem())) {
+						$stockItem = Mage::getModel('cataloginventory/stock_item');
+						$stockItem->assignProduct($product)
+								  ->setData('stock_id', 1)
+								  ->setData('store_id', 1);
+					}					
+					$stockItem = $product->getStockItem();
+					$stockData = $stockItem->getData();
+
+					if($stockData['use_config_manage_stock'] != 0) {
+						$stockcontrol = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
+					} else {
+						$stockcontrol = $stockData['manage_stock'];
+					}
+					
+					if($stockcontrol !=0) {
+						$stockItem->subtractQty(intval($qty));
+					}
+					
+					$stockItem->save();
+				}
+				
 			}
 		}
 		
@@ -350,8 +367,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			if($orderline->productcode[0] == 'FREIGHT')
 			{
 				$freighttotal += floatval($orderline->linetotalinctax[0]);
-				/*$totalinc += floatval($orderline->linetotalinctax[0]);
-				$totalex += floatval($orderline->linetotal[0]);*/
 				$freightservice = $orderline->productname[0];
 			}
 		}
@@ -372,11 +387,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$quote->collectTotals();
 		
-		/*$quote->setSubtotal($totalinc);
-		$quote->setBaseSubtotal($totalinc);
-		$quote->setGrandTotal($totalinc);
-		$quote->setBaseGrandTotal($totalinc);*/
-		
 		$quote->save();
 		
 		$convertquote = Mage::getSingleton('sales/convert_quote');
@@ -392,7 +402,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setCanShipPartiallyItem(false);
 
 		$order->setCodistoOrderid($ordercontent->orderid);
-	
+		
 		$lineidx = 0;
 		foreach ($quote->getAllItems() as $item) {
 		
@@ -425,26 +435,42 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$lineidx++;
 		}
 		
-		if($ebaysalesrecordnumber)
-			$order->addStatusToHistory($order->getStatus(), "Order $ebaysalesrecordnumber received from eBay");
 			
-		/*$taxamount = $store->roundPrice(floatval($totalinc) - floatval($totalex));
-		$taxpercent = round(floatval($totalinc) / floatval($totalex) - 1.0, 2) * 100;
-		$order->setBaseTaxAmount($taxamount);
-		$order->setTaxAmount($taxamount);
-		$order->setTaxPercent($taxpercent);
-		$order->setSubtotal($totalinc);
-		$order->setBaseSubtotal($totalinc);
-		$order->setGrandTotal($totalinc);
-		$order->setBaseGrandTotal($totalinc);*/
+		/* cancelled, processing, captured, inprogress, complete */
+		if($ordercontent->orderstate == 'captured') {
+			$order->setState(Mage_Sales_Model_Order::STATE_NEW, true);
+			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
+		} else if($ordercontent->orderstate == 'cancelled') {
+			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true);
+			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been cancelled");
+		} else if($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') {
+			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true);
+			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is in progress");
+		} else if ($ordercontent->orderstate == 'complete') {
+			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE);
+			$order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
+			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
+		} else {
+			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been captured");
+		}
+		
+ 		if($ordercontent->paymentstatus == 'complete') {
+			$order->setBaseTotalPaid($basegrandtotal);
+			$order->setTotalPaid($basegrandtotal);
+			$order->setBaseTotalDue('0');
+			$order->setTotalDue('0');
+			$order->setDue('0');
+			$order->getAllPayments();
+			foreach($payments as $key=>$payment) {
+				$payment->setBaseAmountPaid($totalinc);
+			}
+		}
 		
 		$order->place();
 		$order->save();
 
 		$quote->setIsActive(false)->save();
 
-		$neworder = Mage::getModel('sales/order')->load($order->entity_id);
-		
 		$response = $this->getResponse();
 		$response->setBody('OK');
 	}
@@ -492,7 +518,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setBaseShippingTaxAmount($taxpercent);
 
 
-		/* cancelled, processing, captured, inprogress, complete */
+		/* States: cancelled, processing, captured, inprogress, complete */
 		if($ordercontent->orderstate == 'captured' && ($orderstatus!='pending' || $orderstatus!='new')) {
 			$order->setState(Mage_Sales_Model_Order::STATE_NEW, true);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
@@ -509,6 +535,45 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE);
 			$order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
+		}
+		
+		if(($ordercontent->orderstate == 'cancelled' && $orderstatus!='canceled') || ($ordercontent->orderstate != 'cancelled' && $orderstatus == 'canceled')) {
+			foreach($ordercontent->orderlines->orderline as $orderline)
+			{
+				if($orderline->productcode[0] != 'FREIGHT')
+				{
+					$catalog = Mage::getModel('catalog/product');
+					$prodid = $catalog->getIdBySku((string)$orderline->productcode[0]);
+					$product = Mage::getModel('catalog/product')->load($prodid);
+					$qty = $orderline->quantity[0];
+					
+					if (!($stockItem = $product->getStockItem())) {
+						$stockItem = Mage::getModel('cataloginventory/stock_item');
+						$stockItem->assignProduct($product)
+								  ->setData('stock_id', 1)
+								  ->setData('store_id', 1);
+					}					
+					$stockItem = $product->getStockItem();
+					$stockData = $stockItem->getData();
+
+					if($stockData['use_config_manage_stock'] != 0) {
+						$stockcontrol = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
+					} else {
+						$stockcontrol = $stockData['manage_stock'];
+					}
+					
+					if($stockcontrol !=0) {
+						if($ordercontent->orderstate == 'cancelled') {
+							$stockItem->addQty(intval($qty));
+						} else {
+							$stockItem->subtractQty(intval($qty));
+						}
+					}
+					
+					$stockItem->save();
+					
+				}
+			}
 		}
 		
 		if($ordercontent->paymentstatus == 'complete') {
