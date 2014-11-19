@@ -573,6 +573,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					$catalog = Mage::getModel('catalog/product');
 					$prodid = $catalog->getIdBySku((string)$orderline->productcode[0]);
 					$product = Mage::getModel('catalog/product')->load($prodid);
+					$qty = $orderline->quantity[0];
 					
 					if (!($stockItem = $product->getStockItem())) {
 						$stockItem = Mage::getModel('cataloginventory/stock_item');
