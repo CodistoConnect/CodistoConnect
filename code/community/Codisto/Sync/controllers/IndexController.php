@@ -140,7 +140,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				$ordermatch = false;
 				foreach ($orders as $order) {
-					//syslog(1, print_r('matching order: ' . $order->getCodistoOrderid(), true));
 					$ordermatch = true;
 				}
 
@@ -305,9 +304,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$billingAddress  = $quote->getBillingAddress()->addData($addressData_billing);
 		$shippingAddress = $quote->getShippingAddress()->addData($addressData_shipping);
 		
-		/*$totalinc = 0;
-		$totalex = 0;*/
-		
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
 			if($orderline->productcode[0] != 'FREIGHT')
@@ -318,10 +314,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				
 				$qty = $orderline->quantity[0];
 
-				//$taxamount = $store->roundPrice(floatval($orderline->linetotalinctax[0]) - floatval($orderline->linetotal[0]));
-				//$item->setBaseTaxAmount($taxamount);
-				//$item->setTaxAmount($taxamount);
-				
 				$item = Mage::getModel('sales/quote_item');
 				$item->setProduct($product);
 				$item->setSku($orderline->productcode[0]);
@@ -366,9 +358,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					$stockItem->save();
 				}
 				
-				/*
-				$totalinc += floatval($orderline->linetotalinctax[0]);
-				$totalex += floatval($orderline->linetotal[0]);*/
 			}
 		}
 		
@@ -378,8 +367,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			if($orderline->productcode[0] == 'FREIGHT')
 			{
 				$freighttotal += floatval($orderline->linetotalinctax[0]);
-				/*$totalinc += floatval($orderline->linetotalinctax[0]);
-				$totalex += floatval($orderline->linetotal[0]);*/
 				$freightservice = $orderline->productname[0];
 			}
 		}
@@ -399,11 +386,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$shippingAddress->setShippingAmountForDiscount(0);
 
 		$quote->collectTotals();
-		
-		/*$quote->setSubtotal($totalinc);
-		$quote->setBaseSubtotal($totalinc);
-		$quote->setGrandTotal($totalinc);
-		$quote->setBaseGrandTotal($totalinc);*/
 		
 		$quote->save();
 		
@@ -454,16 +436,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 		
 			
-		/*$taxamount = $store->roundPrice(floatval($totalinc) - floatval($totalex));
-		$taxpercent = round(floatval($totalinc) / floatval($totalex) - 1.0, 2) * 100;
-		$order->setBaseTaxAmount($taxamount);
-		$order->setTaxAmount($taxamount);
-		$order->setTaxPercent($taxpercent);
-		$order->setSubtotal($totalinc);
-		$order->setBaseSubtotal($totalinc);
-		$order->setGrandTotal($totalinc);
-		$order->setBaseGrandTotal($totalinc);*/
-
 		/* cancelled, processing, captured, inprogress, complete */
 		if($ordercontent->orderstate == 'captured') {
 			$order->setState(Mage_Sales_Model_Order::STATE_NEW, true);
@@ -546,7 +518,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setBaseShippingTaxAmount($taxpercent);
 
 
-		/* cancelled, processing, captured, inprogress, complete */
+		/* States: cancelled, processing, captured, inprogress, complete */
 		if($ordercontent->orderstate == 'captured' && ($orderstatus!='pending' || $orderstatus!='new')) {
 			$order->setState(Mage_Sales_Model_Order::STATE_NEW, true);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
