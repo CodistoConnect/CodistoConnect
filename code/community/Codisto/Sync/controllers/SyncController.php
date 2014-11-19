@@ -609,7 +609,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				$product = $productData->getData();
 				$productloader = Mage::getModel('catalog/product')->load($product['entity_id']);
 
-                $percent = $productData->getData('tax_percent');
+				$percent = $productData->getData('tax_percent');
 				if($percent === 0 || !$percent)
 					$percent = 10;
 
