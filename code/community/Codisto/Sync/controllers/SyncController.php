@@ -89,7 +89,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		} else {
 			$response->setBody('Invalid Request');
 		}
-		$response->sendResponse();
 		
 	}
 	
