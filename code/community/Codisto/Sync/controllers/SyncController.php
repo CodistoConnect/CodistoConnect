@@ -73,7 +73,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	
 	public function resetPluginAction () 
 	{ // End Point index.php/codisto-sync/sync/resetPlugin
-		
 		$request = $this->getRequest();
 		$response = $this->getResponse();
 		$this->getConfig();
@@ -93,7 +92,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		} else {
 			$response->setBody('Invalid Request');
 		}
-		
 	}
 	
 	public function configUpdateAction()
