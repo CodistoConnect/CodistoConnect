@@ -91,11 +91,12 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						
 						$baseurl = Mage::getBaseUrl();
 						
-						$emailaddress = Mage::getStoreConfig('trans_email/ident_general/value') ? 
-							Mage::getStoreConfig('trans_email/ident_general/value') : 
-							Mage::getSingleton('core/config')->init()->getXpath('/config/default/trans_email/ident_general/email');						
-							
-						$remoteResponse = $client->setRawData('{"type" : "magentoplugin","baseurl" : "' . $baseurl . '", "emailaddress" : "' . $emailaddress[0] . '"}', 'application/json')->request('POST');
+						$emailaddress = Mage::getStoreConfig('trans_email/ident_general/value');
+						if(!$emailaddress) {
+							$emailaddress = Mage::getSingleton('core/config')->init()->getXpath('/config/default/trans_email/ident_general/email');
+							$emailaddress = $emailaddress[0];
+						}							
+						$remoteResponse = $client->setRawData('{"type" : "magentoplugin","baseurl" : "' . $baseurl . '", "emailaddress" : "' . $emailaddress . '"}', 'application/json')->request('POST');
 						
 						$data = json_decode($remoteResponse->getRawBody(), true);
 						$result = $data['result'];
