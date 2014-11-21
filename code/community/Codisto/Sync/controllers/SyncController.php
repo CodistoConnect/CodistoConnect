@@ -73,8 +73,11 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	
 	public function resetPluginAction () 
 	{ // End Point index.php/codisto-sync/sync/resetPlugin
-	
+		$request = $this->getRequest();
 		$response = $this->getResponse();
+		$this->getConfig();
+		$server = $request->getServer();
+		
 		if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
 			Mage::getModel("core/config")->saveConfig("codisto/merchantid", null);
 			Mage::getModel("core/config")->saveConfig("codisto/hostkey", null);
@@ -89,8 +92,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		} else {
 			$response->setBody('Invalid Request');
 		}
-		$response->sendResponse();
-		
 	}
 	
 	public function configUpdateAction()
