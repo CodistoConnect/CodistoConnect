@@ -57,6 +57,11 @@
 				</codisto_orderid>
 			</sales_convert_order>
 		</fieldsets>
+		<helpers>
+			<codisto-sync>
+				<class>Codisto_Sync_Helper</class>
+			</codisto-sync>
+		</helpers>
 		<resources>
 			<codisto_setup>
 				<setup>
@@ -89,6 +94,17 @@
 			</adminhtml>
 		</blocks>
 	</global>
+	<admin>
+		<routers>
+			<adminhtml>
+				<args>
+					<modules>
+						<Codisto_Sync after="Mage_Adminhtml">Codisto_Sync</Codisto_Sync>
+					</modules>
+				</args>
+			</adminhtml>
+		</routers>
+	</admin>
 	<default>
 		<web>
 			<routers>

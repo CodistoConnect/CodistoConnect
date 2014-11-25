@@ -8,10 +8,11 @@ locale/
 etc/*
 design/
 code/core/
-code/community/
-!code/community/Codisto
+code/community/*
 etc/modules/
-!etc/modules/Codisto*
 *.tmp
 *.bak
 Mage.php
+!etc/modules/Codisto*
+!code/community/Codisto
+!code/community/Codisto/Sync
