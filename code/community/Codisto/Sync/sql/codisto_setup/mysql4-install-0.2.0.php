@@ -22,8 +22,10 @@ $installer->startSetup();
 
 $connection = $this->getConnection();
 
+$table = $this->getTable('sales/flat_order');
+
 $connection->addColumn(
-	'sales_flat_order',
+	$table,
 	'codisto_orderid',
 	'varchar(10)'
 );

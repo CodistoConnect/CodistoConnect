@@ -1,34 +1,41 @@
 <config>
-    <menu>
-        <codisto translate="title">
-            <title>Codisto</title>
-            <sort_order>99</sort_order>
-            <children>
-                <example>
-                    <title>Sync Settings</title>
-                    <sort_order>1</sort_order>
-                    <action>adminhtml/syncadmin/index</action>
-                </example>
-            </children>
-        </codisto>
-    </menu>
-    
-    <acl>
-        <resources>
-            <admin>
-                <children>                
-                    <codisto translate="title">
-                        <title>Top Level Codisto Menu Item</title>
-                        <sort_order>1</sort_order>
-                        <children>
-                            <example>
-                                <title>Sync Settings</title>
-                            </example>
-                        </children>
-                    </codisto>
-                </children>
-            </admin>
-        </resources>
-    </acl>
-    
-</config> 
+	<menu>
+		<codisto translate="title">
+			<title>eBay | Codisto</title>
+			<sort_order>99</sort_order>
+			<children>
+				<subitem translate="title">
+					<title>Manage Listings</title>
+					<sort_order>1</sort_order>
+					<action>adminhtml/syncadmin/index</action>
+				</subitem>
+				<subitem1 translate="title">
+					<title>Getting Started</title>
+					<sort_order>2</sort_order>
+					<action>adminhtml/syncadmin/gettingstarted</action>
+				</subitem1>
+			</children>
+		</codisto>
+	</menu>
+
+	<acl>
+		<resources>
+			<admin>
+				<children>                
+					<codisto translate="title">
+						<title>Top Level Codisto Menu Item</title>
+						<sort_order>1</sort_order>
+						<children>
+							<subitem>
+								<title>Manage Listings</title>
+							</subitem >
+							<subitem>
+								<title>Getting Started</title>
+							</subitem>
+						</children>
+					</codisto>
+				</children>
+			</admin>
+		</resources>
+	</acl>
+</config>
