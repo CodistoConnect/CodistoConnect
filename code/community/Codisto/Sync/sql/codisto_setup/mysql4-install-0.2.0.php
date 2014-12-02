@@ -22,8 +22,10 @@ $installer->startSetup();
 
 $connection = $this->getConnection();
 
+$tablename = $prefix = Mage::getConfig()->getTablePrefix() . 'sales_flat_order';
+
 $connection->addColumn(
-	'sales_flat_order',
+	$tablename,
 	'codisto_orderid',
 	'varchar(10)'
 );
