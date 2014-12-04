@@ -412,11 +412,11 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			->setPageSize($pageSize);
 
 		$pages = $configurableCollection->getLastPageNumber();
+		$insertedProducts = array();
 			
 		for($i=1; $i<=$pages; $i++) {
 
 			$configurableCollection->setCurPage($i);
-			$insertedProducts = array();
 
 			foreach ($configurableCollection as $productConfigurableData) {
 				$product = $productConfigurableData->getData();
@@ -681,7 +681,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					$fields['Enabled'] = 0;
 				else
 					$fields['Enabled'] = -1;
-
+					
 				$query = array();
 				$query[] = "INSERT INTO Product(";
 				$query[] = implode(array_keys($fields), ",");
@@ -711,9 +711,28 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				// ProductImages
 				$productData->load('media_gallery');
 				$insertImages = $db->prepare("INSERT INTO ProductImage(ProductExternalReference, URL, Sequence) VALUES(?,?,?)");
+				$hasimage = false;
 				foreach ($productData->getMediaGalleryImages() as $image) {
 					if ($image->getDisabled() != 0) continue;
 					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+					$hasimage = true;
+				}
+				
+				if(!$hasimage) {
+					//Get Group Product image
+					$groupedparentsid = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($product['entity_id']);
+					foreach ($groupedparentsid as $parentid) {
+						$parentloader = Mage::getModel('catalog/product')->load($parentid);
+						foreach ($parentloader->getMediaGalleryImages() as $image) {
+							$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+						}
+					}
+				}
+
+				if(!isset($product['description']) || preg_replace('/\s/', '', $product['description']) == '') {
+					$parentid = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($product['entity_id'])->getFirstItem();
+					if($parentid)
+						$product['description'] = $parentloader = Mage::getModel('catalog/product')->load($parentid)->description;
 				}
 
 				// ProductOptions
@@ -769,7 +788,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						
 					}
 					
-					//Cross Multiply all the product options and their attributes to create discreet SKUs with individuaul prices
+					//Cross Multiply all the product options and their attributes to create discreet SKUs with individual prices
 					$seen = array();
 					if(count($optionnames) > 0) {
 						foreach($optionnames as $optionname1) {
