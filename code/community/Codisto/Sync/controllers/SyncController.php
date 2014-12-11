@@ -280,7 +280,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$db->query("CREATE TABLE SKUMatrix
 						(
 							SKUExternalReference TEXT NOT NULL,
-							Code TEXT NOT NULL,
+							Code TEXT,
 							OptionName TEXT NOT NULL,
 							OptionValue TEXT NOT NULL,
 							PriceModifier TEXT
@@ -289,7 +289,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$db->query("CREATE TABLE OptionMatrix
 						(
 							SKUExternalReference TEXT NOT NULL,
-							Code TEXT NOT NULL,
+							Code TEXT,
 							OptionName TEXT NOT NULL,
 							OptionValue TEXT NOT NULL,
 							PriceModifier TEXT
@@ -578,7 +578,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					foreach($configurableAttributes as $attribute)
 					{
 						$productAttribute = $attribute->getProductAttribute();
-						$SKUMatrixDD->execute(array($child->getId(), $productAttribute->getAttributeCode(), $child->getAttributeText($productAttribute->getAttributeCode()), $pricemodifier));
+						$SKUMatrixDD->execute(array($child->getId(), "", $productAttribute->getAttributeCode(), $child->getAttributeText($productAttribute->getAttributeCode()), $pricemodifier));
 					}
 
 					//TODO : Delete the sku options when there is only one choice.
@@ -736,10 +736,10 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				}
 
 				// ProductOptions
-				$options = $product->getOptions();
+				$options = $productloader->getOptions();
 				$optionrows = array();
 				$optionnames = array();
-				
+
 				if (count($options) > 0) {
 
 					foreach ($options as $option) {
@@ -775,7 +775,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 								
 								$row = array();
 								
-								$row[] = array('skuid' => $SKUID, 'code' => $ov['sku'], 'optionname' => $o['title'], 'optionvalue' => $ov['title'], 'optionprice' => $ov['price']);
+								$row[] = array('skuid' => $SKUID, 'code' => $ov['sku'], 'optionname' => $o['title'], 'optionvalue' => $ov['title'], 'optionprice' => $ov['price']/(1+($percent/100)) );
 								
 								$optionrows[] = $row;
 							
@@ -787,7 +787,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$optionnames[] = $o['title'];
 						
 					}
-					
+
 					//Cross Multiply all the product options and their attributes to create discreet SKUs with individual prices
 					$seen = array();
 					if(count($optionnames) > 0) {
@@ -801,19 +801,32 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									
 								if(in_array($optionname, $seen))
 									continue;
-											
+
 								$value = $optionrow[0]['optionvalue'];
 								$code = $optionrow[0]['code'];
 								$optionskuid = $optionrow[0]['skuid'];
 								$price = $optionrow[0]['optionprice'];
+			
+								if(count($optionnames) == 1) {
+								
+									$cprice =  $productprice / (1+($percent/100)) + $price;
+								
+									$POV->execute(array($optionskuid, $code, $optionname, $value, $price));
+									$PO->execute(array($optionskuid, $code, $product['entity_id'], -1, 1, $cprice, -1));										
+
+								} else {
+								
 									foreach($optionrows as $optionrow2) {
+
 										if($optionname != $optionrow2[0]['optionname'] && $value != $optionrow2[0]['optionvalue']) {
+
 											$coptionname = $optionname . '-' . $optionrow2[0]['optionname'];
 											$cvalue =  $value . '-' . $optionrow2[0]['optionvalue'];
 											$ccode =  $code. '-' . $optionrow2[0]['code'];
 											$coptionskuid =  $optionskuid . '-' . $optionrow2[0]['skuid'];
-											$cprice =  $productprice + $price + $optionrow2[0]['optionprice']; // (1+($percent/100)
-										
+											$cprice =  $productprice / (1+($percent/100)) + $price + $optionrow2[0]['optionprice']; // (1+($percent/100)
+											if($ccode == '-')
+												$ccode = null;
 											$POV->execute(array($coptionskuid, $ccode, $optionrow2[0]['optionname'], $optionrow2[0]['optionvalue'], $optionrow2[0]['optionprice']));
 											$POV->execute(array($coptionskuid, $ccode, $optionname, $value, $price));
 											$PO->execute(array($coptionskuid, $ccode, $product['entity_id'], -1, 1, $cprice, -1));
@@ -821,6 +834,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 											$seen[] = $optionrow2[0]['optionname'];
 										}
 									}
+								}
 							}
 						}
 					}

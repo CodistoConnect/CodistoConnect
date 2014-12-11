@@ -58,6 +58,15 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					}
 				}
 				
+				$querystring = '?';
+				foreach($request->getQuery() as $k=>$v) {
+					$querystring .= urlencode($k).'='.urlencode($v)."&";
+				}
+				
+				if($querystring != '?') {
+					$remoteUrl.=$querystring;
+				}
+				
 				// proxy request
 				$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true ));
 				
