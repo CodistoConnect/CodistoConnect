@@ -412,7 +412,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			->setPageSize($pageSize);
 
 		$pages = $configurableCollection->getLastPageNumber();
-		$insertedProducts = array();
 			
 		$insertedProducts = array();
 		for($i=1; $i<=$pages; $i++) {
