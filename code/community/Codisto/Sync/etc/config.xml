@@ -28,6 +28,7 @@
 			</depends>
 		</Codisto_Sync>
 	</modules>
+
 	<frontend>
 		<routers>
 			<codisto-sync>
@@ -39,12 +40,38 @@
 			</codisto-sync>
 		</routers>
 	</frontend>
+    <layout>
+        <updates>
+            <codisto>
+                <file>codisto.xml</file>
+            </codisto>
+        </updates>
+    </layout>
 	<global>
 		<models>
+            <!-- custom model extending Mage_Payment_Model_Method_Abstract -->
 			<ebaypayment>
 				<class>Codisto_Sync_Ebaypayment_Model</class>
 			</ebaypayment>
+
+            <paymentinfo>
+                <class>Codisto_Sync_Model</class>
+            </paymentinfo>
+
 		</models>
+
+        <events>
+            <payment_info_block_prepare_specific_information>
+                <observers>
+                    <codisto>
+                        <type>singleton</type>
+                        <class>Codisto_Sync_Model_Observer</class>
+                        <method>paymentInfoBlockPrepareSpecificInformation</method>
+                    </codisto>
+                </observers>
+            </payment_info_block_prepare_specific_information>
+        </events>
+
 		<fieldsets>
 			<sales_convert_quote>
 				<codisto_orderid>
@@ -82,10 +109,13 @@
 			<modulename>
 				<class>Codisto_Sync_Block</class>
 			</modulename>
-			<adminhtml>
+
+
+            <adminhtml>
 				<rewrite>
 					<catalog_product_edit_tabs>Codisto_Sync_Block_Adminhtml_Tabs</catalog_product_edit_tabs>
 				</rewrite>
+
 			</adminhtml>
 		</blocks>
 	</global>
@@ -98,6 +128,7 @@
 				</codisto-sync>
 			</routers>
 		</web>
+
 		<payment>
 			<ebaypayment>
 				<active>1</active>
@@ -109,4 +140,5 @@
 			</ebaypayment>
 		</payment>
 	</default>
+
 </config>

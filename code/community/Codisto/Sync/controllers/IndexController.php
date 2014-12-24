@@ -19,6 +19,8 @@
  */
 class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 {
+	protected $_PayPalmethodType = Mage_Paypal_Model_Config::METHOD_WPP_EXPRESS;
+
 	public function calcAction()
 	{
 		$request = $this->getRequest();
@@ -131,7 +133,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		{
 			if($content_type == "text/xml")
 			{
-
 				$xml = simplexml_load_string(file_get_contents("php://input"));
 		
 				$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
@@ -192,9 +193,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
 		
 		$currencyCode = $ordercontent->transactcurrency[0];
-		$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
-		if(!$ebaysalesrecordnumber)
-			$ebaysalesrecordnumber = '';
+
 		$freightcarrier = 'Post';
 		$freightservice = 'Freight';
 
@@ -299,10 +298,10 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$quote = Mage::getModel('sales/quote');
 		$quote->assignCustomer($customer);
 				
-		$quote->getPayment()->setMethod('ebaypayment');
-		
-		$billingAddress  = $quote->getBillingAddress()->addData($addressData_billing);
-		$shippingAddress = $quote->getShippingAddress()->addData($addressData_shipping);
+		$quote->getPayment()->setMethod($this->_PayPalmethodType);
+
+		$quote->getBillingAddress()->addData($addressData_billing);
+		$quote->getShippingAddress()->addData($addressData_shipping);
 		
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
@@ -453,7 +452,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		} else {
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been captured");
 		}
-		
+
  		if($ordercontent->paymentstatus == 'complete') {
 			$order->setBaseTotalPaid($basegrandtotal);
 			$order->setTotalPaid($basegrandtotal);
@@ -465,7 +464,22 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$payment->setBaseAmountPaid($totalinc);
 			}
 		}
-		
+
+		$payment = $order->getPayment();
+		$payment->setMethod($this->_PayPalmethodType);
+		Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
+
+		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
+
+		$payment->setTransactionId($paypaltransactionid)
+			->setParentTransactionId(null)
+			->setIsTransactionClosed(1);
+
+		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT);
+		$transaction->save();
+
+		$payment->save();
+
 		$order->place();
 		$order->save();
 
@@ -478,10 +492,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 	private function ProcessOrderSync($codistoorderid, $xml)
 	{
 		$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $codistoorderid)->getFirstItem();
-		
 		$orderstatus = $order->getState();
 		$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
-		$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
 
 		$freightcarrier = 'Post';
 		$freightservice = 'Freight';
@@ -516,7 +528,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setGrandTotal($subtotal + $freighttotal);
 		$order->setBaseGrandTotal($subtotal + $freighttotal);
 		$order->setBaseShippingTaxAmount($taxpercent);
-
 
 		/* States: cancelled, processing, captured, inprogress, complete */
 		if($ordercontent->orderstate == 'captured' && ($orderstatus!='pending' || $orderstatus!='new')) {
@@ -575,7 +586,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				}
 			}
 		}
-		
+
 		if($ordercontent->paymentstatus == 'complete') {
 			$order->setBaseTotalPaid($basegrandtotal);
 			$order->setTotalPaid($basegrandtotal);
@@ -583,13 +594,20 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$order->setTotalDue('0');
 			$order->setDue('0');
 			$order->getAllPayments();
-			foreach($payments as $key=>$payment) {
-				$payment->setBaseAmountPaid($totalinc);
-			}
+
 		}
 		
-		$order->setMethod('ebaypayment');
-		
+		$payment = $order->getPayment();
+		$payment->setMethod($this->_PayPalmethodType);
+		Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
+
+		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
+
+		$payment->setTransactionId($paypaltransactionid)
+			->setParentTransactionId(null)
+			->setIsTransactionClosed(1);
+
+		$payment->save();
 		$order->save();
 		
 		$response = $this->getResponse();
