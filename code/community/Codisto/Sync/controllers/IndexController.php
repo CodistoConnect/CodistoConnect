@@ -507,7 +507,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			->setIsTransactionClosed(1);
 			
 		$payment->setMethod($this->_PayPalmethodType);
-		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, "");
+		//$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, "");
+		
 		$payment->save();
 
 		$quote->setIsActive(false)->save();
@@ -628,7 +629,10 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$payment->setMethod($this->_PayPalmethodType);
 		Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
 
-		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
+		
+
+		//$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
+		$paypaltransactionid = "yolo";
 		$payment->setTransactionId($paypaltransactionid)
 			->setParentTransactionId(null)
 			->setIsTransactionClosed(1);
@@ -637,7 +641,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->save();
 		
 		$response = $this->getResponse();
-		$response->setBody(print_r($ordercontent));
 	}
 	
 	private function getRegionCollection($countryCode)
