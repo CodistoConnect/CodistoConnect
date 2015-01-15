@@ -297,7 +297,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$quote = Mage::getModel('sales/quote');
 		$quote->assignCustomer($customer);
 				
-		$quote->getPayment()->setMethod($this->_PayPalmethodType);
 
 		$quote->getBillingAddress()->addData($addressData_billing);
 		$quote->getShippingAddress()->addData($addressData_shipping);
@@ -473,7 +472,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 
 		$payment = $order->getPayment();
-		$payment->setMethod($this->_PayPalmethodType);
+		
 		Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
 
 		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
@@ -481,8 +480,12 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$payment->setTransactionId($paypaltransactionid)
 			->setParentTransactionId(null)
 			->setIsTransactionClosed(1);
-
+		
 		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT);
+		
+		//need to safe guard against the user not having paypal payment method activated.
+		//if it is not activated then peraps we should activate it. on a fresh vps it wasn't activated and fales
+		$payment->setMethod($this->_PayPalmethodType);
 		$transaction->save();
 
 		$payment->save();
