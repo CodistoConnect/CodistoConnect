@@ -391,7 +391,15 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$shippingAddress->setShippingAmountForDiscount(0);
 
 		$quote->collectTotals();
+		
+		/*Setting the pyment method on the quote object when the order is placed it tries to hit the payment gateway
+		   <div class="trace">
+            		<pre>PayPal gateway has rejected request. You do not have permissions to make this API call (#10002: Authentication/Authorization Failed).<br />
+			<strong>Trace:</strong>
 
+		*/
+		//$quote->getPayment()->setMethod($this->_PayPalmethodType);
+	
 		$paypalavailable = Mage::getSingleton('paypal/express')->isAvailable();
 		if($paypalavailable) {
 			$quote->getPayment()->setMethod($this->_PayPalmethodType);
@@ -399,13 +407,18 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$ebaypaymentmethod = 'ebaypayment';
 			$quote->getPayment()->setMethod($ebaypaymentmethod);
 		}
-	
+
+			
+		
 		$quote->save();
 		
 		$convertquote = Mage::getSingleton('sales/convert_quote');
+		$order = $convertquote->toOrder($quote);
 		
 
-		$order = $convertquote->toOrder($quote);
+		//$payment = $order->getPayment();
+		//$payment->setMethod($this->_PayPalmethodType);
+
 		$convertquote->addressToOrder($quote->getShippingAddress(), $order);
 		$order->setGlobal_currency_code($currencyCode);
 		$order->setBase_currency_code($currencyCode);
@@ -482,18 +495,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 
 		$payment = $order->getPayment();
-		if($payment)
-			syslog(LOG_INFO, "payment is not null");
-		else
-			syslog(LOG_INFO, "payment is null.. that kind of makes life hard");
-		//TODO confirm this check happens everywhere payment method is set such as update order case
-		if($paypalavailable) {
-			$payment->setMethod($this->_PayPalmethodType);
-		} else {
-			$ebaypaymentmethod = 'ebaypayment';
-			$payment->setMethod($ebaypaymentmethod);
-		}
-	
+		
 		Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
 		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
 
@@ -503,7 +505,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$payment->setTransactionId($paypaltransactionid)
 			->setParentTransactionId(null)
 			->setIsTransactionClosed(1);
-		
+			
+		$payment->setMethod($this->_PayPalmethodType);
 		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, "");
 		$payment->save();
 
@@ -626,7 +629,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
 
 		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
-
 		$payment->setTransactionId($paypaltransactionid)
 			->setParentTransactionId(null)
 			->setIsTransactionClosed(1);
