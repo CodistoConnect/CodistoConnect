@@ -391,15 +391,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$shippingAddress->setShippingAmountForDiscount(0);
 
 		$quote->collectTotals();
-		
-		/*Setting the pyment method on the quote object when the order is placed it tries to hit the payment gateway
-		   <div class="trace">
-            		<pre>PayPal gateway has rejected request. You do not have permissions to make this API call (#10002: Authentication/Authorization Failed).<br />
-			<strong>Trace:</strong>
-
-		*/
-		//$quote->getPayment()->setMethod($this->_PayPalmethodType);
-	
+			
 		$paypalavailable = Mage::getSingleton('paypal/express')->isAvailable();
 		if($paypalavailable) {
 			$quote->getPayment()->setMethod($this->_PayPalmethodType);
@@ -407,17 +399,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$ebaypaymentmethod = 'ebaypayment';
 			$quote->getPayment()->setMethod($ebaypaymentmethod);
 		}
-
-			
-		
+	
 		$quote->save();
 		
 		$convertquote = Mage::getSingleton('sales/convert_quote');
 		$order = $convertquote->toOrder($quote);
-		
-
-		//$payment = $order->getPayment();
-		//$payment->setMethod($this->_PayPalmethodType);
 
 		$convertquote->addressToOrder($quote->getShippingAddress(), $order);
 		$order->setGlobal_currency_code($currencyCode);
