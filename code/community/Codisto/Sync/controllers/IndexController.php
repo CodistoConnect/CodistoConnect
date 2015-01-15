@@ -135,11 +135,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			{
 				$xml = simplexml_load_string(file_get_contents("php://input"));
 		
-				$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
-		
-
-				//syslog(LOG_INFO, print_r($ordercontent, 1));
-	
+				$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');	
 				$orders = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $ordercontent->orderid);
 
 				$ordermatch = false;
@@ -156,12 +152,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					if(!$ordercontent->reason)
 						$ordercontent->reason = "OrderCreated";
 
-				//syslog(LOG_INFO, print_r($ordercontent, 1));
-
 				if($ordercontent &&
 						$ordercontent->reason == "OrderCreated")
 					{
-						syslog(LOG_INFO, "Creating a new order");
 						$this->ProcessOrderCreate($xml, null);
 					}
 					
@@ -346,7 +339,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						$validOrderLineCount++;
 					$product = Mage::getModel('catalog/product')->load($prodid);
 					if (!($stockItem = $product->getStockItem())) {
-						syslog(LOG_INFO, "Got here - Stock Item must be empty");
 						$stockItem = Mage::getModel('cataloginventory/stock_item');
 						$stockItem->assignProduct($product)
 								  ->setData('stock_id', 1)
