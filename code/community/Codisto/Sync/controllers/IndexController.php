@@ -497,29 +497,15 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
 		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
 
-		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, "");
-		if($transaction)
-			syslog(LOG_INFO, "tranasction id not null");
-		else
-			syslog(LOG_INFO, "transaction is null");
-		
-		$transaction->setParentTxnId($paypaltransactionid);
-		$transaction->setIsClosed(1);
-		$transaction->save();
-		/*
+		$order->place();
+		$order->save();
+
 		$payment->setTransactionId($paypaltransactionid)
 			->setParentTransactionId(null)
 			->setIsTransactionClosed(1);
-
-		*/
-		//$transpayment = $transaction->getOrderPaymentObject();
-		//syslog(LOG_INFO, print_r($transaction, 1));
-		//syslog(LOG_INFO, print_r($transaction, 1));
-
+		
+		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, "");
 		$payment->save();
-
-		$order->place();
-		$order->save();
 
 		$quote->setIsActive(false)->save();
 
