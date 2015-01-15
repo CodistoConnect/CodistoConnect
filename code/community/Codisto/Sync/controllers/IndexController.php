@@ -391,10 +391,23 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$shippingAddress->setShippingAmountForDiscount(0);
 
 		$quote->collectTotals();
-		
+
+		$paypalavailable = Mage::getSingleton('paypal/express')->isAvailable();
+		if($paypalavailable) {
+			$quote->getPayment()->setMethod($this->_PayPalmethodType);
+		} else {
+			//$ebaypaymentmethod = Mage::getSingleton('ebaypayment/paymentmethod');	
+			$ebaypaymentmethod = 'ebaypayment';
+			syslog(LOG_INFO, print_r($ebaypaymentmethod, 1));
+			$quote->getPayment()->setMethod($ebaypaymentmethod);
+			syslog(LOG_INFO, print_r($quote->getPayment()->getMethod(), 1));
+		}
+	
 		$quote->save();
 		
 		$convertquote = Mage::getSingleton('sales/convert_quote');
+		
+
 		$order = $convertquote->toOrder($quote);
 		$convertquote->addressToOrder($quote->getShippingAddress(), $order);
 		$order->setGlobal_currency_code($currencyCode);
@@ -480,12 +493,18 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$payment->setTransactionId($paypaltransactionid)
 			->setParentTransactionId(null)
 			->setIsTransactionClosed(1);
-		
+
+
+		//TODO confirm this check happens everywhere payment method is set such as update order case
+		$paypalavailable = Mage::getSingleton('paypal/express')->isAvailable();
+		if($paypalavailable) {
+			$payment->setMethod($this->_PayPalmethodType);
+		} else {
+			$ebaypaymentmethod = 'ebaypayment';
+			$payment->setMethod($ebaypaymentmethod);
+		}
+
 		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT);
-		
-		//need to safe guard against the user not having paypal payment method activated.
-		//if it is not activated then peraps we should activate it. on a fresh vps it wasn't activated and fales
-		$payment->setMethod($this->_PayPalmethodType);
 		$transaction->save();
 
 		$payment->save();
