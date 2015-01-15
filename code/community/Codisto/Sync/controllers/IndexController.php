@@ -396,11 +396,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		if($paypalavailable) {
 			$quote->getPayment()->setMethod($this->_PayPalmethodType);
 		} else {
-			//$ebaypaymentmethod = Mage::getSingleton('ebaypayment/paymentmethod');	
 			$ebaypaymentmethod = 'ebaypayment';
-			syslog(LOG_INFO, print_r($ebaypaymentmethod, 1));
 			$quote->getPayment()->setMethod($ebaypaymentmethod);
-			syslog(LOG_INFO, print_r($quote->getPayment()->getMethod(), 1));
 		}
 	
 		$quote->save();
@@ -485,27 +482,39 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 
 		$payment = $order->getPayment();
-		
-		Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
-
-		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
-
-		$payment->setTransactionId($paypaltransactionid)
-			->setParentTransactionId(null)
-			->setIsTransactionClosed(1);
-
-
+		if($payment)
+			syslog(LOG_INFO, "payment is not null");
+		else
+			syslog(LOG_INFO, "payment is null.. that kind of makes life hard");
 		//TODO confirm this check happens everywhere payment method is set such as update order case
-		$paypalavailable = Mage::getSingleton('paypal/express')->isAvailable();
 		if($paypalavailable) {
 			$payment->setMethod($this->_PayPalmethodType);
 		} else {
 			$ebaypaymentmethod = 'ebaypayment';
 			$payment->setMethod($ebaypaymentmethod);
 		}
+	
+		Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
+		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
 
-		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT);
+		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, "");
+		if($transaction)
+			syslog(LOG_INFO, "tranasction id not null");
+		else
+			syslog(LOG_INFO, "transaction is null");
+		
+		$transaction->setParentTxnId($paypaltransactionid);
+		$transaction->setIsClosed(1);
 		$transaction->save();
+		/*
+		$payment->setTransactionId($paypaltransactionid)
+			->setParentTransactionId(null)
+			->setIsTransactionClosed(1);
+
+		*/
+		//$transpayment = $transaction->getOrderPaymentObject();
+		//syslog(LOG_INFO, print_r($transaction, 1));
+		//syslog(LOG_INFO, print_r($transaction, 1));
 
 		$payment->save();
 
