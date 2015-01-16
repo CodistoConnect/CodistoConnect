@@ -96,6 +96,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	
 	public function configUpdateAction()
 	{ // End Point: index.php/codisto-sync/sync/configUpdate
+
 		$request = $this->getRequest();
 		$response = $this->getResponse();
 
@@ -233,6 +234,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$syncDb = Mage::getBaseDir("var") . "/eziimport0.db";
 		if (file_exists($syncDb))
 			unlink($syncDb);
+
+		$request = $this->getRequest();
+		$productref = $request->getQuery('productref');
 
 		// Generate the temporary DB
 		$db = new PDO("sqlite:" . $syncDb);
@@ -405,7 +409,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$store = Mage::app()->getStore('default');
 
 		$pageSize = 20;
-		
+
 		// Products: CONFIGURABLE
 		$configurableCollection = Mage::getModel('catalog/product')->getCollection()
 			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
@@ -597,11 +601,21 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			$configurableCollection->clear();
 		}
 
-		// Products: SIMPLE
-		$collection = Mage::getModel('catalog/product')->getCollection()
-			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
-			->addAttributeToFilter('type_id', array('eq' => 'simple'));
-			
+		//$collection will either be the whole collection or the single product
+
+
+		if($productref) {
+			//I'm not sure how php will work with this .. do I have to do some sort of casting or perhaps create an array and push this into it for collection to be enumerable here?
+			$collection =  Mage::getModel('catalog/product')->load($productId);
+		} else {
+			// Products: SIMPLE
+			//void getCollection () is the method signature... I nounderstand. should be returning void.. umm what? how is $collection assigned then if it returns void?
+			$collection = Mage::getModel('catalog/product')->getCollection()
+				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
+				->addAttributeToFilter('type_id', array('eq' => 'simple'));
+		}
+
+
 		$pages = $collection->getLastPageNumber();		
 		for($i=1; $i<=$pages; $i++) {
 
