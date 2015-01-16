@@ -224,6 +224,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		fclose($f);
 	}
 
+	//this needs to be modified to handle a single product id with an external reference
 	private function Sync()
 	{
 		ini_set('max_execution_time', 300);
