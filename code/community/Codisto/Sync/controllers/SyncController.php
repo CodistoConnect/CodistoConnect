@@ -280,7 +280,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$db->query("CREATE TABLE SKUMatrix
 						(
 							SKUExternalReference TEXT NOT NULL,
-							Code TEXT NOT NULL,
+							Code TEXT,
 							OptionName TEXT NOT NULL,
 							OptionValue TEXT NOT NULL,
 							PriceModifier TEXT
@@ -289,7 +289,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$db->query("CREATE TABLE OptionMatrix
 						(
 							SKUExternalReference TEXT NOT NULL,
-							Code TEXT NOT NULL,
+							Code TEXT,
 							OptionName TEXT NOT NULL,
 							OptionValue TEXT NOT NULL,
 							PriceModifier TEXT
@@ -413,19 +413,16 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		$pages = $configurableCollection->getLastPageNumber();
 			
+		$insertedProducts = array();
 		for($i=1; $i<=$pages; $i++) {
 
 			$configurableCollection->setCurPage($i);
-			$insertedProducts = array();
 
 			foreach ($configurableCollection as $productConfigurableData) {
 				$product = $productConfigurableData->getData();
 				$productloader = Mage::getModel('catalog/product')->load($product['entity_id']);
-				
-				$taxCalculation = Mage::getModel('tax/calculation');
-				$request = $taxCalculation->getRateRequest(null, null, null, $store);
-				$taxClassId = $productloader->getTaxClassId();
-				$percent = $taxCalculation->getRate($request->setProductClassId($taxClassId));
+
+				$percent = $productConfigurableData->getData('tax_percent');
 				if($percent === 0 || !$percent)
 					$percent = 10;			
 				
@@ -581,7 +578,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					foreach($configurableAttributes as $attribute)
 					{
 						$productAttribute = $attribute->getProductAttribute();
-						$SKUMatrixDD->execute(array($child->getId(), $productAttribute->getAttributeCode(), $child->getAttributeText($productAttribute->getAttributeCode()), $pricemodifier));
+						$SKUMatrixDD->execute(array($child->getId(), "", $productAttribute->getAttributeCode(), $child->getAttributeText($productAttribute->getAttributeCode()), $pricemodifier));
 					}
 
 					//TODO : Delete the sku options when there is only one choice.
@@ -612,11 +609,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			foreach ($collection as $productData) {
 				$product = $productData->getData();
 				$productloader = Mage::getModel('catalog/product')->load($product['entity_id']);
-				
-				$taxCalculation = Mage::getModel('tax/calculation');
-				$request = $taxCalculation->getRateRequest(null, null, null, $store);
-				$taxClassId = $productData->getTaxClassId();
-				$percent = $taxCalculation->getRate($request->setProductClassId($taxClassId));
+
+				$percent = $productData->getData('tax_percent');
 				if($percent === 0 || !$percent)
 					$percent = 10;
 
@@ -687,7 +681,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					$fields['Enabled'] = 0;
 				else
 					$fields['Enabled'] = -1;
-
+					
 				$query = array();
 				$query[] = "INSERT INTO Product(";
 				$query[] = implode(array_keys($fields), ",");
@@ -717,16 +711,35 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				// ProductImages
 				$productData->load('media_gallery');
 				$insertImages = $db->prepare("INSERT INTO ProductImage(ProductExternalReference, URL, Sequence) VALUES(?,?,?)");
+				$hasimage = false;
 				foreach ($productData->getMediaGalleryImages() as $image) {
 					if ($image->getDisabled() != 0) continue;
 					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+					$hasimage = true;
+				}
+				
+				if(!$hasimage) {
+					//Get Group Product image
+					$groupedparentsid = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($product['entity_id']);
+					foreach ($groupedparentsid as $parentid) {
+						$parentloader = Mage::getModel('catalog/product')->load($parentid);
+						foreach ($parentloader->getMediaGalleryImages() as $image) {
+							$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+						}
+					}
+				}
+
+				if(!isset($product['description']) || preg_replace('/\s/', '', $product['description']) == '') {
+					$parentid = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($product['entity_id'])->getFirstItem();
+					if($parentid)
+						$product['description'] = $parentloader = Mage::getModel('catalog/product')->load($parentid)->description;
 				}
 
 				// ProductOptions
-				$options = $product->getOptions();
+				$options = $productloader->getOptions();
 				$optionrows = array();
 				$optionnames = array();
-				
+
 				if (count($options) > 0) {
 
 					foreach ($options as $option) {
@@ -762,7 +775,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 								
 								$row = array();
 								
-								$row[] = array('skuid' => $SKUID, 'code' => $ov['sku'], 'optionname' => $o['title'], 'optionvalue' => $ov['title'], 'optionprice' => $ov['price']);
+								$row[] = array('skuid' => $SKUID, 'code' => $ov['sku'], 'optionname' => $o['title'], 'optionvalue' => $ov['title'], 'optionprice' => $ov['price']/(1+($percent/100)) );
 								
 								$optionrows[] = $row;
 							
@@ -774,8 +787,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$optionnames[] = $o['title'];
 						
 					}
-					
-					//Cross Multiply all the product options and their attributes to create discreet SKUs with individuaul prices
+
+					//Cross Multiply all the product options and their attributes to create discreet SKUs with individual prices
 					$seen = array();
 					if(count($optionnames) > 0) {
 						foreach($optionnames as $optionname1) {
@@ -788,19 +801,32 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									
 								if(in_array($optionname, $seen))
 									continue;
-											
+
 								$value = $optionrow[0]['optionvalue'];
 								$code = $optionrow[0]['code'];
 								$optionskuid = $optionrow[0]['skuid'];
 								$price = $optionrow[0]['optionprice'];
+			
+								if(count($optionnames) == 1) {
+								
+									$cprice =  $productprice / (1+($percent/100)) + $price;
+								
+									$POV->execute(array($optionskuid, $code, $optionname, $value, $price));
+									$PO->execute(array($optionskuid, $code, $product['entity_id'], -1, 1, $cprice, -1));										
+
+								} else {
+								
 									foreach($optionrows as $optionrow2) {
+
 										if($optionname != $optionrow2[0]['optionname'] && $value != $optionrow2[0]['optionvalue']) {
+
 											$coptionname = $optionname . '-' . $optionrow2[0]['optionname'];
 											$cvalue =  $value . '-' . $optionrow2[0]['optionvalue'];
 											$ccode =  $code. '-' . $optionrow2[0]['code'];
 											$coptionskuid =  $optionskuid . '-' . $optionrow2[0]['skuid'];
-											$cprice =  $productprice + $price + $optionrow2[0]['optionprice']; // (1+($percent/100)
-										
+											$cprice =  $productprice / (1+($percent/100)) + $price + $optionrow2[0]['optionprice']; // (1+($percent/100)
+											if($ccode == '-')
+												$ccode = null;
 											$POV->execute(array($coptionskuid, $ccode, $optionrow2[0]['optionname'], $optionrow2[0]['optionvalue'], $optionrow2[0]['optionprice']));
 											$POV->execute(array($coptionskuid, $ccode, $optionname, $value, $price));
 											$PO->execute(array($coptionskuid, $ccode, $product['entity_id'], -1, 1, $cprice, -1));
@@ -808,6 +834,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 											$seen[] = $optionrow2[0]['optionname'];
 										}
 									}
+								}
 							}
 						}
 					}

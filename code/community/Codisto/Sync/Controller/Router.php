@@ -22,8 +22,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 	public function match(Zend_Controller_Request_Http $request)
 	{
 		$path = $request->getPathInfo();
-	
-		if(0 === strpos($path, '/admin/codisto/'))
+
+		if(preg_match("/^\/[a-zA-z0-9-_]+\/codisto\//", $path))
 		{
 			$request->setDispatched(true);
 			
@@ -40,13 +40,13 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			{
 				if (preg_match("/\.css|\.js|\.woff|\.ttf|\/images\//i", $path)) {
 					
-					$remotePath = preg_replace('/^\/admin\/codisto\/ebaytab\/product\/\d+\/?|key\/[a-zA-z0-9]*\//', '', $path);
+					$remotePath = preg_replace('/^\/[a-zA-z0-9-_]+\/codisto\/ebaytab\/product\/\d+\/?|key\/[a-zA-z0-9]*\//', '', $path);
 
 					$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/' . $remotePath;
 				
 				} else {
 				
-					$remotePath = preg_replace('/^\/admin\/codisto\/ebaytab\/?|key\/[a-zA-z0-9]*\//', '', $path);
+					$remotePath = preg_replace('/^\/[a-zA-z0-9-_]+\/codisto\/ebaytab\/?|key\/[a-zA-z0-9]*\//', '', $path);
 					
 					if($MerchantID && $HostID)
 					{
@@ -56,6 +56,15 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					{
 						$remoteUrl = 'https://ui.codisto.com/' . $remotePath;
 					}
+				}
+				
+				$querystring = '?';
+				foreach($request->getQuery() as $k=>$v) {
+					$querystring .= urlencode($k).'='.urlencode($v)."&";
+				}
+				
+				if($querystring != '?') {
+					$remoteUrl.=$querystring;
 				}
 				
 				// proxy request
