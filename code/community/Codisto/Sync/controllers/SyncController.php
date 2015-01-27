@@ -599,7 +599,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		// Products: SIMPLE
 		$collection = Mage::getModel('catalog/product')->getCollection()
 			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
-			->addAttributeToFilter('type_id', array('eq' => 'simple'));
+			->addAttributeToFilter('type_id', array('eq' => 'simple'))
+			->setPageSize($pageSize);
+
 			
 		$pages = $collection->getLastPageNumber();		
 		for($i=1; $i<=$pages; $i++) {
