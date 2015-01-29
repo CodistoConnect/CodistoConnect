@@ -23,6 +23,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	public function indexAction()
 	{
+		syslog(LOG_INFO, "In indexaction");
 		$response = $this->getResponse();
 	
 		$this->getConfig();
@@ -30,7 +31,11 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$request->setDispatched(true);
 		$server = $request->getServer();
 
+		syslog(LOG_INFO, print_r($_SERVER, 1));
+
+
 		if (isset($server['HTTP_X_SYNC'])) {
+			syslog(LOG_INFO, " SYNC HEADER IS SET YAY");
 			if (!isset($server['HTTP_X_ACTION'])) {
 				$server['HTTP_X_ACTION'] = "";
 			}
@@ -42,6 +47,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						die;
 					}
 				case "EXECUTE":
+					
 					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
 						$this->Sync();
 						$response->setBody('done');
@@ -157,6 +163,23 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	private function getConfig()
 	{
+		//$configModel = Mage::getModel('core/config');
+		//$configModel->saveConfig('codisto/ezimerchant/merchantid','TEST');
+
+		Mage::getModel("core/config")->saveConfig("codisto/merchantid", 28955);
+		Mage::getModel("core/config")->saveConfig("codisto/apikey", "Troll lol lol");
+		Mage::getModel("core/config")->saveConfig("codisto/hostkey", "pH5qPANuaaQKEii0LGFWKg==");
+		syslog(LOG_INFO, "saving the config");
+		Mage::getModel("core/config")->saveConfig("codisto/hostid", "1");
+
+
+		Mage::getModel("core/config")->saveConfig("codisto/partnerid", "7");
+		Mage::getModel("core/config")->saveConfig("codisto/partnerkey", "Troll lol lol");
+
+
+
+
+
 		$response = $this->getResponse();
 		$this->config = array(
 			"MerchantID" => Mage::getStoreConfig('codisto/merchantid'),
@@ -228,6 +251,19 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	//this needs to be modified to handle a single product id with an external reference
 	private function Sync()
 	{
+		//syslog(LOG_INFO, print_r($_SERVER, 1));
+		/*
+		syslog(LOG_INFO, $_SERVER['HTTP_HOST']);
+		syslog(LOG_INFO, $_SERVER['REQUEST_URI']);
+		syslog(LOG_INFO, $_SERVER['REQUEST_METHOD']);
+		syslog(LOG_INFO, $_SERVER['SERVER_PROTOCOL']);
+		syslog(LOG_INFO, "Showingheaders \n");
+		
+		foreach (getallheaders() as $name => $value) {
+   			 echo "$name: $value\n";
+		}
+		*/
+
 		syslog(LOG_INFO, "In sync");
 		ini_set('max_execution_time', 300);
 		

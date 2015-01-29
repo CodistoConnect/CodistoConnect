@@ -22,7 +22,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 	public function match(Zend_Controller_Request_Http $request)
 	{
 		$path = $request->getPathInfo();
-
+		syslog(LOG_INFO, "path is " .$path);
 		if(preg_match("/^\/[a-zA-z0-9-_]+\/codisto\//", $path))
 		{
 			$request->setDispatched(true);
@@ -52,6 +52,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					
 					if($MerchantID && $HostID)
 					{
+						syslog(LOG_INFO, "host id is ". $HostID);
 						$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/frame/' . $HostID . '/' . $remotePath;
 					}
 					else
