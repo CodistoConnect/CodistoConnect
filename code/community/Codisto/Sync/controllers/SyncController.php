@@ -31,11 +31,10 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$request->setDispatched(true);
 		$server = $request->getServer();
 
-		syslog(LOG_INFO, print_r($_SERVER, 1));
+	//	syslog(LOG_INFO, print_r($_SERVER, 1));
 
 
 		if (isset($server['HTTP_X_SYNC'])) {
-			syslog(LOG_INFO, " SYNC HEADER IS SET YAY");
 			if (!isset($server['HTTP_X_ACTION'])) {
 				$server['HTTP_X_ACTION'] = "";
 			}
@@ -58,6 +57,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					$response->setBody("No Action");
 					$response->sendResponse();
 			}
+		} else {
+			syslog(LOG_INFO, "x_sync header is missing !!");
 		}
 	}
 	
@@ -274,6 +275,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		$request = $this->getRequest();
 		$productref = $request->getQuery('productref');
+
+		syslog(LOG_INFO, "product ref is " . $productref);
+
 
 		// Generate the temporary DB
 		$db = new PDO("sqlite:" . $syncDb);
@@ -642,10 +646,11 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 
 		if($productref) {
-			syslog(LOG_INFO, "Product ref is " . $productref);
+			syslog(LOG_INFO, "Getting single products for" . $productref);
 			//I'm not sure how php will work with this .. do I have to do some sort of casting or perhaps create an array and push this into it for collection to be enumerable here?
 			
 			$collection =  Mage::getModel('catalog/product')->load($productref);
+			syslog(LOG_INFO, print_r($collection, 1));
 			//$collection =  Mage::getModel('catalog/product')->load($productId);
 		} else {
 			// Products: SIMPLE
