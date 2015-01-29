@@ -228,6 +228,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	//this needs to be modified to handle a single product id with an external reference
 	private function Sync()
 	{
+		syslog(LOG_INFO, "In sync");
 		ini_set('max_execution_time', 300);
 		
 		// Clear the temporary DB
@@ -605,8 +606,11 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 
 		if($productref) {
+			syslog(LOG_INFO, "Product ref is " . $productref);
 			//I'm not sure how php will work with this .. do I have to do some sort of casting or perhaps create an array and push this into it for collection to be enumerable here?
-			$collection =  Mage::getModel('catalog/product')->load($productId);
+			
+			$collection =  Mage::getModel('catalog/product')->load($productref);
+			//$collection =  Mage::getModel('catalog/product')->load($productId);
 		} else {
 			// Products: SIMPLE
 			//void getCollection () is the method signature... I nounderstand. should be returning void.. umm what? how is $collection assigned then if it returns void?

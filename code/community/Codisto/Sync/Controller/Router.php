@@ -34,6 +34,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			$HostID = Mage::getStoreConfig('codisto/hostid');
 			$HostKey = Mage::getStoreConfig('codisto/hostkey');
 
+			syslog(LOG_INFO, "MerchantID is ". $MerchantID);
+
 			Mage::getSingleton('core/session', array('name'=>'adminhtml'));
 				
 			if(Mage::getSingleton('admin/session')->isLoggedIn())
@@ -57,7 +59,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						$remoteUrl = 'https://ui.codisto.com/' . $remotePath;
 					}
 				}
-				
+				syslog(LOG_INFO, "remoteurl is " .$remoteUrl);				
 				$querystring = '?';
 				foreach($request->getQuery() as $k=>$v) {
 					$querystring .= urlencode($k).'='.urlencode($v)."&";
@@ -85,7 +87,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					$client->setRawData($requestBody);
 	
 				$remoteResponse = $client->request($request->getMethod());
-				
+				syslog(LOG_INFO, "Status is " . $remoteResponse->getStatus());				
 				if($remoteResponse->getStatus() == 403 &&
 					$remoteResponse->getHeader("Content-Type") == "application/json")
 				{
