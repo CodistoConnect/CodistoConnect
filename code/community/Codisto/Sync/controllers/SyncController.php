@@ -19,7 +19,6 @@
  */
 class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 {
-	var $blah = 123;
 	var $config = array();
 
 	public function indexAction()
@@ -159,22 +158,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	private function getConfig()
 	{
-		//$configModel = Mage::getModel('core/config');
-		//$configModel->saveConfig('codisto/ezimerchant/merchantid','TEST');
-
-		Mage::getModel("core/config")->saveConfig("codisto/merchantid", 28955);
-		Mage::getModel("core/config")->saveConfig("codisto/apikey", "Troll lol lol");
-		Mage::getModel("core/config")->saveConfig("codisto/hostkey", "pH5qPANuaaQKEii0LGFWKg==");
-		Mage::getModel("core/config")->saveConfig("codisto/hostid", "1");
-
-
-		Mage::getModel("core/config")->saveConfig("codisto/partnerid", "7");
-		Mage::getModel("core/config")->saveConfig("codisto/partnerkey", "Troll lol lol");
-
-
-
-
-
 		$response = $this->getResponse();
 		$this->config = array(
 			"MerchantID" => Mage::getStoreConfig('codisto/merchantid'),
@@ -243,7 +226,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		fclose($f);
 	}
 
-	//this needs to be modified to handle a single product id with an external reference
 	private function Sync()
 	{
 		ini_set('max_execution_time', 300);
@@ -631,9 +613,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			}
 			$configurableCollection->clear();
 		}
-
-		//$collection will either be the whole collection or the single product
-
 
 		if($productref) {
 
