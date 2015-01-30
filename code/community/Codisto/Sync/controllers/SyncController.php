@@ -465,7 +465,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			$configurableCollection = Mage::getModel('catalog/product')->getCollection()
 			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
 			->addAttributeToFilter('type_id', array('eq' => 'configurable'))
-			->addAttributeToFilter('entity_id', array('eq' => $productref;
+			->addAttributeToFilter('entity_id', array('eq' => $productref))
 			->setPageSize($pageSize);
 
 		} else {
@@ -677,7 +677,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			$collection = Mage::getModel('catalog/product')->getCollection()
 				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
 				->addAttributeToFilter('type_id', array('eq' => 'simple'))
-				->addAttributeToFilter('entity_id', array('eq' => $productref;
+				->addAttributeToFilter('entity_id', array('eq' => $productref));
 
 	
 			syslog(LOG_INFO, print_r($collection, 1));
