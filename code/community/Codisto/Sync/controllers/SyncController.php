@@ -42,6 +42,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						die;
 					}
 				case "EXECUTE":
+					
 					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
 						$this->Sync();
 						$response->setBody('done');
@@ -52,7 +53,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					$response->setBody("No Action");
 					$response->sendResponse();
 			}
-		}
+		} 
 	}
 	
 	public function checkPluginAction()
@@ -96,6 +97,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	
 	public function configUpdateAction()
 	{ // End Point: index.php/codisto-sync/sync/configUpdate
+
 		$request = $this->getRequest();
 		$response = $this->getResponse();
 
@@ -233,6 +235,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$syncDb = Mage::getBaseDir("var") . "/eziimport0.db";
 		if (file_exists($syncDb))
 			unlink($syncDb);
+
+		$request = $this->getRequest();
+		$productref = $request->getQuery('productref');
 
 		// Generate the temporary DB
 		$db = new PDO("sqlite:" . $syncDb);
@@ -406,11 +411,24 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		$pageSize = 20;
 		
-		// Products: CONFIGURABLE
-		$configurableCollection = Mage::getModel('catalog/product')->getCollection()
+		if($productref) {
+
+			$configurableCollection = Mage::getModel('catalog/product')->getCollection()
+			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
+			->addAttributeToFilter('type_id', array('eq' => 'configurable'))
+			->addAttributeToFilter('entity_id', array('eq' => $productref))
+			->setPageSize($pageSize);
+
+		} else {
+			
+			$configurableCollection = Mage::getModel('catalog/product')->getCollection()
 			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
 			->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 			->setPageSize($pageSize);
+
+		}
+
+
 
 		$pages = $configurableCollection->getLastPageNumber();
 			
@@ -603,13 +621,22 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			$configurableCollection->clear();
 		}
 
-		// Products: SIMPLE
-		$collection = Mage::getModel('catalog/product')->getCollection()
-			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
-			->addAttributeToFilter('type_id', array('eq' => 'simple'))
-			->setPageSize($pageSize);
+		if($productref) {
 
-			
+			$collection = Mage::getModel('catalog/product')->getCollection()
+				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
+				->addAttributeToFilter('type_id', array('eq' => 'simple'))
+				->addAttributeToFilter('entity_id', array('eq' => $productref));
+
+	
+		} else {
+			$collection = Mage::getModel('catalog/product')->getCollection()
+				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
+				->addAttributeToFilter('type_id', array('eq' => 'simple'))
+				->setPageSize($pageSize);
+		}
+
+
 		$pages = $collection->getLastPageNumber();		
 		for($i=1; $i<=$pages; $i++) {
 
