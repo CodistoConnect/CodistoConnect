@@ -24,16 +24,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	public function indexAction()
 	{
-		syslog(LOG_INFO, "In indexaction");
 		$response = $this->getResponse();
 	
 		$this->getConfig();
 		$request = $this->getRequest();
 		$request->setDispatched(true);
 		$server = $request->getServer();
-
-	//	syslog(LOG_INFO, print_r($_SERVER, 1));
-
 
 		if (isset($server['HTTP_X_SYNC'])) {
 			if (!isset($server['HTTP_X_ACTION'])) {
@@ -58,9 +54,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					$response->setBody("No Action");
 					$response->sendResponse();
 			}
-		} else {
-			syslog(LOG_INFO, "x_sync header is missing !!");
-		}
+		} 
 	}
 	
 	public function checkPluginAction()
@@ -171,7 +165,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		Mage::getModel("core/config")->saveConfig("codisto/merchantid", 28955);
 		Mage::getModel("core/config")->saveConfig("codisto/apikey", "Troll lol lol");
 		Mage::getModel("core/config")->saveConfig("codisto/hostkey", "pH5qPANuaaQKEii0LGFWKg==");
-		syslog(LOG_INFO, "saving the config");
 		Mage::getModel("core/config")->saveConfig("codisto/hostid", "1");
 
 
@@ -231,7 +224,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	private function Send()
 	{
-		syslog(LOG_INFO, "Sending the SQL Lite DB back to ezi so it can import the products");
 		$syncDb = Mage::getBaseDir("var") . "/eziimport0.db";
 		$f = fopen($syncDb, "rb");
 
@@ -244,8 +236,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		header('Content-Transfer-Encoding: binary');
 		header('Content-Length: ' . filesize($syncDb));
 
-		syslog(LOG_INFO, "Filesize to send is ". filesize($syncDb));
-
 		while (!feof($f)) {
 			echo fread($f, 1024);
 			flush();
@@ -256,7 +246,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	//this needs to be modified to handle a single product id with an external reference
 	private function Sync()
 	{
-		syslog(LOG_INFO, "In sync");
 		ini_set('max_execution_time', 300);
 		
 		// Clear the temporary DB
@@ -266,9 +255,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		$request = $this->getRequest();
 		$productref = $request->getQuery('productref');
-
-		syslog(LOG_INFO, "product ref is " . $productref);
-
 
 		// Generate the temporary DB
 		$db = new PDO("sqlite:" . $syncDb);
@@ -441,25 +427,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$store = Mage::app()->getStore('default');
 
 		$pageSize = 20;
-
-		// Products: CONFIGURABLE
-
-/*
-		if($productref) {
-			syslog(LOG_INFO, "Getting single configurable product for" . $productref);
-			
-			$collection =  Mage::getModel('catalog/product')->load($productref);
-			syslog(LOG_INFO, print_r($collection, 1));
-			//$collection =  Mage::getModel('catalog/product')->load($productId);
-		} else {
-			// Products: SIMPLE
-			//void getCollection () is the method signature... I nounderstand. should be returning void.. umm what? how is $collection assigned then if it returns void?
-			$collection = Mage::getModel('catalog/product')->getCollection()
-				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
-				->addAttributeToFilter('type_id', array('eq' => 'simple'));
-		}
-
-*/
+		
 		if($productref) {
 
 			$configurableCollection = Mage::getModel('catalog/product')->getCollection()
@@ -668,11 +636,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 
 		if($productref) {
-			syslog(LOG_INFO, "Getting single products for" . $productref);
-			//I'm not sure how php will work with this .. do I have to do some sort of casting or perhaps create an array and push this into it for collection to be enumerable here?
-
-			//TODO get rid of this load - I need to add a where clause to the query below
-		
 
 			$collection = Mage::getModel('catalog/product')->getCollection()
 				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
@@ -680,11 +643,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				->addAttributeToFilter('entity_id', array('eq' => $productref));
 
 	
-			syslog(LOG_INFO, print_r($collection, 1));
-			//$collection =  Mage::getModel('catalog/product')->load($productId);
 		} else {
-			// Products: SIMPLE
-			//void getCollection () is the method signature... I nounderstand. should be returning void.. umm what? how is $collection assigned then if it returns void?
 			$collection = Mage::getModel('catalog/product')->getCollection()
 				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
 				->addAttributeToFilter('type_id', array('eq' => 'simple'));
