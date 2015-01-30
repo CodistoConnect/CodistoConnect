@@ -22,6 +22,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 	public function match(Zend_Controller_Request_Http $request)
 	{
 		$path = $request->getPathInfo();
+
 		if(preg_match("/^\/[a-zA-z0-9-_]+\/codisto\//", $path))
 		{
 			$request->setDispatched(true);
@@ -56,6 +57,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						$remoteUrl = 'https://ui.codisto.com/' . $remotePath;
 					}
 				}
+				
 				$querystring = '?';
 				foreach($request->getQuery() as $k=>$v) {
 					$querystring .= urlencode($k).'='.urlencode($v)."&";
@@ -83,6 +85,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					$client->setRawData($requestBody);
 	
 				$remoteResponse = $client->request($request->getMethod());
+				
 				if($remoteResponse->getStatus() == 403 &&
 					$remoteResponse->getHeader("Content-Type") == "application/json")
 				{
