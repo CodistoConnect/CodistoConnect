@@ -228,6 +228,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	private function Sync()
 	{
+		
 		ini_set('max_execution_time', 300);
 		
 		// Clear the temporary DB
@@ -511,12 +512,18 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				foreach ($categoryIds as $categoryId) {
 					$insertCategory->execute(array($product['entity_id'], $categoryId, 0));
 				}
-
+				
 				// ProductImages
 				$productConfigurableData->load('media_gallery');
 				foreach ($productConfigurableData->getMediaGalleryImages() as $image) {
 					if ($image->getDisabled() != 0) continue;
-					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+
+					$sequence = $image->getPosition() + 1;
+					if((string)Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA).'catalog/product'.$productConfigurableData->getImage() == (string)$image->getUrl()) {
+						$sequence = 0;
+					}
+
+					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $sequence));
 				}
 				
 				//the configurable product id
@@ -625,7 +632,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		} else {
 			$collection = Mage::getModel('catalog/product')->getCollection()
 				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
-				->addAttributeToFilter('type_id', array('eq' => 'simple'));
+				->addAttributeToFilter('type_id', array('eq' => 'simple'))
+				->setPageSize($pageSize);
 		}
 
 
@@ -742,7 +750,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				$hasimage = false;
 				foreach ($productData->getMediaGalleryImages() as $image) {
 					if ($image->getDisabled() != 0) continue;
-					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+
+					$sequence = $image->getPosition() + 1;
+					if((string)Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA).'catalog/product'.$product->getImage() == (string)$image->getUrl()) {
+						$sequence = 0;
+					}
+					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $sequence));				
+					
 					$hasimage = true;
 				}
 				
