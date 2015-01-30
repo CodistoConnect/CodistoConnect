@@ -29,7 +29,8 @@ class Codisto_Sync_Block_Adminhtml_Tabs extends Mage_Adminhtml_Block_Catalog_Pro
 		$entity_id = $this->getProduct()->getEntityId();
 
 		if(isset($entity_id))
-		{		
+		{
+
 			$url = Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/', array('product' => $entity_id));
 
 			//add new tab

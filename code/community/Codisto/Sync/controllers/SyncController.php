@@ -19,6 +19,7 @@
  */
 class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 {
+	var $blah = 123;
 	var $config = array();
 
 	public function indexAction()
@@ -230,6 +231,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	private function Send()
 	{
+		syslog(LOG_INFO, "Sending the SQL Lite DB back to ezi so it can import the products");
 		$syncDb = Mage::getBaseDir("var") . "/eziimport0.db";
 		$f = fopen($syncDb, "rb");
 
@@ -242,6 +244,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		header('Content-Transfer-Encoding: binary');
 		header('Content-Length: ' . filesize($syncDb));
 
+		syslog(LOG_INFO, "Filesize to send is ". filesize($syncDb));
+
 		while (!feof($f)) {
 			echo fread($f, 1024);
 			flush();
@@ -252,19 +256,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	//this needs to be modified to handle a single product id with an external reference
 	private function Sync()
 	{
-		//syslog(LOG_INFO, print_r($_SERVER, 1));
-		/*
-		syslog(LOG_INFO, $_SERVER['HTTP_HOST']);
-		syslog(LOG_INFO, $_SERVER['REQUEST_URI']);
-		syslog(LOG_INFO, $_SERVER['REQUEST_METHOD']);
-		syslog(LOG_INFO, $_SERVER['SERVER_PROTOCOL']);
-		syslog(LOG_INFO, "Showingheaders \n");
-		
-		foreach (getallheaders() as $name => $value) {
-   			 echo "$name: $value\n";
-		}
-		*/
-
 		syslog(LOG_INFO, "In sync");
 		ini_set('max_execution_time', 300);
 		
@@ -452,10 +443,41 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$pageSize = 20;
 
 		// Products: CONFIGURABLE
-		$configurableCollection = Mage::getModel('catalog/product')->getCollection()
+
+/*
+		if($productref) {
+			syslog(LOG_INFO, "Getting single configurable product for" . $productref);
+			
+			$collection =  Mage::getModel('catalog/product')->load($productref);
+			syslog(LOG_INFO, print_r($collection, 1));
+			//$collection =  Mage::getModel('catalog/product')->load($productId);
+		} else {
+			// Products: SIMPLE
+			//void getCollection () is the method signature... I nounderstand. should be returning void.. umm what? how is $collection assigned then if it returns void?
+			$collection = Mage::getModel('catalog/product')->getCollection()
+				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
+				->addAttributeToFilter('type_id', array('eq' => 'simple'));
+		}
+
+*/
+		if($productref) {
+
+			$configurableCollection = Mage::getModel('catalog/product')->getCollection()
+			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
+			->addAttributeToFilter('type_id', array('eq' => 'configurable'))
+			->addAttributeToFilter('entity_id', array('eq' => $productref;
+			->setPageSize($pageSize);
+
+		} else {
+			
+			$configurableCollection = Mage::getModel('catalog/product')->getCollection()
 			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
 			->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 			->setPageSize($pageSize);
+
+		}
+
+
 
 		$pages = $configurableCollection->getLastPageNumber();
 			
@@ -648,8 +670,16 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		if($productref) {
 			syslog(LOG_INFO, "Getting single products for" . $productref);
 			//I'm not sure how php will work with this .. do I have to do some sort of casting or perhaps create an array and push this into it for collection to be enumerable here?
-			
-			$collection =  Mage::getModel('catalog/product')->load($productref);
+
+			//TODO get rid of this load - I need to add a where clause to the query below
+		
+
+			$collection = Mage::getModel('catalog/product')->getCollection()
+				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
+				->addAttributeToFilter('type_id', array('eq' => 'simple'))
+				->addAttributeToFilter('entity_id', array('eq' => $productref;
+
+	
 			syslog(LOG_INFO, print_r($collection, 1));
 			//$collection =  Mage::getModel('catalog/product')->load($productId);
 		} else {
