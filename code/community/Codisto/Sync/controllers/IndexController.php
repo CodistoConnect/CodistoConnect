@@ -513,6 +513,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$orderstatus = $order->getState();
 		$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
 
+		$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
+		if(!$ebaysalesrecordnumber)
+			$ebaysalesrecordnumber = '';
+
+
 		$freightcarrier = 'Post';
 		$freightservice = 'Freight';
 		$freighttotal =  0;
