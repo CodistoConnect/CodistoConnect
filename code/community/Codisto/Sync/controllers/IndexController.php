@@ -203,7 +203,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$billing_address = $ordercontent->orderaddresses->orderaddress[0];
 		$billing_first_name = $billing_last_name = "";
 
-		if(strpos($billing_address->name, " ") > 0) {
+		if(strpos($billing_address->name, " ") !== false) {
 			$billing_name = explode(" ", $billing_address->name, 2);
 			$billing_first_name = $billing_name[0];
 			$billing_last_name = $billing_name[1];
@@ -214,7 +214,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$shipping_address = $ordercontent->orderaddresses->orderaddress[1];
 		$shipping_first_name = $shipping_last_name = "";
 
-		if(strpos($shipping_address->name, " ") > 0) {
+		if(strpos($shipping_address->name, " ") !== false) {
 			$shipping_name = explode(" ", $shipping_address->name, 2);
 			$shipping_first_name = $shipping_name[0];
 			$shipping_last_name = $shipping_name[1];
