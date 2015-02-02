@@ -642,7 +642,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		
 		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
 		if($paypaltransactionid) {
-			$payment->setTransactionId($paypaltransactionid)
+			$payment->setTransactionId($paypaltransactionid);
 		}
 
 		$payment->setParentTransactionId(null)
