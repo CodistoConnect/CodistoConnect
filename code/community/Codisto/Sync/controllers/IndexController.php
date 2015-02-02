@@ -390,7 +390,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		
 		$shippingAddress = $quote->getShippingAddress();
 		$shippingAddress->addShippingRate($rate);
-		$shippingAddress->setShippingMethod('flatrate');
+		$shippingAddress->setShippingMethod('flatrate_flatrate');
 		$shippingAddress->setShippingDescription($freightservice);
 		$shippingAddress->setShippingAmountForDiscount(0);
 
@@ -534,7 +534,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$freightservice = $orderline->productname[0];
 			}
 		}
-		
+
+		$order->setShippingMethod('flatrate_flatrate');
 		$order->setShippingDescription($freightservice);
 		$order->setBaseShippingAmount($freighttotal);
 		$order->setShippingAmount($freighttotal);
