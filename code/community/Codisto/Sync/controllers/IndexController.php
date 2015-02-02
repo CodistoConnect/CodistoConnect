@@ -201,10 +201,27 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$freightservice = 'Freight';
 
 		$billing_address = $ordercontent->orderaddresses->orderaddress[0];
-		$billing_name = explode(" ", $billing_address->name, 2);
+		$billing_first_name = $billing_last_name = "";
+
+		if(strpos($billing_address->name, " ") !== false) {
+			$billing_name = explode(" ", $billing_address->name, 2);
+			$billing_first_name = $billing_name[0];
+			$billing_last_name = $billing_name[1];
+		} else {
+			$billing_first_name = $billing_address->name;
+		}
+
 		$shipping_address = $ordercontent->orderaddresses->orderaddress[1];
-		$shipping_name = explode(" ", $shipping_address->name, 2);
-		
+		$shipping_first_name = $shipping_last_name = "";
+
+		if(strpos($shipping_address->name, " ") !== false) {
+			$shipping_name = explode(" ", $shipping_address->name, 2);
+			$shipping_first_name = $shipping_name[0];
+			$shipping_last_name = $shipping_name[1];
+		} else {
+			$shipping_first_name = $shipping_address->name;
+		}
+
 		$customer = Mage::getModel('customer/customer');
 		$customer->setWebsiteId(Mage::app()->getWebsite()->getId());
 		$customer->loadByEmail($billing_address->email);
@@ -223,8 +240,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 		
 		$addressData_billing = array(
-									'firstname' => $billing_name[0],
-									'lastname' => $billing_name[1],
+									'firstname' => $billing_first_name,
+									'lastname' => $billing_last_name,
 									'street' => $billing_address->address1.','.$billing_address->address2,
 									'city' => $billing_address->place,
 									'postcode' => $billing_address->postalcode,
@@ -245,8 +262,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 				
 		$addressData_shipping = array(
-				'firstname' => $shipping_name[0],
-				'lastname' => $shipping_name[1],
+				'firstname' => $shipping_first_name,
+				'lastname' => $shipping_last_name,
 				'street' => $shipping_address->address1.','.$shipping_address->address2,
 				'city' => $shipping_address->place,
 				'postcode' => $shipping_address->postalcode,
@@ -272,8 +289,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$customer->setWebsiteId($websiteId);
 			$customer->setStoreId($storeId);
 			$customer->setEmail($billing_address->email);
-			$customer->setFirstname($billing_name[0]);
-			$customer->setLastname($billing_name[1]);
+			$customer->setFirstname($billing_first_name);
+			$customer->setLastname($billing_last_name);
 			$customer->setPassword('');
 			$customer->setData('group_id', $ebayGroup->getId());
 			$customer->save();
