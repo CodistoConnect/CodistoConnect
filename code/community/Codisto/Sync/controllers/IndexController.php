@@ -641,8 +641,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
 		
 		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
-		$payment->setTransactionId($paypaltransactionid)
-			->setParentTransactionId(null)
+		if($paypaltransactionid) {
+			$payment->setTransactionId($paypaltransactionid)
+		}
+
+		$payment->setParentTransactionId(null)
 			->setIsTransactionClosed(1);
 
 	
