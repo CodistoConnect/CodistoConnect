@@ -321,8 +321,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$quote->getBillingAddress()->addData($addressData_billing);
 		$quote->getShippingAddress()->addData($addressData_shipping);
-		
-		$validOrderLineCount = 0;
+
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
 			if($orderline->productcode[0] != 'FREIGHT')
@@ -355,8 +354,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					$prodid = $catalog->getIdBySku((string)$orderline->productcode[0]);
 					if(!$prodid)
 						continue;	
-					else
-						$validOrderLineCount++;
+
 					$product = Mage::getModel('catalog/product')->load($prodid);
 					if (!($stockItem = $product->getStockItem())) {
 						$stockItem = Mage::getModel('cataloginventory/stock_item');
@@ -383,10 +381,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				
 			}
 		}
-	
-		if($validOrderLineCount == 0) {
-			return;	
-		}
+
 		$freighttotal = 0;
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
@@ -509,8 +504,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->place();
 		$order->save();
 
-		$payment->setTransactionId($paypaltransactionid)
-			->setParentTransactionId(null)
+		if($paypaltransactionid) {
+			$payment->setTransactionId($paypaltransactionid);
+		}
+
+		$payment->setParentTransactionId(null)
 			->setIsTransactionClosed(1);
 			
 		$payment->setMethod($this->_PayPalmethodType);
