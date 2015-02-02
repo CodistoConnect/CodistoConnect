@@ -42,6 +42,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						die;
 					}
 				case "EXECUTE":
+					
 					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
 						$this->Sync();
 						$response->setBody('done');
@@ -52,7 +53,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					$response->setBody("No Action");
 					$response->sendResponse();
 			}
-		}
+		} 
 	}
 	
 	public function checkPluginAction()
@@ -96,6 +97,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	
 	public function configUpdateAction()
 	{ // End Point: index.php/codisto-sync/sync/configUpdate
+
 		$request = $this->getRequest();
 		$response = $this->getResponse();
 
@@ -226,12 +228,16 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	private function Sync()
 	{
+		
 		ini_set('max_execution_time', 300);
 		
 		// Clear the temporary DB
 		$syncDb = Mage::getBaseDir("var") . "/eziimport0.db";
 		if (file_exists($syncDb))
 			unlink($syncDb);
+
+		$request = $this->getRequest();
+		$productref = $request->getQuery('productref');
 
 		// Generate the temporary DB
 		$db = new PDO("sqlite:" . $syncDb);
@@ -280,7 +286,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$db->query("CREATE TABLE SKUMatrix
 						(
 							SKUExternalReference TEXT NOT NULL,
-							Code TEXT NOT NULL,
+							Code TEXT,
 							OptionName TEXT NOT NULL,
 							OptionValue TEXT NOT NULL,
 							PriceModifier TEXT
@@ -289,7 +295,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$db->query("CREATE TABLE OptionMatrix
 						(
 							SKUExternalReference TEXT NOT NULL,
-							Code TEXT NOT NULL,
+							Code TEXT,
 							OptionName TEXT NOT NULL,
 							OptionValue TEXT NOT NULL,
 							PriceModifier TEXT
@@ -405,15 +411,28 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		$pageSize = 20;
 		
-		// Products: CONFIGURABLE
-		$configurableCollection = Mage::getModel('catalog/product')->getCollection()
+		if($productref) {
+
+			$configurableCollection = Mage::getModel('catalog/product')->getCollection()
+			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
+			->addAttributeToFilter('type_id', array('eq' => 'configurable'))
+			->addAttributeToFilter('entity_id', array('eq' => $productref))
+			->setPageSize($pageSize);
+
+		} else {
+			
+			$configurableCollection = Mage::getModel('catalog/product')->getCollection()
 			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
 			->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 			->setPageSize($pageSize);
 
+		}
+
+
+
 		$pages = $configurableCollection->getLastPageNumber();
-		$insertedProducts = array();
 			
+		$insertedProducts = array();
 		for($i=1; $i<=$pages; $i++) {
 
 			$configurableCollection->setCurPage($i);
@@ -493,12 +512,18 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				foreach ($categoryIds as $categoryId) {
 					$insertCategory->execute(array($product['entity_id'], $categoryId, 0));
 				}
-
+				
 				// ProductImages
 				$productConfigurableData->load('media_gallery');
 				foreach ($productConfigurableData->getMediaGalleryImages() as $image) {
 					if ($image->getDisabled() != 0) continue;
-					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+
+					$sequence = $image->getPosition() + 1;
+					if((string)Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA).'catalog/product'.$productConfigurableData->getImage() == (string)$image->getUrl()) {
+						$sequence = 0;
+					}
+
+					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $sequence));
 				}
 				
 				//the configurable product id
@@ -578,7 +603,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					foreach($configurableAttributes as $attribute)
 					{
 						$productAttribute = $attribute->getProductAttribute();
-						$SKUMatrixDD->execute(array($child->getId(), $productAttribute->getAttributeCode(), $child->getAttributeText($productAttribute->getAttributeCode()), $pricemodifier));
+						$SKUMatrixDD->execute(array($child->getId(), "", $productAttribute->getAttributeCode(), $child->getAttributeText($productAttribute->getAttributeCode()), $pricemodifier));
 					}
 
 					//TODO : Delete the sku options when there is only one choice.
@@ -596,11 +621,22 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			$configurableCollection->clear();
 		}
 
-		// Products: SIMPLE
-		$collection = Mage::getModel('catalog/product')->getCollection()
-			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
-			->addAttributeToFilter('type_id', array('eq' => 'simple'));
-			
+		if($productref) {
+
+			$collection = Mage::getModel('catalog/product')->getCollection()
+				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
+				->addAttributeToFilter('type_id', array('eq' => 'simple'))
+				->addAttributeToFilter('entity_id', array('eq' => $productref));
+
+	
+		} else {
+			$collection = Mage::getModel('catalog/product')->getCollection()
+				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
+				->addAttributeToFilter('type_id', array('eq' => 'simple'))
+				->setPageSize($pageSize);
+		}
+
+
 		$pages = $collection->getLastPageNumber();		
 		for($i=1; $i<=$pages; $i++) {
 
@@ -714,7 +750,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				$hasimage = false;
 				foreach ($productData->getMediaGalleryImages() as $image) {
 					if ($image->getDisabled() != 0) continue;
-					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+
+					$sequence = $image->getPosition() + 1;
+					if((string)Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA).'catalog/product'.$product->getImage() == (string)$image->getUrl()) {
+						$sequence = 0;
+					}
+					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $sequence));				
+					
 					$hasimage = true;
 				}
 				
@@ -736,10 +778,10 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				}
 
 				// ProductOptions
-				$options = $product->getOptions();
+				$options = $productloader->getOptions();
 				$optionrows = array();
 				$optionnames = array();
-				
+
 				if (count($options) > 0) {
 
 					foreach ($options as $option) {
@@ -775,7 +817,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 								
 								$row = array();
 								
-								$row[] = array('skuid' => $SKUID, 'code' => $ov['sku'], 'optionname' => $o['title'], 'optionvalue' => $ov['title'], 'optionprice' => $ov['price']);
+								$row[] = array('skuid' => $SKUID, 'code' => $ov['sku'], 'optionname' => $o['title'], 'optionvalue' => $ov['title'], 'optionprice' => $ov['price']/(1+($percent/100)) );
 								
 								$optionrows[] = $row;
 							
@@ -787,7 +829,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$optionnames[] = $o['title'];
 						
 					}
-					
+
 					//Cross Multiply all the product options and their attributes to create discreet SKUs with individual prices
 					$seen = array();
 					if(count($optionnames) > 0) {
@@ -801,19 +843,32 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									
 								if(in_array($optionname, $seen))
 									continue;
-											
+
 								$value = $optionrow[0]['optionvalue'];
 								$code = $optionrow[0]['code'];
 								$optionskuid = $optionrow[0]['skuid'];
 								$price = $optionrow[0]['optionprice'];
+			
+								if(count($optionnames) == 1) {
+								
+									$cprice =  $productprice / (1+($percent/100)) + $price;
+								
+									$POV->execute(array($optionskuid, $code, $optionname, $value, $price));
+									$PO->execute(array($optionskuid, $code, $product['entity_id'], -1, 1, $cprice, -1));										
+
+								} else {
+								
 									foreach($optionrows as $optionrow2) {
+
 										if($optionname != $optionrow2[0]['optionname'] && $value != $optionrow2[0]['optionvalue']) {
+
 											$coptionname = $optionname . '-' . $optionrow2[0]['optionname'];
 											$cvalue =  $value . '-' . $optionrow2[0]['optionvalue'];
 											$ccode =  $code. '-' . $optionrow2[0]['code'];
 											$coptionskuid =  $optionskuid . '-' . $optionrow2[0]['skuid'];
-											$cprice =  $productprice + $price + $optionrow2[0]['optionprice']; // (1+($percent/100)
-										
+											$cprice =  $productprice / (1+($percent/100)) + $price + $optionrow2[0]['optionprice']; // (1+($percent/100)
+											if($ccode == '-')
+												$ccode = null;
 											$POV->execute(array($coptionskuid, $ccode, $optionrow2[0]['optionname'], $optionrow2[0]['optionvalue'], $optionrow2[0]['optionprice']));
 											$POV->execute(array($coptionskuid, $ccode, $optionname, $value, $price));
 											$PO->execute(array($coptionskuid, $ccode, $product['entity_id'], -1, 1, $cprice, -1));
@@ -821,6 +876,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 											$seen[] = $optionrow2[0]['optionname'];
 										}
 									}
+								}
 							}
 						}
 					}
