@@ -41,18 +41,18 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				if (preg_match("/\.css|\.js|\.woff|\.ttf|\/images\//i", $path)) {
 					
 					if(preg_match("/product\/\d+\//", $path)) {
-						$remotePath = preg_replace('/^\/admin\/codisto\/\w+\/product\/\d+\/?|key\/[a-zA-z0-9]*\//', '', $path);
+						$remotePath = preg_replace('/^\/[a-zA-z0-9-_]+\/codisto\/\w+\/product\/\d+\/?|key\/[a-zA-z0-9]*\//', '', $path);
 					} else {
-						$remotePath = preg_replace('/^\/admin\/codisto\/\w+\/?|key\/[a-zA-z0-9]*\//', '', $path);
+						$remotePath = preg_replace('/^\/[a-zA-z0-9-_]+\/codisto\/\w+\/?|key\/[a-zA-z0-9]*\//', '', $path);
 					}
 					$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/' . $remotePath;
 				
 				} else {
 				
 					if(preg_match("/product\/\d+\//", $path)) {
-						$remotePath = preg_replace('/^\/admin\/codisto\/ebaytab\/?|key\/[a-zA-z0-9]*\//', '', $path);
+						$remotePath = preg_replace('/^\/[a-zA-z0-9-_]+\/codisto\/ebaytab\/?|key\/[a-zA-z0-9]*\//', '', $path);
 					} else {	
-						$remotePath = preg_replace('/^\/admin\/codisto\/\/?|key\/[a-zA-z0-9]*\//', '', $path);
+						$remotePath = preg_replace('/^\/[a-zA-z0-9-_]+\/codisto\/\/?|key\/[a-zA-z0-9]*\//', '', $path);
 					}
 					if($MerchantID && $HostID)
 					{
