@@ -40,6 +40,8 @@ class Codisto_Sync_Model_Observer
 		$userid = Mage::getSingleton('admin/session')->getUser()->getId();
 		//$emailaddress = Mage::getModel('admin/user')->load($userid)->getData('email');
 
+		//TODO determine a nice endpoint
+		//the orderid 
 		$remoteResponse = $client->setRawData('{"type" : "magentoplugin","baseurl" : "' . $baseurl . '"}', 'application/json')->request('POST');
 
 		$data = json_decode($remoteResponse->getRawBody(), true);
