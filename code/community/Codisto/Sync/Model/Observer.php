@@ -28,15 +28,11 @@ class Codisto_Sync_Model_Observer
 		$shipment = $observer->getEvent()->getShipment();
 		$order = $shipment->getOrder();
 		$orderid = $order->getIncrementId();
-		syslog("Orderid is " . $orderid);
 
 		$MerchantID = Mage::getStoreConfig('codisto/merchantid');
-		//$HostID = Mage::getStoreConfig('codisto/hostid');
 		$HostKey = Mage::getStoreConfig('codisto/hostkey');
 
-		syslog(LOG_INFO, "MerchantID is ". $MerchantID);
 		$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/setebayfeedback';
-
 
 		$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true ));
 		$client->setUri($remoteUrl);
@@ -44,16 +40,10 @@ class Codisto_Sync_Model_Observer
 			$client->setHeaders(array('X-HostKey' => $HostKey));
 
 		$baseurl = Mage::getBaseUrl();
-		//$userid = Mage::getSingleton('admin/session')->getUser()->getId();
 
-		syslog(LOG_INFO, "Sending request to update ebayfeedback");
 		$_SERVER['MERCHANT'] = $MerchantID;
-		$remoteResponse = $client->setRawData('{"action" : "setebayfeedback" , "type" : "magentoplugin","baseurl" : "' . $baseurl . '", "orderid" :' . $orderid .'}', 'application/json')->request('POST');
-
-		//$data = json_decode($remoteResponse->getRawBody(), true);
-
-		syslog(LOG_INFO, print_r($remoteResponse, 1));
-
+		$client->setRawData('{"action" : "setebayfeedback" , "type" : "magentoplugin","baseurl" : "' . $baseurl . '", "orderid" :' . $orderid .'}', 'application/json')->request('POST');
+		
 		return $this;
 	}
 }
