@@ -5,7 +5,7 @@ class Codisto_Sync_Model_Observer
 
 	public function paymentInfoBlockPrepareSpecificInformation($observer)
 	{
-		if ($observer->getEvent()->getBlock()->getIsSecureMode()) {
+		if (!$observer->getEvent()->getBlock()->getIsSecureMode()) {
 			return;
 		}
 
@@ -25,16 +25,26 @@ class Codisto_Sync_Model_Observer
 
 	public function salesOrderShipmentSaveAfter(Varien_Event_Observer $observer)
 	{
+		if (!$observer->getEvent()->getBlock()->getIsSecureMode()) {
+			syslog(LOG_INFO, "Not secure");
+			return;
+		} else {
+			syslog(LOG_INFO, "Is secure - continuing");
+		}
+
 		$shipment = $observer->getEvent()->getShipment();
 		$order = $shipment->getOrder();
-
 		$orderid = $order->getIncrementId();
 
-		syslog(LOG_INFO, "Order id is " . $orderid);
-
 		$remoteUrl = "https://ui.codisto.com/setebayfeedback";
+		//$MerchantID = Mage::getStoreConfig('codisto/merchantid');
+		//$HostID = Mage::getStoreConfig('codisto/hostid');
+		$HostKey = Mage::getStoreConfig('codisto/hostkey');
 
 		$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true ));
+		if($HostKey)
+			$client->setHeaders(array('X-HostKey' => $HostKey));
+
 		$baseurl = Mage::getBaseUrl();
 		//$userid = Mage::getSingleton('admin/session')->getUser()->getId();
 
