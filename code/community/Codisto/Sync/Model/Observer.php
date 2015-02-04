@@ -47,6 +47,7 @@ class Codisto_Sync_Model_Observer
 		//$userid = Mage::getSingleton('admin/session')->getUser()->getId();
 
 		syslog(LOG_INFO, "Sending request to update ebayfeedback");
+		$_SERVER['MERCHANT'] = $MerchantID;
 		$remoteResponse = $client->setRawData('{"action" : "setebayfeedback" , "type" : "magentoplugin","baseurl" : "' . $baseurl . '", "orderid" :' . $orderid .'}', 'application/json')->request('POST');
 
 		//$data = json_decode($remoteResponse->getRawBody(), true);
