@@ -25,17 +25,21 @@ class Codisto_Sync_Block_Adminhtml_Tabs extends Mage_Adminhtml_Block_Catalog_Pro
 	{
 		//get all existing tabs
 		$this->parent = parent::_prepareLayout();
+		
+		$product = $this->getProduct();
 
-		$entity_id = $this->getProduct()->getEntityId();
+		$entity_id = $product->getEntityId();
+		$type = $product->getTypeId();
 
-		if(isset($entity_id))
+		if(isset($entity_id) && $type != 'grouped')
 		{		
-			$url = Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/', array('product' => $entity_id));
+			$url = Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/', array('product' => $entity_id, 'iframe' => true));
 
 			//add new tab
 			$this->addTab('tabid', array(
-				'label'     => 'Codisto eBay Plugin',
-				'content'   => "<iframe id='codisto' width=\"100%\" height=\"800\" style=\"border: none; \" src=\"${url}\"></iframe>"
+				'label'     => 'eBay',
+				'class'	    => 'ajax',
+				'url'	    => $url
 			));
 		}
 		

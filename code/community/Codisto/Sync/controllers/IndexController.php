@@ -501,7 +501,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
 		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
 
-		$order->place();
+		//$order->place();
 		$order->save();
 
 		if($paypaltransactionid) {

@@ -428,8 +428,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		}
 
-
-
 		$pages = $configurableCollection->getLastPageNumber();
 			
 		$insertedProducts = array();
