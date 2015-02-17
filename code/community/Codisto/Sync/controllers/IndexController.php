@@ -649,6 +649,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 	
 		$payment->save();
+		$order->save();
 		
 		$response = $this->getResponse();
 	}
