@@ -648,9 +648,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			->setIsTransactionClosed(1);
 
 	
-		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, "");
-
-
 		$payment->save();
 		$order->save();
 		
