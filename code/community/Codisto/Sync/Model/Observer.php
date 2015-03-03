@@ -27,23 +27,26 @@ class Codisto_Sync_Model_Observer
 	{
 		$shipment = $observer->getEvent()->getShipment();
 		$order = $shipment->getOrder();
-		$orderid = $order->getIncrementId();
+		$orderid = $order->getCodistoOrderid();
 
-		$MerchantID = Mage::getStoreConfig('codisto/merchantid');
-		$HostKey = Mage::getStoreConfig('codisto/hostkey');
+		if($orderid) {
 
-		$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/setebayfeedback';
+			$MerchantID = Mage::getStoreConfig('codisto/merchantid');
+			$HostKey = Mage::getStoreConfig('codisto/hostkey');
 
-		$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true ));
-		$client->setUri($remoteUrl);
-		if($HostKey)
-			$client->setHeaders(array('X-HostKey' => $HostKey));
+			$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/setebayfeedback';
 
-		$baseurl = Mage::getBaseUrl();
+			$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true ));
+			$client->setUri($remoteUrl);
+			if($HostKey)
+				$client->setHeaders(array('X-HostKey' => $HostKey));
 
-		$_SERVER['MERCHANT'] = $MerchantID;
-		$client->setRawData('{"action" : "setebayfeedback" , "type" : "magentoplugin","baseurl" : "' . $baseurl . '", "orderid" :' . $orderid .'}', 'application/json')->request('POST');
-		
+			$baseurl = Mage::getBaseUrl();
+
+			$_SERVER['MERCHANT'] = $MerchantID;
+			$client->setRawData('{"action" : "setebayfeedback" , "type" : "magentoplugin","baseurl" : "' . $baseurl . '", "orderid" :' . $orderid .'}', 'application/json')->request('POST');
+		}
+
 		return $this;
 	}
 }
