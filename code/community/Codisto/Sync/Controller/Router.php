@@ -87,8 +87,6 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					$remoteUrl.=$querystring;
 				}
 
-syslog(1, $remoteUrl);
-
 				// proxy request
 				$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true ));
 
@@ -98,9 +96,6 @@ syslog(1, $remoteUrl);
 				// set proxied headers
 				foreach($this->getAllHeaders() as $k=>$v)
 				{
-
-syslog(1, $k . ':' . $v);
-
 					if(strtolower($k) != "host")
 						$client->setHeaders($k, $v);
 				}
@@ -161,7 +156,6 @@ syslog(1, $k . ':' . $v);
 					$response->setHttpResponseCode($remoteResponse->getStatus());
 					foreach($remoteResponse->getHeaders() as $k => $v)
 					{
-syslog(1, 'response - ' . $k . ':' . $v);
 						if(!in_array(strtolower($k), array("server", "content-length", "transfer-encoding", "date", "connection"), true))
 							$response->setHeader($k, $v, true);
 					}
@@ -199,4 +193,3 @@ syslog(1, 'response - ' . $k . ':' . $v);
 		return $headers;
 	}
 }
-
