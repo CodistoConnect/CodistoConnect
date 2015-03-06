@@ -229,7 +229,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	private function Sync()
 	{
 		
-		ini_set('max_execution_time', 300);
+		ini_set('max_execution_time', -1);
 		
 		// Clear the temporary DB
 		$syncDb = Mage::getBaseDir("var") . "/eziimport0.db";
@@ -603,7 +603,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					foreach($configurableAttributes as $attribute)
 					{
 						$productAttribute = $attribute->getProductAttribute();
-						$SKUMatrixDD->execute(array($child->getId(), "", $productAttribute->getAttributeCode(), $child->getAttributeText($productAttribute->getAttributeCode()), $pricemodifier));
+						$SKUMatrixDD->execute(array($child->getId(), "", $productAttribute->getFrontendLabel(), $child->getAttributeText($productAttribute->getAttributeCode()), $pricemodifier));
 					}
 
 					//TODO : Delete the sku options when there is only one choice.
