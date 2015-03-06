@@ -62,6 +62,17 @@
                     </codisto>
                 </observers>
             </payment_info_block_prepare_specific_information>
+
+			<sales_order_shipment_save_after>
+				<observers>
+					<codisto>
+						<type>singleton</type>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>salesOrderShipmentSaveAfter</method>
+					</codisto>
+				</observers>
+			</sales_order_shipment_save_after>
+
         </events>
 
 		<fieldsets>
