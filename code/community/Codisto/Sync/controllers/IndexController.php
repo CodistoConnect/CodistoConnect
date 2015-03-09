@@ -197,14 +197,18 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$ordercontent = $xml->entry->content->children('http://api.ezimerchant.com/schemas/2009/');
 
 			$currencyCode = $ordercontent->transactcurrency[0];
-
+			$ordertotal = floatval($ordercontent->ordertotal[0]);
+			$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
+			$ordertaxtotal = floatval($ordercontent->ordertaxtotal[0]);
+			$taxpercent = 0;
+			
 			$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
 			if(!$ebaysalesrecordnumber)
 				$ebaysalesrecordnumber = '';
 
 			$freightcarrier = 'Post';
 			$freightservice = 'Freight';
-
+			
 			$billing_address = $ordercontent->orderaddresses->orderaddress[0];
 			$billing_first_name = $billing_last_name = "";
 
@@ -335,22 +339,26 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					$product->setSku($orderline->productcode[0]);
 					$product->setName($orderline->productname[0]);
 
-					$qty = $orderline->quantity[0];
-
+					$qty = (int)$orderline->quantity[0];
+					$subtotalinctax = floatval($orderline->linetotalinctax[0]);
+					$subtotal = floatval($orderline->linetotal[0]);
+					
 					$item = Mage::getModel('sales/quote_item');
 					$item->setProduct($product);
 					$item->setSku($orderline->productcode[0]);
 					$item->setName($orderline->productname[0]);
 					$item->setQty($qty);
-					$item->setPrice($orderline->price[0]);
-					$item->setPriceInclTax($orderline->priceinctax[0]);
-					$item->setOriginalPrice($orderline->listpriceinctax[0]);
-					$item->setDiscountAmount('0');
+ 					$item->setPrice(floatval($orderline->price[0]));
+					$item->setPriceInclTax(floatval($orderline->priceinctax[0]));
+ 					$item->setBasePrice(floatval($orderline->price[0]));
+					$item->setBasePriceInclTax(floatval($orderline->priceinctax[0]));
+					$item->setOriginalPrice(floatval($orderline->priceinctax[0]));
+					$item->setDiscountAmount(0);
 					$item->setWeight($orderline->weight[0]);
-					$item->setCustomPrice($orderline->priceinctax[0]);
-					$item->setOriginalCustomPrice($orderline->listpriceinctax[0]);
-					$item->setBasePriceInclTax(floatval(($orderline->listpriceinctax[0] * $qty)));
-					$item->setBaseRowTotalInclTax(floatval(($orderline->listpriceinctax[0] * $qty)));
+					$item->setBaseRowTotal($subtotal);
+					$item->setBaseRowTotalInclTax($subtotalinctax);
+					$item->setRowTotal($subtotal);
+					$item->setRowTotalInclTax($subtotalinctax);
 
 					$quote->addItem($item);
 
@@ -388,14 +396,21 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 
 			$freighttotal = 0;
+			$freighttotalextax = 0;
 			foreach($ordercontent->orderlines->orderline as $orderline)
 			{
 				if($orderline->productcode[0] == 'FREIGHT')
 				{
 					$freighttotal += floatval($orderline->linetotalinctax[0]);
+					$freighttotalextax += floatval($orderline->linetotalextax[0]);
 					$freightservice = $orderline->productname[0];
 				}
 			}
+			
+			if($freighttotalextax != 0) {
+				$taxrate = floatval($freighttotal / $freighttotalextax);
+				$taxpercent = (($freighttotal / $freighttotalextax) -1) * 100;
+			}			
 
 			$rate = Mage::getModel('sales/quote_address_rate');
 			$rate->setCode('flatrate');
@@ -460,10 +475,29 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				$taxamount = $store->roundPrice(floatval($orderline->linetotalinctax[0]) - floatval($orderline->linetotal[0]));
 
+				$qty = (int)$orderline->quantity[0];
+				$subtotalinctax = floatval($orderline->linetotalinctax[0]);
+				$subtotal = floatval($orderline->linetotal[0]);
+
 				$orderItem->setBaseTaxAmount($taxamount);
 				$orderItem->setTaxAmount($taxamount);
 				$orderItem->setTaxPercent(round(floatval($orderline->priceinctax[0]) / floatval($orderline->price[0]) - 1.0, 2) * 100);
-				$orderItem->setRowTotal(floatval($orderline->linetotal[0]));
+
+				$orderItem->setProduct($product);
+				$orderItem->setSku($orderline->productcode[0]);
+				$orderItem->setName($orderline->productname[0]);
+				$orderItem->setQty($qty);
+				$orderItem->setPrice(floatval($orderline->price[0]));
+				$orderItem->setPriceInclTax(floatval($orderline->priceinctax[0]));
+				$orderItem->setBasePrice(floatval($orderline->price[0]));
+				$orderItem->setBasePriceInclTax(floatval($orderline->priceinctax[0]));
+				$orderItem->setOriginalPrice(floatval($orderline->priceinctax[0]));
+				$orderItem->setDiscountAmount(0);
+				$orderItem->setWeight($orderline->weight[0]);
+				$orderItem->setBaseRowTotal($subtotal);
+				$orderItem->setBaseRowTotalInclTax($subtotalinctax);
+				$orderItem->setRowTotal($subtotal);
+				$orderItem->setRowTotalInclTax($subtotalinctax);
 
 				$order->addItem($orderItem);
 
@@ -490,14 +524,14 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 
 			if($ordercontent->paymentstatus == 'complete') {
-				$order->setBaseTotalPaid($basegrandtotal);
-				$order->setTotalPaid($basegrandtotal);
+				$order->setBaseTotalPaid($ordertotal);
+				$order->setTotalPaid($ordertotal);
 				$order->setBaseTotalDue('0');
 				$order->setTotalDue('0');
 				$order->setDue('0');
 				$order->getAllPayments();
 				foreach($payments as $key=>$payment) {
-					$payment->setBaseAmountPaid($totalinc);
+					$payment->setBaseAmountPaid($ordertotal);
 				}
 			}
 
@@ -505,8 +539,13 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 			Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
 			$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
+			
+			$order->setSubtotal($ordersubtotal + $ordertaxtotal);
+			$order->setBaseSubtotalInclTax($ordertotal - $freighttotal);
+			$order->setGrandTotal($ordertotal);
+			$order->setBaseGrandTotal($ordertotal);
+			$order->setBaseShippingTaxAmount($taxpercent);
 
-			$order->place();
 			$order->save();
 
 			if($paypaltransactionid) {
@@ -525,13 +564,16 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 			$connection->commit();
 
+			$response = $this->getResponse();
+			$response->setBody('OK');
+
 		}
 		catch(Exception $e) {
 			$connection->rollback();
+			$response = $this->getResponse();
+			$response->setHttpResponseCode(500)->setBody($e->getMessage() . "<br/>" . $e->getTraceAsString());
 		}
-
-		$response = $this->getResponse();
-		$response->setBody('OK');
+		
 	}
 	
 	private function ProcessOrderSync($codistoorderid, $xml)
@@ -549,6 +591,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			if(!$ebaysalesrecordnumber)
 				$ebaysalesrecordnumber = '';
 
+
+			$currencyCode = $ordercontent->transactcurrency[0];
+			$ordertotal = floatval($ordercontent->ordertotal[0]);
+			$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
+			$ordertaxtotal = floatval($ordercontent->ordertaxtotal[0]);
 
 			$freightcarrier = 'Post';
 			$freightservice = 'Freight';
@@ -577,12 +624,10 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$taxpercent = (($freighttotal / $freighttotalextax) -1) * 100;
 			}
 
-			$basegrandtotal = $order->getGrandTotal();
-			$subtotal = $order->getSubtotal();
-
-			$order->setBaseSubtotalInclTax($subtotal + $freighttotal);
-			$order->setGrandTotal($subtotal + $freighttotal);
-			$order->setBaseGrandTotal($subtotal + $freighttotal);
+			$order->setSubtotal($ordersubtotal + $ordertaxtotal);
+			$order->setBaseSubtotalInclTax($ordertotal - $freighttotal);
+			$order->setGrandTotal($ordertotal);
+			$order->setBaseGrandTotal($ordertotal);
 			$order->setBaseShippingTaxAmount($taxpercent);
 
 			/* States: cancelled, processing, captured, inprogress, complete */
@@ -644,15 +689,15 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 
 			if($ordercontent->paymentstatus == 'complete') {
-				$order->setBaseTotalPaid($basegrandtotal);
-				$order->setTotalPaid($basegrandtotal);
+				$order->setBaseTotalPaid($ordertotal);
+				$order->setTotalPaid($ordertotal);
 				$order->setBaseTotalDue('0');
 				$order->setTotalDue('0');
 				$order->setDue('0');
 				$order->getAllPayments();
 
 			}
-
+			
 			$payment = $order->getPayment();
 			$payment->setMethod($this->_PayPalmethodType);
 			Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
@@ -660,22 +705,27 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
 			if($paypaltransactionid) {
 				$payment->setTransactionId($paypaltransactionid);
-			}
+			}			
 
 			$payment->setParentTransactionId(null)
 				->setIsTransactionClosed(1);
 
-
 			$payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, "");
 			$payment->save();
 			$order->save();
-
+			
 			$connection->commit();
+
+			$response = $this->getResponse();
+			$response->setBody('OK');
+
 		}
 		catch(Exception $e) {
 			$connection->rollback();
+			$response = $this->getResponse();
+			$response->setHttpResponseCode(500)->setBody($e->getMessage() . "<br/>" . $e->getTraceAsString());
 		}
-		$response = $this->getResponse();
+		
 	}
 	
 	private function getRegionCollection($countryCode)
