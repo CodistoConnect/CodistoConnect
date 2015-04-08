@@ -21,7 +21,7 @@
 	<acl>
 		<resources>
 			<admin>
-				<children>                
+				<children>
 					<codisto translate="title">
 						<title>Top Level Codisto Menu Item</title>
 						<sort_order>1</sort_order>

@@ -25,14 +25,16 @@ class Codisto_Sync_Block_Adminhtml_Tabs extends Mage_Adminhtml_Block_Catalog_Pro
 	{
 		//get all existing tabs
 		$this->parent = parent::_prepareLayout();
-		
+
 		$product = $this->getProduct();
 
 		$entity_id = $product->getEntityId();
+
 		$type = $product->getTypeId();
 
 		if(isset($entity_id) && $type != 'grouped')
-		{		
+		{
+
 			$url = Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/', array('product' => $entity_id, 'iframe' => true));
 
 			//add new tab
@@ -42,7 +44,7 @@ class Codisto_Sync_Block_Adminhtml_Tabs extends Mage_Adminhtml_Block_Catalog_Pro
 				'url'	    => $url
 			));
 		}
-		
+
 		return $this->parent;
 	}
 }

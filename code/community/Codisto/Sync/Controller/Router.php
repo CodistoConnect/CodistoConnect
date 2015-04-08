@@ -34,13 +34,70 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			$response->clearAllHeaders();
 
 			$MerchantID = Mage::getStoreConfig('codisto/merchantid');
-			$HostID = Mage::getStoreConfig('codisto/hostid');
 			$HostKey = Mage::getStoreConfig('codisto/hostkey');
 
 			Mage::getSingleton('core/session', array('name'=>'adminhtml'));
 				
 			if(Mage::getSingleton('admin/session')->isLoggedIn())
 			{
+				if(!isset($MerchantID) || !isset($HostKey))
+				{
+					try
+					{
+						$client = new Zend_Http_Client("https://ui.codisto.com/create", array( 'keepalive' => true, 'maxredirects' => 0 ));
+						$client->setHeaders('Content-Type', 'application/json');
+						
+						for($retry = 0; ; $retry++)
+						{
+							try
+							{
+								$url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
+								$version = Mage::getVersion();
+								$storename = Mage::getStoreConfig('general/store_information/name');
+								$email = $user->getEmail();
+				
+								$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(), 'url' => $url, 'email' => $email, 'storename' => $storename )))->request('POST');
+								
+								if(!$remoteResponse->isSuccessful())
+									throw new Exception('Error Creating Account');
+				
+								$data = json_decode($remoteResponse->getRawBody(), true);
+				
+								if(isset($data['merchantid']) && $data['merchantid'] &&
+									isset($data['hostkey']) && $data['hostkey'])
+								{
+									Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['merchantid']);
+									Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['hostkey']);
+									
+									$MerchantID = $data['merchantid'];
+									$HostKey = $data['hostkey'];
+								}
+							}
+							catch(Exception $e)
+							{
+								if($retry < 3)
+								{
+									usleep(1000000);
+									continue;
+								}
+								
+								throw $e;
+							}
+							
+							break;
+						}
+					}
+					catch(Exception $e)
+					{
+						$response->setBody("<!DOCTYPE html><html><head></head><body><h1>Unable to Register</h1><p>Sorry, we were unable to register your Codisto account,
+						please contact <a href=\"mailto:support@codisto.com\">support@codisto.com</a> and our team will help to resolve the issue</p></body></html>");
+						
+						return true;
+					}
+				}
+				
+				
+				
 				if(preg_match("/product\/\d+\/iframe\/\d+\//", $path))
 				{
 					$tabPath = $request->getBaseUrl().preg_replace("/iframe\/\d+\//", '', $path);
@@ -59,6 +116,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					} else {
 						$remotePath = preg_replace('/^\/[a-zA-z0-9-_]+\/codisto\/\w+\/?|key\/[a-zA-z0-9]*\//', '', $path);
 					}
+					
 					$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/' . $remotePath;
 
 				} else {
@@ -68,9 +126,10 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					} else {
 						$remotePath = preg_replace('/^\/[a-zA-z0-9-_]+\/codisto\/\/?|key\/[a-zA-z0-9]*\//', '', $path);
 					}
-					if($MerchantID && $HostID)
+					
+					if($MerchantID)
 					{
-						$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/frame/' . $HostID . '/' . $remotePath;
+						$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/' . $remotePath;
 					}
 					else
 					{
@@ -86,13 +145,12 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				if($querystring != '?') {
 					$remoteUrl.=$querystring;
 				}
-
+				
 				// proxy request
 				$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true ));
 
 				$client->setHeaders("X-Admin-Base-Url", Mage::getModel('core/url')->getUrl('adminhtml/codisto/ebaytab/'));
 
-				
 				// set proxied headers
 				foreach($this->getAllHeaders() as $k=>$v)
 				{
@@ -100,57 +158,14 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						$client->setHeaders($k, $v);
 				}
 				
-				if($HostKey)
-					$client->setHeaders(array('X-HostKey' => $HostKey));
+				$client->setHeaders(array('X-HostKey' => $HostKey));
 
 				$requestBody = $request->getRawBody();
 				if($requestBody)
 					$client->setRawData($requestBody);
 	
 				$remoteResponse = $client->request($request->getMethod());
-				
-				if($remoteResponse->getStatus() == 403 &&
-					$remoteResponse->getHeader("Content-Type") == "application/json")
-				{
-					if($request->getQuery('retry'))
-					{
-						$response->setBody("<html><head></head><body><h1>Unable to Register</h1><p>Sorry, we were unable to register your Codisto account,
-						please contact <a href=\"mailto:support@codisto.com\">support@codisto.com</a> and our team will help to resolve the issue</p></body></html>");
-					}
-					else
-					{
-						$client->setUri("https://ui.codisto.com/register");
-						$baseurl = Mage::getBaseUrl();
-						$userid = Mage::getSingleton('admin/session')->getUser()->getId();
-						$emailaddress = Mage::getModel('admin/user')->load($userid)->getData('email');
-						
-						$remoteResponse = $client->setRawData('{"type" : "magentoplugin","baseurl" : "' . $baseurl . '", "emailaddress" : "' . $emailaddress . '"}', 'application/json')->request('POST');
-						
-						$data = json_decode($remoteResponse->getRawBody(), true);
-						$result = $data['result'];
-						if(!isset($result['result']['hostid']))
-							$result['result']['hostid'] = 1;
-
-						if($result['merchantid'] && $result['result']['hostkey'] && $result['result']['hostid']) {
-							Mage::getModel("core/config")->saveConfig("codisto/merchantid", $result['merchantid']);
-							Mage::getModel("core/config")->saveConfig("codisto/hostkey", $result['result']['hostkey']);
-							Mage::getModel("core/config")->saveConfig("codisto/hostid", $result['result']['hostid']);
-							Mage::app()->removeCache('config_store_data');
-							Mage::app()->getCacheInstance()->cleanType('config');
-							Mage::app()->getStore()->resetConfig();
-						}
-						
-						if($remoteResponse->getStatus() == 200)
-						{
-							$response->setRedirect($request->getRequestUri() . '?retry=1');
-						}
-						else
-						{
-							$response->setBody($remoteResponse->getRawBody());
-						}
-					}
-				}
-				else
+				if($remoteResponse->getStatus() != 403)
 				{
 					// set proxied status and headers
 					$response->setHttpResponseCode($remoteResponse->getStatus());
@@ -162,7 +177,11 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 	
 					// set proxied output
 					$response->setBody($remoteResponse->getRawBody());
+					
+					return true;
 				}
+				
+				// TODO: hostkey don't match!
 
 				return true;
 			}
