@@ -20,8 +20,8 @@
  
 class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 {
-	private $defaultSyncTimeout = 5;
-	private $defaultSleep = 500000;
+	private $defaultSyncTimeout = 15;
+	private $defaultSleep = 250000;
 	
 	public function indexAction()
 	{

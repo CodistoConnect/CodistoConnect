@@ -174,15 +174,14 @@ class Codisto_Sync_Model_Sync
 		$price = Mage::helper('tax')->getPrice($product, $totalPrice, false, null, null, null, $store, null, false);
 		
 		$data = array();
-		
 		$data[] = $skuData['entity_id'];
 		$data[] = $skuData['sku'];
 		$data[] = $args['parent_id'];
 		$data[] = $skuData['name'];
-		$data[] = $stockData['use_config_manage_stock'] != 0 ? 
-							(Mage::getStoreConfig('cataloginventory/item_options/manage_stock') ? -1 : 0):
-							($stockData['manage_stock'] ? -1 : 0);
-		$data[] = (int)$stockData['qty'];
+		$data[] = !isset($stockData['use_config_manage_stock']) || $stockData['use_config_manage_stock'] == 0 ?
+					(isset($stockData['manage_stock']) && $stockData['manage_stock'] ? -1 : 0) :
+					(Mage::getStoreConfig('cataloginventory/item_options/manage_stock') ? -1 : 0);
+		$data[] = isset($stockData['qty']) && is_numeric($stockData['qty']) ? (int)$stockData['qty'] : 1;
 		$data[] = $price;
 		$data[] = $skuData['status'] != 1 ? 0 : -1;
 
@@ -273,13 +272,16 @@ class Codisto_Sync_Model_Sync
 	
 		foreach ($configurableAttributes as $attribute){
 			$prices = $attribute->getPrices();
-			foreach ($prices as $price){
-
-				if ($price['is_percent']){ //if the price is specified in percents
-					$pricesByAttributeValues[$price['value_index']] = (float)$price['pricing_value'] * $basePrice / 100;
-				}
-				else { //if the price is absolute value
-					$pricesByAttributeValues[$price['value_index']] = (float)$price['pricing_value'];
+			if(is_array($prices))
+			{
+				foreach ($prices as $price){
+	
+					if ($price['is_percent']){ //if the price is specified in percents
+						$pricesByAttributeValues[$price['value_index']] = (float)$price['pricing_value'] * $basePrice / 100;
+					}
+					else { //if the price is absolute value
+						$pricesByAttributeValues[$price['value_index']] = (float)$price['pricing_value'];
+					}
 				}
 			}
 		}
@@ -298,6 +300,8 @@ class Codisto_Sync_Model_Sync
 	public function SyncSimpleProduct($args)
 	{
 		$type = $args['type'];
+		
+		$db = $args['db'];
 		
 		$store = $args['store'];
 		$productData = $args['row'];
@@ -318,12 +322,17 @@ class Codisto_Sync_Model_Sync
 		if($type == 'simple' &&
 			$description == '')
 		{
-			$groupedParentId = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($productData['entity_id'])->getFirstItem();
-			if($groupedParentId)
-			{
-				$groupedParent = Mage::getModel('catalog/product')->load($groupedParentId);
-				if($groupedParent)
-					$description = $groupedParent->description;
+			$parentIds = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($productData['entity_id']);
+			
+			if($parentIds)
+			{			
+				$groupedParentId = $parentIds->getFirstItem();
+				if($groupedParentId)
+				{
+					$groupedParent = Mage::getModel('catalog/product')->load($groupedParentId);
+					if($groupedParent)
+						$description = $groupedParent->description;
+				}
 			}
 			
 			if(!$description)
@@ -337,14 +346,17 @@ class Codisto_Sync_Model_Sync
 		$data[] = $productData['name'];
 		$data[] = $price;
 		$data[] = $listPrice;
-		$data[] = $productData['tax_class_id'];
+		$data[] = isset($productData['tax_class_id']) && $productData['tax_class_id'] ? $productData['tax_class_id'] : '';
 		$data[] = $description;
 		$data[] = $productData['status'] != 1 ? 0 : -1;
-		$data[] = $stockData['use_config_manage_stock'] != 0 ? 
-							(Mage::getStoreConfig('cataloginventory/item_options/manage_stock') ? -1 : 0):
-							($stockData['manage_stock'] ? -1 : 0);
-		$data[] = (int)$stockData['qty'];
-		$data[] = $productData['weight'];
+		$data[] = !isset($stockData['use_config_manage_stock']) || $stockData['use_config_manage_stock'] == 0 ?
+					(isset($stockData['manage_stock']) && $stockData['manage_stock'] ? -1 : 0) :
+					(Mage::getStoreConfig('cataloginventory/item_options/manage_stock') ? -1 : 0);
+		$data[] = isset($stockData['qty']) && is_numeric($stockData['qty']) ? (int)$stockData['qty'] : 1;
+		$data[] = isset($productData['weight']) && is_numeric($productData['weight']) ? (float)$productData['weight'] : $productData['weight'];
+				
+		if($db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM Product WHERE ExternalReference = '.$productData['entity_id'].') THEN 1 ELSE 0 END')->fetchColumn())
+			return;
 				
 		$insertSQL->execute($data);
 		
