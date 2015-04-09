@@ -22,7 +22,7 @@ class Codisto_Sync_Model_Sync
 			((int)$version['minor']*100)+
 			((int)$version['revision']*10));
 
-		$this->useTaxHelper = false; //($edition == 'Enterprise' && $versionNumber > 11300) || ($edition == 'Community' && $versionNumber >= 10810);
+		$this->useTaxHelper = ($edition == 'Enterprise' && $versionNumber > 11300) || ($edition == 'Community' && $versionNumber >= 10810);
 
 		if(!$this->useTaxHelper)
 		{
