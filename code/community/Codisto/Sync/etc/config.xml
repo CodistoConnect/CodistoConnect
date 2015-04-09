@@ -50,10 +50,6 @@
 			<ebaypayment>
 				<class>Codisto_Sync_Ebaypayment_Model</class>
 			</ebaypayment>
-
-			<codistosyncobserver>
-					<class>Sync_Model</class>
-			</codistosyncobserver>
 		</models>
 
 		<events>
@@ -110,7 +106,16 @@
 					</codisto_stockmovements>
 				</observers>
 			</sales_order_item_cancel>
-
+			
+			<core_block_abstract_prepare_layout_after>
+				<observers>
+					<codisto_admin>
+						<type>singleton</type>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>addProductTab</method>
+					</codisto_admin>
+				</observers>
+			</core_block_abstract_prepare_layout_after>
 		</events>
 
 		<fieldsets>
@@ -154,18 +159,6 @@
 			</Codisto_Sync_read>
 		</resources>
 		
-		<blocks>
-			<modulename>
-				<class>Codisto_Sync_Block</class>
-			</modulename>
-
-			<adminhtml>
-				<rewrite>
-					<catalog_product_edit_tabs>Codisto_Sync_Block_Adminhtml_Tabs</catalog_product_edit_tabs>
-				</rewrite>
-			</adminhtml>
-		</blocks>
-		
 		<index>
 			<indexer>
 					<codistoebayindex>
@@ -173,7 +166,6 @@
 					</codistoebayindex>
 			</indexer>
 		</index>
-		
 	</global>
 	
 	<admin>
@@ -187,7 +179,6 @@
 			</adminhtml>
 		</routers>
 	</admin>
-
 	
 	<default>
 		<web>

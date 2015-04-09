@@ -124,6 +124,32 @@ class Codisto_Sync_Model_Observer
 		return $this;
 	}
 	
+	public function addProductTab($observer)
+	{
+		$block = $observer->getEvent()->getBlock();
+		
+		if ($block instanceof Mage_Adminhtml_Block_Catalog_Product_Edit_Tabs){
+			
+			$product = Mage::registry('product');
+			
+			$type = $product->getTypeId();
+
+			if(in_array($type, array('simple', 'configurable')))
+			{
+				$entity_id = $product->getId();
+				
+				$url = Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/', array('product' => $entity_id));
+				
+				$block->addTab('codisto_ebay_tab', array(
+					'label' => 'eBay',
+					'url'   => $url,
+					'class' => 'ajax'
+				));
+			}
+		}
+		return $this;
+	}
+	
 	private function signalStockChange($stockItems)
 	{
 		if(!empty($stockItems))
