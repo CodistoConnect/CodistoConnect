@@ -10,6 +10,7 @@ class Codisto_Sync_Model_Sync
 	private $taxCalculation;
 	private $rateRequest;
 	
+	private $cmsHelper;
 	
 	public function __construct()
 	{
@@ -28,6 +29,8 @@ class Codisto_Sync_Model_Sync
 		{
 			$this->taxCalculation = Mage::getModel('tax/calculation');
 		}
+		
+		$this->cmsHelper = Mage::helper('cms');
 	}
 
 	
@@ -84,7 +87,7 @@ class Codisto_Sync_Model_Sync
 		
 		// Configurable products
 		$configurableProducts = Mage::getModel('catalog/product')->getCollection()
-							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
+							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
 							->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 							->addAttributeToFilter('entity_id', array('in' => $ids));
 
@@ -92,7 +95,7 @@ class Codisto_Sync_Model_Sync
 		$superLinkName = Mage::getSingleton('core/resource')->getTableName('catalog/product_super_link');
 		
 		$simpleProducts = Mage::getModel('catalog/product')->getCollection()
-							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
+							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
 							->addAttributeToFilter('type_id', array('eq' => 'simple'))
 							->addAttributeToFilter('entity_id', array('in' => $ids));
 
@@ -229,8 +232,6 @@ class Codisto_Sync_Model_Sync
 			$insertSKUMatrixSQL->execute(array($skuData['entity_id'], '', $attributeName, $attributeValue));
 		}
 
-		$baseImageURL = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA).'catalog/product'.$product->getImage();
-		
 		$hasImage = false;
 		
 		$product->load('media_gallery');
@@ -238,7 +239,7 @@ class Codisto_Sync_Model_Sync
 
 			$imgURL = $product->getMediaConfig()->getMediaUrl($image['file']);
 			
-			if($imgURL == $baseImageURL)
+			if($image['file'] == $skuData['image'])
 			{
 				$tag = '';
 				$sequence = 0;
@@ -313,7 +314,7 @@ class Codisto_Sync_Model_Sync
 		}
 
 		$childProducts = $configurableData->getUsedProductCollection()
-							->addAttributeToSelect(array('name', 'status', 'price', 'special_price', 'tax_class_id'), 'left');
+							->addAttributeToSelect(array('name', 'image', 'status', 'price', 'special_price', 'tax_class_id'), 'left');
 		
 		Mage::getSingleton('core/resource_iterator')->walk($childProducts->getSelect(), array(array($this, 'SyncSKU')), array( 'parent_id' => $productData['entity_id'], 'attributes' => $configurableAttributes, 'prices' => $pricesByAttributeValues, 'db' => $db, 'preparedStatement' => $insertSQL, 'preparedskumatrixStatement' => $insertSKUMatrixSQL, 'preparedcategoryproductStatement' => $insertCategorySQL, 'preparedimageStatement' => $insertImageSQL, 'store' => $store ));
 		
@@ -344,7 +345,7 @@ class Codisto_Sync_Model_Sync
 		$price = $this->getExTaxPrice($product, $product->getFinalPrice(), $store);
 		$listPrice = $this->getExTaxPrice($product, $product->getPrice(), $store);
 				
-		$description = preg_replace('/^\s+|\s+$/', '', $productData['description']);
+		$description = $this->cmsHelper->getBlockTemplateProcessor()->filter(preg_replace('/^\s+|\s+$/', '', $productData['description']));
 		if($type == 'simple' &&
 			$description == '')
 		{
@@ -357,7 +358,7 @@ class Codisto_Sync_Model_Sync
 				{
 					$groupedParent = Mage::getModel('catalog/product')->load($groupedParentId);
 					if($groupedParent)
-						$description = $groupedParent->description;
+						$description = $this->cmsHelper->getBlockTemplateProcessor()->filter(preg_replace('/^\s+|\s+$/', '', $groupedParent->description));
 				}
 			}
 			
@@ -391,16 +392,13 @@ class Codisto_Sync_Model_Sync
 			$insertCategorySQL->execute(array($productData['entity_id'], $categoryId, 0));
 		}
 		
-		$baseImageURL = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA).'catalog/product'.$product->getImage();
-		
 		$hasImage = false;
-		
 		$product->load('media_gallery');
 		foreach ($product->getMediaGallery('images') as $image) {
 
 			$imgURL = $product->getMediaConfig()->getMediaUrl($image['file']);
 			
-			if($imgURL == $baseImageURL)
+			if($image['file'] == $productData['image'])
 			{
 				$tag = '';
 				$sequence = 0;
@@ -431,14 +429,13 @@ class Codisto_Sync_Model_Sync
 				$groupedProduct = Mage::getModel('catalog/product')->load($parentid);
 				
 				$maxSequence = 0;
-				$baseImageURL = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA).'catalog/product'.$groupedProduct->getImage();
 				$baseImageFound = false;
 				
 				foreach ($groupedProduct->getMediaGallery('images') as $image) {
 					
 					$imgURL = $groupedProduct->getMediaConfig()->getMediaUrl($image['file']);
 					
-					if(!$baseImageFound && $imgURL == $baseImageURL)
+					if(!$baseImageFound && ($image['file'] == $groupedProduct->getImage()))
 					{
 						$tag = '';
 						$sequence = 0;
@@ -552,7 +549,7 @@ class Codisto_Sync_Model_Sync
 		{
 			// Configurable products
 			$configurableProducts = Mage::getModel('catalog/product')->getCollection()
-								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
+								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 								->addAttributeToFilter('entity_id', array('gt' => $this->currentProductId));
 								
@@ -578,7 +575,7 @@ class Codisto_Sync_Model_Sync
 			$superLinkName = Mage::getSingleton('core/resource')->getTableName('catalog/product_super_link');
 			
 			$simpleProducts = Mage::getModel('catalog/product')->getCollection()
-								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
+								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'simple'))
 								->addAttributeToFilter('entity_id', array('gt' => $this->currentProductId));
 	
