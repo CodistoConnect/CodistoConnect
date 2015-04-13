@@ -20,8 +20,8 @@
  
 class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 {
-	private $defaultSyncTimeout = 15;
-	private $defaultSleep = 250000;
+	private $defaultSyncTimeout = 10;
+	private $defaultSleep = 100000;
 	
 	public function indexAction()
 	{
@@ -99,6 +99,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
 						$response->setRawHeader('Status: 400 Bad Request');
 						$response->setBody('Security Error');
 						$response->sendResponse();
@@ -122,6 +125,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						
 						$syncObject->Sync($syncDb);
 						
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
 						$response->setBody('done');
 						$response->sendResponse();
 						
@@ -129,6 +135,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
 						$response->setRawHeader('Status: 400 Bad Request');
 						$response->setBody('Security Error');
 						$response->sendResponse();
@@ -184,11 +193,17 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							usleep($sleep);
 						}
 						
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
 						$response->setBody($result);
 						$response->sendResponse();
 					}
 					else
 					{
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
 						$response->setRawHeader('Status: 400 Bad Request');
 						$response->setBody('Security Error');
 						$response->sendResponse();
@@ -196,6 +211,10 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					die;
 					
 				default:
+				
+					$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+					$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+					$response->setHeader('Pragma', 'no-cache', true);
 					$response->setBody('No Action');
 					$response->sendResponse();
 			}
@@ -206,6 +225,11 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	{
 		$server = $this->getRequest()->getServer();
 		$response = $this->getResponse();
+		
+		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+		$response->setHeader('Pragma', 'no-cache', true);
+		
 		$this->getConfig();
 		if($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 			$response->setBody('OK');
@@ -216,21 +240,15 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	{ // End Point: index.php/codisto-sync/sync/checkPlugin
 		$this->getConfig();
 		$response = $this->getResponse();
+		
+		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+		$response->setHeader('Pragma', 'no-cache', true);
+
 		$response->setBody('SUCCESS');
 		$response->sendResponse();
 	}
 
-	public function testSyncAction()
-	{ // End Point: index.php/codisto-sync/sync/testSync
-		$request = $this->getRequest();
-		
-		$syncObject = Mage::getModel('codistosync/sync');
-		$syncObject->Sync();
-		
-		if($request->getQuery('send'))
-			$this->Send();
-	}
-	
 	public function resetPluginAction()
 	{ // End Point index.php/codisto-sync/sync/resetPlugin
 		$request = $this->getRequest();
@@ -248,8 +266,17 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			Mage::app()->getCacheInstance()->cleanType('config');
 			Mage::app()->getStore()->resetConfig();
 
+			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+			$response->setHeader('Pragma', 'no-cache', true);
+
 			$response->setBody('SUCCESS');
 		} else {
+			
+			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+			$response->setHeader('Pragma', 'no-cache', true);
+			
 			$response->setBody('Invalid Request');
 		}
 	}
@@ -305,7 +332,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	private function Send($syncDb)
 	{
-		header('Cache-Control: private, no-cache, must-revalidate'); //HTTP 1.1
+		header('Cache-Control: no-cache, must-revalidate'); //HTTP 1.1
 		header('Pragma: no-cache'); //HTTP 1.0
 		header('Expires: Thu, 01 Jan 1970 00:00:00 GMT'); // Date in the past
 		header('Content-Type: application/octet-stream');

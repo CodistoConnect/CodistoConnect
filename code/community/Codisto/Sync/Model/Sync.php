@@ -108,6 +108,7 @@ class Codisto_Sync_Model_Sync
 		$db->exec('DELETE FROM SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
 		$db->exec('DELETE FROM SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
 		$db->exec('DELETE FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).')');
+		$db->exec('DELETE FROM CategoryProduct WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		
 		Mage::getSingleton('core/resource_iterator')->walk($configurableProducts->getSelect(), array(array($this, 'SyncConfigurableProduct')), array( 'type' => 'configurable', 'db' => $db, 'preparedStatement' => $insertProduct, 'preparedskuStatement' => $insertSKU, 'preparedskumatrixStatement' => $insertSKUMatrix, 'preparedcategoryproductStatement' => $insertCategoryProduct, 'preparedimageStatement' => $insertImage, 'preparedskuimageStatement' => $insertSKUImage, 'store' => $store ));
 
@@ -161,6 +162,10 @@ class Codisto_Sync_Model_Sync
 	public function SyncSKU($args)
 	{
 		$skuData = $args['row'];
+		$db = $args['db'];
+		
+		if($db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SKU WHERE ExternalReference = '.$skuData['entity_id'].') THEN 1 ELSE 0 END')->fetchColumn())
+			return;
 
 		$store = $args['store'];
 		
@@ -251,7 +256,9 @@ class Codisto_Sync_Model_Sync
 					$tag = '';
 				$sequence = $image['position'];
 				if(!$sequence)
-					$sequence = 0;
+					$sequence = 1;
+				else
+					$sequence++;
 			}
 
 			$insertImageSQL->execute(array($skuData['entity_id'], $imgURL, $tag, $sequence));
@@ -410,7 +417,9 @@ class Codisto_Sync_Model_Sync
 					$tag = '';
 				$sequence = $image['position'];
 				if(!$sequence)
-					$sequence = 0;
+					$sequence = 1;
+				else
+					$sequence++;
 			}
 
 			$insertImageSQL->execute(array($productData['entity_id'], $imgURL, $tag, $sequence));
@@ -448,7 +457,9 @@ class Codisto_Sync_Model_Sync
 							$tag = '';
 						$sequence = $image['position'];
 						if(!$sequence)
-							$sequence = 0;
+							$sequence = 1;
+						else
+							$sequence++;
 							
 						$sequence += $baseSequence;
 						
@@ -553,7 +564,7 @@ class Codisto_Sync_Model_Sync
 								->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 								->addAttributeToFilter('entity_id', array('gt' => $this->currentProductId));
 								
-			$configurableProducts->getSelect()->order('entity_id')->limit(3);
+			$configurableProducts->getSelect()->order('entity_id')->limit(6);
 	
 			Mage::getSingleton('core/resource_iterator')->walk($configurableProducts->getSelect(), array(array($this, 'SyncConfigurableProduct')), array( 'type' => 'configurable', 'db' => $db, 'preparedStatement' => $insertProduct, 'preparedskuStatement' => $insertSKU, 'preparedskumatrixStatement' => $insertSKUMatrix, 'preparedcategoryproductStatement' => $insertCategoryProduct, 'preparedimageStatement' => $insertImage, 'preparedskuimageStatement' => $insertSKUImage, 'store' => $store ));
 	
@@ -579,7 +590,7 @@ class Codisto_Sync_Model_Sync
 								->addAttributeToFilter('type_id', array('eq' => 'simple'))
 								->addAttributeToFilter('entity_id', array('gt' => $this->currentProductId));
 	
-			$simpleProducts->getSelect()->where('`e`.entity_id NOT IN (SELECT product_id FROM '.$superLinkName.')')->order('entity_id')->limit(5);
+			$simpleProducts->getSelect()->where('`e`.entity_id NOT IN (SELECT product_id FROM '.$superLinkName.')')->order('entity_id')->limit(250);
 	
 			Mage::getSingleton('core/resource_iterator')->walk($simpleProducts->getSelect(), array(array($this, 'SyncSimpleProduct')), array( 'type' => 'simple', 'db' => $db, 'preparedStatement' => $insertProduct, 'preparedcategoryproductStatement' => $insertCategoryProduct, 'preparedimageStatement' => $insertImage, 'store' => $store ));
 
@@ -620,6 +631,7 @@ class Codisto_Sync_Model_Sync
 		$db->exec('PRAGMA encoding = \'UTF-8\'');
 		$db->exec('PRAGMA cache_size=15000');
 		$db->exec('PRAGMA soft_heap_limit=67108864');
+		$db->exec('PRAGMA journal_mode=\'MEMORY\'');
 		
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 		$db->exec('CREATE TABLE IF NOT EXISTS Progress(entity_id integer NOT NULL, State text NOT NULL, Sentinel integer NOT NULL PRIMARY KEY AUTOINCREMENT, CHECK(Sentinel=1))');

@@ -142,8 +142,8 @@ class Codisto_Sync_Model_Observer
 				
 				$block->addTab('codisto_ebay_tab', array(
 					'label' => 'eBay',
-					'url'   => $url,
-					'class' => 'ajax'
+					'class' => 'ajax',
+					'url'   => $url
 				));
 			}
 		}

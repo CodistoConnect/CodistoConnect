@@ -147,9 +147,9 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				}
 				
 				// proxy request
-				$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true ));
+				$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true, 'strict' => false, 'maxredirects' => 0 ));
 
-				$client->setHeaders("X-Admin-Base-Url", Mage::getModel('core/url')->getUrl('adminhtml/codisto/ebaytab/'));
+				$client->setHeaders("X-Admin-Base-Url", Mage::getBaseURL(Mage_Core_Model_Store::URL_TYPE_LINK).'adminhtml/codisto/ebaytab/');
 
 				// set proxied headers
 				foreach($this->getAllHeaders() as $k=>$v)
@@ -158,7 +158,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						$client->setHeaders($k, $v);
 				}
 				
-				$client->setHeaders(array('X-HostKey' => $HostKey));
+				$client->setHeaders(array('X-HostKey' => $HostKey, 'Accept-Encoding' => 'gzip,deflate'));
 
 				$requestBody = $request->getRawBody();
 				if($requestBody)
@@ -169,14 +169,31 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				{
 					// set proxied status and headers
 					$response->setHttpResponseCode($remoteResponse->getStatus());
+					$response->setHeader('Pragma', '', true);
+
 					foreach($remoteResponse->getHeaders() as $k => $v)
 					{
 						if(!in_array(strtolower($k), array("server", "content-length", "transfer-encoding", "date", "connection"), true))
+						{
+							if(is_array($v))
+							{
+								$response->setHeader($k, $v[0], true);
+								
+								for($i = 1; $i < count($v); $i++)
+									$response->setHeader($k, $v[$i]);
+							}
+							else
+							{
 							$response->setHeader($k, $v, true);
 					}
+						}
+					}
 	
+					if(!$response->isRedirect())
+					{
 					// set proxied output
 					$response->setBody($remoteResponse->getRawBody());
+					}
 					
 					return true;
 				}
