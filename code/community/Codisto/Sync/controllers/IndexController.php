@@ -505,7 +505,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$response = $this->getResponse();
 		$response->setHeader("Content-Type", "application/json");
-		$response->setBody(json_encode(array( 'orderid' => $order->getId())));
+		$response->setBody(json_encode(array( 'orderid' => $order->getIncrementId())));
 	}
 	
 	private function ProcessOrderSync($order, $xml)
@@ -651,7 +651,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		
 		$response = $this->getResponse();
 		$response->setHeader("Content-Type", "application/json");
-		$response->setBody(json_encode(array( 'orderid' => $order->getId())));
+		$response->setBody(json_encode(array( 'orderid' => $order->getIncrementId())));
 	}
 	
 	private function getRegionCollection($countryCode)
