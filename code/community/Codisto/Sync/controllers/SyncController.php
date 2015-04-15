@@ -239,6 +239,11 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			
 			$response->setBody('OK');
 		}
+		else
+		{
+			$response->setRawHeader('Status: 400 Bad Request');
+			$response->setBody('Security Error');
+		}
 
 	}
 	
