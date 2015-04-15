@@ -55,9 +55,10 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							$db->exec('PRAGMA synchronous=0');
 							$db->exec('PRAGMA temp_store=2');
 							$db->exec('PRAGMA page_size=65536');
-							$db->exec('PRAGMA encoding = \'UTF-8\'');
+							$db->exec('PRAGMA encoding=\'UTF-8\'');
 							$db->exec('PRAGMA cache_size=15000');
 							$db->exec('PRAGMA soft_heap_limit=67108864');
+							$db->exec('PRAGMA journal_mode=MEMORY');
 							
 							$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
 							
@@ -232,7 +233,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		
 		$this->getConfig();
 		if($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+		{
+			$version = (string)Mage::getConfig()->getModuleConfig("Codisto_Sync")->version;
+			$response->setHeader('X-Codisto-Version', $version, true);
+			
 			$response->setBody('OK');
+		}
 
 	}
 	

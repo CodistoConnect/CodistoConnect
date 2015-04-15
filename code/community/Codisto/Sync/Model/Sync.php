@@ -628,10 +628,10 @@ class Codisto_Sync_Model_Sync
 		$db->exec('PRAGMA synchronous=0');
 		$db->exec('PRAGMA temp_store=2');
 		$db->exec('PRAGMA page_size=65536');
-		$db->exec('PRAGMA encoding = \'UTF-8\'');
+		$db->exec('PRAGMA encoding=\'UTF-8\'');
 		$db->exec('PRAGMA cache_size=15000');
 		$db->exec('PRAGMA soft_heap_limit=67108864');
-		$db->exec('PRAGMA journal_mode=\'MEMORY\'');
+		$db->exec('PRAGMA journal_mode=MEMORY');
 		
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 		$db->exec('CREATE TABLE IF NOT EXISTS Progress(entity_id integer NOT NULL, State text NOT NULL, Sentinel integer NOT NULL PRIMARY KEY AUTOINCREMENT, CHECK(Sentinel=1))');
