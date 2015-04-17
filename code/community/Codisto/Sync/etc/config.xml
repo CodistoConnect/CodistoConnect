@@ -13,16 +13,16 @@
  * obtain it through the world-wide-web, please send an email
  * to license@magentocommerce.com so we can send you a copy immediately.
  *
- * @category    Codisto
- * @package     Codisto_Sync
- * @copyright   Copyright (c) 2014 On Technology Pty. Ltd. (http://codisto.com/)
- * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ * @category	Codisto
+ * @package		Codisto_Sync
+ * @copyright	Copyright (c) 2014 On Technology Pty. Ltd. (http://codisto.com/)
+ * @license		http://opensource.org/licenses/osl-3.0.php	Open Software License (OSL 3.0)
  */
  -->
 <config>
 	<modules>
 		<Codisto_Sync>
-			<version>0.2.0</version>
+			<version>1.0.0</version>
 			<depends>
 				<Mage_Payment/>
 			</depends>
@@ -40,28 +40,42 @@
 			</codisto-sync>
 		</routers>
 	</frontend>
+	
+	<adminhtml>
+		<events>
+			<controller_action_layout_generate_blocks_after>
+				<observers>
+					<codisto>
+						<type>singleton</type>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>addScript</method>
+					</codisto>
+				</observers>
+			</controller_action_layout_generate_blocks_after>
+		</events>
+	</adminhtml>
+	
 	<global>
 		<models>
+			<codistosync>
+				<class>Codisto_Sync_Model</class>
+			</codistosync>
+			
 			<ebaypayment>
 				<class>Codisto_Sync_Ebaypayment_Model</class>
 			</ebaypayment>
-
-            		<paymentinfo>
-                		<class>Codisto_Sync_Model</class>
-            		</paymentinfo>
-
 		</models>
 
-        <events>
-            <payment_info_block_prepare_specific_information>
-                <observers>
-                    <codisto>
-                        <type>singleton</type>
-                        <class>Codisto_Sync_Model_Observer</class>
-                        <method>paymentInfoBlockPrepareSpecificInformation</method>
-                    </codisto>
-                </observers>
-            </payment_info_block_prepare_specific_information>
+		<events>
+			<payment_info_block_prepare_specific_information>
+				<observers>
+					<codisto>
+						<type>singleton</type>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>paymentInfoBlockPrepareSpecificInformation</method>
+					</codisto>
+				</observers>
+			</payment_info_block_prepare_specific_information>
 
 			<sales_order_shipment_save_after>
 				<observers>
@@ -72,8 +86,51 @@
 					</codisto>
 				</observers>
 			</sales_order_shipment_save_after>
-
-        </events>
+			
+			<checkout_submit_all_after>
+				<observers>
+					<codisto_stockmovements>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>checkoutAllSubmitAfter</method>
+					</codisto_stockmovements>
+				</observers>
+			</checkout_submit_all_after>
+			<cataloginventory_stock_revert_products_sale>
+				<observers>
+					<codisto_stockmovements>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>stockRevertProductsSale</method>
+					</codisto_stockmovements>
+				</observers>
+			</cataloginventory_stock_revert_products_sale>
+			<catalog_product_import_finish_before>
+				<observers>
+					<codisto_stockmovements>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>catalogProductImportFinishBefore</method>
+					</codisto_stockmovements>
+				</observers>
+			</catalog_product_import_finish_before>
+			<sales_order_item_cancel>
+				<observers>
+					<inventory><type>disabled</type></inventory>
+					<codisto_stockmovements>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>cancelOrderItem</method>
+					</codisto_stockmovements>
+				</observers>
+			</sales_order_item_cancel>
+			
+			<core_block_abstract_prepare_layout_after>
+				<observers>
+					<codisto_admin>
+						<type>singleton</type>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>addProductTab</method>
+					</codisto_admin>
+				</observers>
+			</core_block_abstract_prepare_layout_after>
+		</events>
 
 		<fieldsets>
 			<sales_convert_quote>
@@ -87,11 +144,13 @@
 				</codisto_orderid>
 			</sales_convert_order>
 		</fieldsets>
+		
 		<helpers>
 			<codisto-sync>
 				<class>Codisto_Sync_Helper</class>
 			</codisto-sync>
 		</helpers>
+		
 		<resources>
 			<codisto_setup>
 				<setup>
@@ -113,20 +172,16 @@
 				</connection>
 			</Codisto_Sync_read>
 		</resources>
-		<blocks>
-			<modulename>
-				<class>Codisto_Sync_Block</class>
-			</modulename>
-
-
-            <adminhtml>
-				<rewrite>
-					<catalog_product_edit_tabs>Codisto_Sync_Block_Adminhtml_Tabs</catalog_product_edit_tabs>
-				</rewrite>
-
-			</adminhtml>
-		</blocks>
+		
+		<index>
+			<indexer>
+					<codistoebayindex>
+						<model>codistosync/indexer_ebay</model>
+					</codistoebayindex>
+			</indexer>
+		</index>
 	</global>
+	
 	<admin>
 		<routers>
 			<adminhtml>
@@ -138,6 +193,7 @@
 			</adminhtml>
 		</routers>
 	</admin>
+	
 	<default>
 		<web>
 			<routers>
