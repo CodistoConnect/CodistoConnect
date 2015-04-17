@@ -150,6 +150,25 @@ class Codisto_Sync_Model_Observer
 		return $this;
 	}
 	
+	public function addScript($observer)
+	{
+		$controller = $observer->getAction();
+		$layout = $controller->getLayout();
+		$block = $layout->createBlock('core/text');
+		$block->setText(
+		'<script type="text/javascript">
+		window.codisto = {
+			merchantid : '.Mage::getStoreConfig('codisto/merchantid').'
+		};
+		(function() {
+			var s = document.createElement("script");
+			s.src = "https://ui.codisto.com/" + window.codisto.merchantid + "/js/app/adminhtml.js";
+			document.getElementsByTagName("HEAD")[0].appendChild(s);
+		})();
+		</script>');
+		$layout->getBlock('js')->append($block);
+	}
+	
 	private function signalStockChange($stockItems)
 	{
 		if(!empty($stockItems))

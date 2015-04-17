@@ -41,6 +41,20 @@
 		</routers>
 	</frontend>
 	
+	<adminhtml>
+		<events>
+			<controller_action_layout_generate_blocks_after>
+				<observers>
+					<codisto>
+						<type>singleton</type>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>addScript</method>
+					</codisto>
+				</observers>
+			</controller_action_layout_generate_blocks_after>
+		</events>
+	</adminhtml>
+	
 	<global>
 		<models>
 			<codistosync>
