@@ -23,7 +23,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 	{
 		$path = $request->getPathInfo();
 
-		if(preg_match("/^\/[a-zA-z0-9-_]+\/codisto\//", $path))
+		if(preg_match('/^\/[a-zA-z0-9-_]+\/codisto\//', $path))
 		{
 			$request->setDispatched(true);
 
@@ -44,7 +44,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				{
 					try
 					{
-						$client = new Zend_Http_Client("https://ui.codisto.com/create", array( 'keepalive' => true, 'maxredirects' => 0 ));
+						$client = new Zend_Http_Client('https://ui.codisto.com/create', array( 'keepalive' => true, 'maxredirects' => 0 ));
 						$client->setHeaders('Content-Type', 'application/json');
 						
 						for($retry = 0; ; $retry++)
@@ -66,8 +66,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 								if(isset($data['merchantid']) && $data['merchantid'] &&
 									isset($data['hostkey']) && $data['hostkey'])
 								{
-									Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['merchantid']);
-									Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['hostkey']);
+									Mage::getModel('core/config')->saveConfig('codisto/merchantid', $data['merchantid']);
+									Mage::getModel('core/config')->saveConfig('codisto/hostkey', $data['hostkey']);
 									
 									$MerchantID = $data['merchantid'];
 									$HostKey = $data['hostkey'];
@@ -89,8 +89,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					}
 					catch(Exception $e)
 					{
-						$response->setBody("<!DOCTYPE html><html><head></head><body><h1>Unable to Register</h1><p>Sorry, we were unable to register your Codisto account,
-						please contact <a href=\"mailto:support@codisto.com\">support@codisto.com</a> and our team will help to resolve the issue</p></body></html>");
+						$response->setBody('<!DOCTYPE html><html><head></head><body><h1>Unable to Register</h1><p>Sorry, we were unable to register your Codisto account,
+						please contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p></body></html>');
 						
 						return true;
 					}
@@ -98,13 +98,13 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				
 				
 				
-				if(preg_match("/product\/\d+\/iframe\/\d+\//", $path))
+				if(preg_match('/product\/\d+\/iframe\/\d+\//', $path))
 				{
-					$tabPath = $request->getBaseUrl().preg_replace("/iframe\/\d+\//", '', $path);
+					$tabPath = $request->getBaseUrl().preg_replace('/iframe\/\d+\//', '', $path);
 					
-					$response->setHeader("Cache-Control", "public, max-age=86400", true);
-					$response->setHeader("Pragma", "cache", true);
-					$response->setBody("<!DOCTYPE html><html><head><body><iframe id='codisto' width=\"100%\" height=\"800\" style=\"border: none; \" src=\"${tabPath}\"></iframe></body></html>");
+					$response->setHeader('Cache-Control', 'public, max-age=86400', true);
+					$response->setHeader('Pragma', 'cache', true);
+					$response->setBody('<!DOCTYPE html><html><head><body><iframe id="codisto" class="codisto-iframe" width="100%" height="800" style="border: none;" src="'.$tabPath.'" frameborder="0"></iframe></body></html>');
 					
 					return true;
 				}
@@ -121,7 +121,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				
 				$querystring = '?';
 				foreach($request->getQuery() as $k=>$v) {
-					$querystring .= urlencode($k).'='.urlencode($v)."&";
+					$querystring .= urlencode($k).'='.urlencode($v).'&';
 				}
 
 				if($querystring != '?') {
@@ -131,12 +131,12 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				// proxy request
 				$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true, 'strict' => false, 'maxredirects' => 0 ));
 
-				$client->setHeaders("X-Admin-Base-Url", Mage::getBaseURL(Mage_Core_Model_Store::URL_TYPE_LINK).'adminhtml/codisto/ebaytab/');
+				$client->setHeaders('X-Admin-Base-Url', Mage::getBaseURL(Mage_Core_Model_Store::URL_TYPE_LINK).'adminhtml/codisto/ebaytab/');
 
 				// set proxied headers
 				foreach($this->getAllHeaders() as $k=>$v)
 				{
-					if(strtolower($k) != "host")
+					if(strtolower($k) != 'host')
 						$client->setHeaders($k, $v);
 				}
 				
@@ -155,7 +155,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 					foreach($remoteResponse->getHeaders() as $k => $v)
 					{
-						if(!in_array(strtolower($k), array("server", "content-length", "transfer-encoding", "date", "connection"), true))
+						if(!in_array(strtolower($k), array('server', 'content-length', 'transfer-encoding', 'date', 'connection'), true))
 						{
 							if(is_array($v))
 							{
@@ -200,10 +200,10 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			{
 				$name = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
 				$headers[$name] = $value;
-			} else if ($name == "CONTENT_TYPE") {
-				$headers["Content-Type"] = $value;
-			} else if ($name == "CONTENT_LENGTH") {
-				$headers["Content-Length"] = $value;
+			} else if ($name == 'CONTENT_TYPE') {
+				$headers['Content-Type'] = $value;
+			} else if ($name == 'CONTENT_LENGTH') {
+				$headers['Content-Length'] = $value;
 			}
 		}
 		if($extra)
