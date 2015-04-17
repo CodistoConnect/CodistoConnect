@@ -85,15 +85,16 @@ class Codisto_Sync_Model_Sync
 		
 		$this->productsProcessed = array();
 		
+		$superLinkName = Mage::getSingleton('core/resource')->getTableName('catalog/product_super_link');
+		
 		// Configurable products
 		$configurableProducts = Mage::getModel('catalog/product')->getCollection()
 							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
-							->addAttributeToFilter('type_id', array('eq' => 'configurable'))
-							->addAttributeToFilter('entity_id', array('in' => $ids));
+							->addAttributeToFilter('type_id', array('eq' => 'configurable'));
+
+		$configurableProducts->getSelect()->where('`e`.entity_id IN ('.implode(',', $ids).') OR `e`.entity_id IN (SELECT parent_id FROM '.$superLinkName.' WHERE product_id IN ('.implode(',', $ids).'))');
 
 		// Simple Products not participating as configurable skus
-		$superLinkName = Mage::getSingleton('core/resource')->getTableName('catalog/product_super_link');
-		
 		$simpleProducts = Mage::getModel('catalog/product')->getCollection()
 							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
 							->addAttributeToFilter('type_id', array('eq' => 'simple'))

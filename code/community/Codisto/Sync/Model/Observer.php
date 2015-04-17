@@ -138,7 +138,7 @@ class Codisto_Sync_Model_Observer
 			{
 				$entity_id = $product->getId();
 				
-				$url = Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/', array('product' => $entity_id));
+				$url = Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/', array('product' => $entity_id, 'iframe' => 1));
 				
 				$block->addTab('codisto_ebay_tab', array(
 					'label' => 'eBay',

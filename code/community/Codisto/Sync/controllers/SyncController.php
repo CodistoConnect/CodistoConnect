@@ -74,13 +74,15 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 								$productIds = json_decode($request->getQuery('productid'));
 								if(!is_array($productIds))
 									$productIds = array($productIds);
+
+								$productIds = array_map('intval', $productIds);
 								
 								$db->exec('CREATE TABLE Product AS SELECT * FROM SyncDb.Product WHERE ExternalReference IN ('.implode(',', $productIds).')');
-								$db->exec('CREATE TABLE ProductImage AS SELECT * FROM SyncDb.ProductImage WHERE ProductExternalReference IN ('.implode(',', $productIds).')');
-								$db->exec('CREATE TABLE CategoryProduct AS SELECT * FROM SyncDb.CategoryProduct WHERE ProductExternalReference IN ('.implode(',', $productIds).')');
-								$db->exec('CREATE TABLE SKU AS SELECT * FROM SyncDb.SKU WHERE ProductExternalReference IN ('.implode(',', $productIds).')');
-								$db->exec('CREATE TABLE SKUMatrix AS SELECT * FROM SyncDb.SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $productIds).'))');
-								$db->exec('CREATE TABLE SKUImage AS SELECT * FROM SyncDb.SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $productIds).'))');
+								$db->exec('CREATE TABLE ProductImage AS SELECT * FROM SyncDb.ProductImage WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+								$db->exec('CREATE TABLE CategoryProduct AS SELECT * FROM SyncDb.CategoryProduct WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+								$db->exec('CREATE TABLE SKU AS SELECT * FROM SyncDb.SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+								$db->exec('CREATE TABLE SKUMatrix AS SELECT * FROM SyncDb.SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product))');
+								$db->exec('CREATE TABLE SKUImage AS SELECT * FROM SyncDb.SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product))');
 								
 								if($db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE name = \'ProductDelete\' COLLATE NOCASE AND type = \'table\') THEN 1 ELSE 0 END')->fetchColumn())
 									$db->exec('CREATE TABLE ProductDelete AS SELECT * FROM SyncDb.ProductDelete WHERE ExternalReference IN ('.implode(',', $productIds).')');
@@ -210,6 +212,59 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$response->sendResponse();
 					}
 					die;
+					
+				case 'PULL':
+				
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
+						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync.db';
+						
+						$ProductID = intval($request->getPost('ProductID'));
+						$productIds = array($ProductID);
+						
+						$syncObject = Mage::getModel('codistosync/sync');
+						
+						$syncObject->UpdateProducts($syncDb, $productIds);
+
+						$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
+						
+						$db = new PDO('sqlite:' . $tmpDb);
+						$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+						
+						$db->exec('PRAGMA synchronous=0');
+						$db->exec('PRAGMA temp_store=2');
+						$db->exec('PRAGMA page_size=65536');
+						$db->exec('PRAGMA encoding=\'UTF-8\'');
+						$db->exec('PRAGMA cache_size=15000');
+						$db->exec('PRAGMA soft_heap_limit=67108864');
+						$db->exec('PRAGMA journal_mode=MEMORY');
+						
+						$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
+						
+						$db->exec('BEGIN EXCLUSIVE TRANSACTION');
+						$db->exec('CREATE TABLE Product AS SELECT * FROM SyncDb.Product WHERE ExternalReference IN ('.implode(',', $productIds).') OR ExternalReference IN (SELECT ProductExternalReference FROM SKU WHERE ExternalReference IN ('.implode(',', $productIds).'))');
+						$db->exec('CREATE TABLE ProductImage AS SELECT * FROM SyncDb.ProductImage WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+						$db->exec('CREATE TABLE CategoryProduct AS SELECT * FROM SyncDb.CategoryProduct WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+						$db->exec('CREATE TABLE SKU AS SELECT * FROM SyncDb.SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+						$db->exec('CREATE TABLE SKUMatrix AS SELECT * FROM SyncDb.SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product))');
+						$db->exec('CREATE TABLE SKUImage AS SELECT * FROM SyncDb.SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product))');
+						$db->exec('COMMIT TRANSACTION');
+						$db->exec('VACUUM');
+
+						$this->Send($tmpDb);
+						
+						unlink($tmpDb);
+					}
+					else
+					{
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setRawHeader('Status: 400 Bad Request');
+						$response->setBody('Security Error');
+						$response->sendResponse();
+					}
+				
 					
 				default:
 				
