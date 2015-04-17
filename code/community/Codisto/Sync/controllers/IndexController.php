@@ -139,7 +139,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				
 				$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)->getFirstItem();
 
-				if($order) {
+				if($order && $order->getId()) {
 
 					$this->ProcessOrderSync($order, $xml);
 				
@@ -213,8 +213,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$regionsel_id = 0;
 			foreach($regionCollection as $region)
 			{
-				// TODO : deal with name
-				if($region['code'] == $billing_address->division)
+				if(in_array($billing_address->division, array($region['code'], $region['name'])))
 				{
 
 					$regionsel_id = $region['region_id'];
@@ -222,21 +221,20 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 
 			$addressData_billing = array(
-				'firstname' => $billing_first_name,
-				'lastname' => $billing_last_name,
-				'street' => $billing_address->address1.','.$billing_address->address2,
-				'city' => $billing_address->place,
-				'postcode' => $billing_address->postalcode,
-				'telephone' => $billing_address->phone,
-				'country_id' => $billing_address->countrycode,
-				'region_id' => $regionsel_id, // id from directory_country_region table// id from directory_country_region table
+				'firstname' => (string)$billing_first_name,
+				'lastname' => (string)$billing_last_name,
+				'street' => (string)$billing_address->address1.','.$billing_address->address2,
+				'city' => (string)$billing_address->place,
+				'postcode' => (string)$billing_address->postalcode,
+				'telephone' => (string)$billing_address->phone,
+				'country_id' => (string)$billing_address->countrycode,
+				'region_id' => (string)$regionsel_id, // id from directory_country_region table// id from directory_country_region table
 			);
 
 			$regionsel_id_ship = 0;
 			foreach($regionCollection as $region)
 			{
-				// TODO : deal with name
-				if($region['code'] == $shipping_address->division)
+				if(in_array($shipping_address->division, array($region['code'], $region['name'])))
 				{
 
 					$regionsel_id_ship = $region['region_id'];
@@ -244,14 +242,14 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 
 			$addressData_shipping = array(
-				'firstname' => $shipping_first_name,
-				'lastname' => $shipping_last_name,
-				'street' => $shipping_address->address1.','.$shipping_address->address2,
-				'city' => $shipping_address->place,
-				'postcode' => $shipping_address->postalcode,
-				'telephone' => $shipping_address->phone,
-				'country_id' => $shipping_address->countrycode,
-				'region_id' => $regionsel_id_ship, // id from directory_country_region table// id from directory_country_region table
+				'firstname' => (string)$shipping_first_name,
+				'lastname' => (string)$shipping_last_name,
+				'street' => (string)$shipping_address->address1.','.$shipping_address->address2,
+				'city' => (string)$shipping_address->place,
+				'postcode' => (string)$shipping_address->postalcode,
+				'telephone' => (string)$shipping_address->phone,
+				'country_id' => (string)$shipping_address->countrycode,
+				'region_id' => (string)$regionsel_id_ship, // id from directory_country_region table// id from directory_country_region table
 			);
 
 
@@ -270,9 +268,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				$customer->setWebsiteId($websiteId);
 				$customer->setStoreId($storeId);
-				$customer->setEmail($billing_address->email);
-				$customer->setFirstname($billing_first_name);
-				$customer->setLastname($billing_last_name);
+				$customer->setEmail((string)$billing_address->email);
+				$customer->setFirstname((string)$billing_first_name);
+				$customer->setLastname((string)$billing_last_name);
 				$customer->setPassword('');
 				$customer->setData('group_id', $ebayGroup->getId());
 				$customer->save();
@@ -300,7 +298,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$quote = Mage::getModel('sales/quote');
 			$quote->assignCustomer($customer);
 
-
 			$quote->getBillingAddress()->addData($addressData_billing);
 			$quote->getShippingAddress()->addData($addressData_shipping);
 
@@ -308,15 +305,19 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			{
 				if($orderline->productcode[0] != 'FREIGHT')
 				{
+					$productcode = (string)$orderline->productcode[0];
+					if(!$productcode)
+						$productcode = '_';
+
 					$product = Mage::getModel('catalog/product');
-					$product->setSku($orderline->productcode[0]);
+					$product->setSku($productcode);
 					$product->setName($orderline->productname[0]);
 
 					$qty = $orderline->quantity[0];
 
 					$item = Mage::getModel('sales/quote_item');
 					$item->setProduct($product);
-					$item->setSku($orderline->productcode[0]);
+					$item->setSku($productcode);
 					$item->setName($orderline->productname[0]);
 					$item->setQty($qty);
 					$item->setPrice(floatval($orderline->price[0]));
@@ -331,36 +332,39 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 					$quote->addItem($item);
 
-					if($ordercontent->orderstate != 'cancelled') {
-						$catalog = Mage::getModel('catalog/product');
-						$prodid = $catalog->getIdBySku((string)$orderline->productcode[0]);
-						if(!$prodid)
-							continue;
+					if($ordercontent->orderstate != 'cancelled')
+					{
+						if($productcode)
+						{
+							$catalog = Mage::getModel('catalog/product');
+							$prodid = $catalog->getIdBySku($productcode);
+							if($prodid)
+							{
+								$product = Mage::getModel('catalog/product')->load($prodid);
+								if (!($stockItem = $product->getStockItem())) {
+									$stockItem = Mage::getModel('cataloginventory/stock_item');
+									$stockItem->assignProduct($product)
+										->setData('stock_id', 1)
+										->setData('store_id', $storeId);
+								}
 
-						$product = Mage::getModel('catalog/product')->load($prodid);
-						if (!($stockItem = $product->getStockItem())) {
-							$stockItem = Mage::getModel('cataloginventory/stock_item');
-							$stockItem->assignProduct($product)
-								->setData('stock_id', 1)
-								->setData('store_id', 1);
+								$stockItem = $product->getStockItem();
+								$stockData = $stockItem->getData();
+
+								if($stockData['use_config_manage_stock'] != 0) {
+									$stockcontrol = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
+								} else {
+									$stockcontrol = $stockData['manage_stock'];
+								}
+
+								if($stockcontrol !=0) {
+									$stockItem->subtractQty(intval($qty));
+								}
+
+								$stockItem->save();
+							}
 						}
-
-						$stockItem = $product->getStockItem();
-						$stockData = $stockItem->getData();
-
-						if($stockData['use_config_manage_stock'] != 0) {
-							$stockcontrol = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
-						} else {
-							$stockcontrol = $stockData['manage_stock'];
-						}
-
-						if($stockcontrol !=0) {
-							$stockItem->subtractQty(intval($qty));
-						}
-
-						$stockItem->save();
 					}
-
 				}
 			}
 
@@ -447,7 +451,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$lineidx++;
 			}
 
-
 			/* cancelled, processing, captured, inprogress, complete */
 			if($ordercontent->orderstate == 'captured') {
 				$order->setState(Mage_Sales_Model_Order::STATE_NEW, true);
@@ -498,14 +501,19 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 			$connection->commit();
 
+			$response = $this->getResponse();
+			$response->setHeader("Content-Type", "application/json");
+			$response->setBody(json_encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+
 		}
 		catch(Exception $e) {
 			$connection->rollback();
-		}
 
 		$response = $this->getResponse();
 		$response->setHeader("Content-Type", "application/json");
-		$response->setBody(json_encode(array( 'orderid' => $order->getIncrementId())));
+			$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
+
+		}
 	}
 	
 	private function ProcessOrderSync($order, $xml)
@@ -644,14 +652,19 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$order->save();
 
 			$connection->commit();
+			
+			$response = $this->getResponse();
+			$response->setHeader("Content-Type", "application/json");
+			$response->setBody(json_encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+
 		}
 		catch(Exception $e) {
 			$connection->rollback();
-		}
 		
-		$response = $this->getResponse();
-		$response->setHeader("Content-Type", "application/json");
-		$response->setBody(json_encode(array( 'orderid' => $order->getIncrementId())));
+			$response = $this->getResponse();
+			$response->setHeader("Content-Type", "application/json");
+			$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
+		}
 	}
 	
 	private function getRegionCollection($countryCode)
