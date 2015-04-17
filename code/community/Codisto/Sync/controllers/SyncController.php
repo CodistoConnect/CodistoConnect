@@ -42,6 +42,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						die;
 					}
 				case "EXECUTE":
+					
 					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
 						$this->Sync();
 						$response->setBody('done');
@@ -52,7 +53,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					$response->setBody("No Action");
 					$response->sendResponse();
 			}
-		}
+		} 
 	}
 	
 	public function checkPluginAction()
@@ -96,6 +97,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	
 	public function configUpdateAction()
 	{ // End Point: index.php/codisto-sync/sync/configUpdate
+
 		$request = $this->getRequest();
 		$response = $this->getResponse();
 
@@ -226,12 +228,16 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	private function Sync()
 	{
-		ini_set('max_execution_time', 300);
+		
+		ini_set('max_execution_time', -1);
 		
 		// Clear the temporary DB
 		$syncDb = Mage::getBaseDir("var") . "/eziimport0.db";
 		if (file_exists($syncDb))
 			unlink($syncDb);
+
+		$request = $this->getRequest();
+		$productref = $request->getQuery('productref');
 
 		// Generate the temporary DB
 		$db = new PDO("sqlite:" . $syncDb);
@@ -405,11 +411,24 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		$pageSize = 20;
 		
-		// Products: CONFIGURABLE
-		$configurableCollection = Mage::getModel('catalog/product')->getCollection()
+		if($productref) {
+
+			$configurableCollection = Mage::getModel('catalog/product')->getCollection()
+			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
+			->addAttributeToFilter('type_id', array('eq' => 'configurable'))
+			->addAttributeToFilter('entity_id', array('eq' => $productref))
+			->setPageSize($pageSize);
+
+		} else {
+			
+			$configurableCollection = Mage::getModel('catalog/product')->getCollection()
 			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
 			->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 			->setPageSize($pageSize);
+
+		}
+
+
 
 		$pages = $configurableCollection->getLastPageNumber();
 			
@@ -493,12 +512,18 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				foreach ($categoryIds as $categoryId) {
 					$insertCategory->execute(array($product['entity_id'], $categoryId, 0));
 				}
-
+				
 				// ProductImages
 				$productConfigurableData->load('media_gallery');
 				foreach ($productConfigurableData->getMediaGalleryImages() as $image) {
 					if ($image->getDisabled() != 0) continue;
-					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+
+					$sequence = $image->getPosition() + 1;
+					if((string)Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA).'catalog/product'.$productConfigurableData->getImage() == (string)$image->getUrl()) {
+						$sequence = 0;
+					}
+
+					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $sequence));
 				}
 				
 				//the configurable product id
@@ -578,7 +603,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					foreach($configurableAttributes as $attribute)
 					{
 						$productAttribute = $attribute->getProductAttribute();
-						$SKUMatrixDD->execute(array($child->getId(), "", $productAttribute->getAttributeCode(), $child->getAttributeText($productAttribute->getAttributeCode()), $pricemodifier));
+						$SKUMatrixDD->execute(array($child->getId(), "", $productAttribute->getFrontendLabel(), $child->getAttributeText($productAttribute->getAttributeCode()), $pricemodifier));
 					}
 
 					//TODO : Delete the sku options when there is only one choice.
@@ -596,11 +621,22 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			$configurableCollection->clear();
 		}
 
-		// Products: SIMPLE
-		$collection = Mage::getModel('catalog/product')->getCollection()
-			->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
-			->addAttributeToFilter('type_id', array('eq' => 'simple'));
-			
+		if($productref) {
+
+			$collection = Mage::getModel('catalog/product')->getCollection()
+				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
+				->addAttributeToFilter('type_id', array('eq' => 'simple'))
+				->addAttributeToFilter('entity_id', array('eq' => $productref));
+
+	
+		} else {
+			$collection = Mage::getModel('catalog/product')->getCollection()
+				->addAttributeToSelect(array('entity_id', 'image', 'status', 'meta_title', 'sku', 'meta_description', 'name', 'weight', 'created_at', 'updated_at', 'is_salable', 'image', 'product_url', 'price', 'special_price', 'main'))
+				->addAttributeToFilter('type_id', array('eq' => 'simple'))
+				->setPageSize($pageSize);
+		}
+
+
 		$pages = $collection->getLastPageNumber();		
 		for($i=1; $i<=$pages; $i++) {
 
@@ -714,7 +750,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				$hasimage = false;
 				foreach ($productData->getMediaGalleryImages() as $image) {
 					if ($image->getDisabled() != 0) continue;
-					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $image->getPosition()));
+
+					$sequence = $image->getPosition() + 1;
+					if((string)Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA).'catalog/product'.$product->getImage() == (string)$image->getUrl()) {
+						$sequence = 0;
+					}
+					$insertImages->execute(array($product['entity_id'], $image->getUrl(), $sequence));				
+					
 					$hasimage = true;
 				}
 				
