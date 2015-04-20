@@ -17,6 +17,7 @@
  * @copyright   Copyright (c) 2014 On Technology Pty. Ltd. (http://codisto.com/)
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
+
 class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 {
 	protected $_PayPalmethodType = Mage_Paypal_Model_Config::METHOD_WPP_EXPRESS;
@@ -27,13 +28,13 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$response = $this->getResponse();
 
 		$model = Mage::getModel('catalog/product');
-		
+
 		$cart = Mage::getSingleton('checkout/cart');
 
 		$postalcode = $request->getPost('POSTALCODE');
 		$division = $request->getPost('DIVISION');
 		$countrycode = $request->getPost('COUNTRYCODE');
-		
+
 		if($countrycode == 'AU')
 		{
 			$pc = $postalcode{0};
@@ -79,16 +80,16 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			if($region)
 				$regionid = $region->getId();
 		}
-		
+
 		for($inputidx = 0; ; $inputidx++)
 		{
 			$productcode = $request->getPost('PRODUCTCODE('.$inputidx.')');
 			$id = $model->getIdBySku($productcode);
-			
+
 			$productqty = $request->getPost('PRODUCTQUANTITY('.$inputidx.')');
 			if(!$productqty && $productqty !=0)
 				$productqty = 1;
-			
+
 			if(!$productcode)
 				break;
 
@@ -107,54 +108,54 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		if($regionid)
 			$address->setRegionId((string) $regionid);
-		
+
 		$cart->save();
-	
+
 		$rates = $cart->getQuote()->getShippingAddress()->getShippingRatesCollection();
-		
+
 		$output = '';
 		$outputidx = 0;
-		
+
 		foreach ($rates as $rate) {
 			$output .= 'FREIGHTNAME('.$outputidx.')=Freight&FREIGHTCHARGEINCTAX('.$outputidx.')='.$rate->getPrice() . '&';
-			
+
 			$outputidx++;
 		}
-		
+
 		$response->setBody($output);
 	}
-	
+
 	public function indexAction()
 	{
 		$method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
 		$content_type = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : "";
-		
+
 		if($method == 'POST')
 		{
 			if($content_type == "text/xml")
 			{
 				$xml = simplexml_load_string(file_get_contents("php://input"));
-		
+
 				$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
-				
+
 				$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)->getFirstItem();
 
 				if($order && $order->getId()) {
 
 					$this->ProcessOrderSync($order, $xml);
-				
+
 				} else {
-				
+
 					$this->ProcessOrderCreate($xml);
-				
+
 				}
 			}
 		}
 		else
 		{
-		
+
 			include_once Mage::getBaseDir() . '/errors/404.php';
-			 
+
 		}
 	}
 
@@ -177,14 +178,14 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$ordertotal = floatval($ordercontent->ordertotal[0]);
 			$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
 			$ordertaxtotal = floatval($ordercontent->ordertaxtotal[0]);
-						
+
 			$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
 			if(!$ebaysalesrecordnumber)
 				$ebaysalesrecordnumber = '';
 
 			$freightcarrier = 'Post';
 			$freightservice = 'Freight';
-			
+
 			$billing_address = $ordercontent->orderaddresses->orderaddress[0];
 			$billing_first_name = $billing_last_name = "";
 
@@ -319,7 +320,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					$qty = (int)$orderline->quantity[0];
 					$subtotalinctax = floatval($orderline->linetotalinctax[0]);
 					$subtotal = floatval($orderline->linetotal[0]);
-					
+
 					$item = Mage::getModel('sales/quote_item');
 					$item->setProduct($product);
 					$item->setSku($productcode);
@@ -513,7 +514,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 			Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
 			$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
-			
+
 			$order->setBaseSubtotal($ordersubtotal);
 			$order->setSubtotal($ordersubtotal);
 			$order->setBaseSubtotalInclTax($ordersubtotalincltax);
@@ -523,7 +524,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 			$order->setBaseShippingTaxAmount($freighttax);
 			$order->setShippingTaxAmount($freighttax);
-			
+
 			$order->save();
 
 			if($paypaltransactionid) {
@@ -549,14 +550,14 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 		catch(Exception $e) {
 			$connection->rollback();
-			
+
 			$response = $this->getResponse();
 			$response->setHeader("Content-Type", "application/json");
 			$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
 
 		}
 	}
-	
+
 	private function ProcessOrderSync($order, $xml)
 	{
 		try
@@ -602,7 +603,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$order->setShippingDescription($freightservice);
 			$order->setBaseShippingAmount($freighttotal);
 			$order->setShippingAmount($freighttotal);
-			
+
 			$ordersubtotal = $store->roundPrice($ordersubtotal);
 			$ordersubtotalincltax = $store->roundPrice($ordersubtotal + $ordertaxtotal);
 			$ordertotal = $store->roundPrice($ordertotal);
@@ -691,22 +692,22 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 
 			$order->save();
-			
+
 			$connection->commit();
-			
+
 			$response = $this->getResponse();
 			$response->setHeader("Content-Type", "application/json");
 			$response->setBody(json_encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 		}
 		catch(Exception $e) {
 			$connection->rollback();
-		
+
 			$response = $this->getResponse();
 			$response->setHeader("Content-Type", "application/json");
 			$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
 		}
 	}
-	
+
 	private function getRegionCollection($countryCode)
 	{
 		$regionCollection = Mage::getModel('directory/region_api')->items($countryCode);
