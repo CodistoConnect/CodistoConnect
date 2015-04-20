@@ -135,3 +135,5 @@ Mage.php
 #Allow Codisto Plugin whitelist
 !code/community/Codisto/*
 !etc/modules/Codisto*
+
+.remote-sync.json
