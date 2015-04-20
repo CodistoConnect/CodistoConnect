@@ -133,6 +133,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true, 'strict' => false, 'maxredirects' => 0 ));
 
 				$client->setHeaders('X-Admin-Base-Url', Mage::getBaseURL(Mage_Core_Model_Store::URL_TYPE_LINK).'adminhtml/codisto/ebaytab/');
+				$client->setHeaders('X-Codisto-Version', (string)Mage::getConfig()->getModuleConfig("Codisto_Sync")->version);
 
 				// set proxied headers
 				foreach($this->getAllHeaders() as $k=>$v)
