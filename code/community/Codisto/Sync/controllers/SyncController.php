@@ -405,6 +405,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		header('Content-Disposition: attachment; filename=' . basename($syncDb));
 		header('Content-Length: ' . filesize($syncDb));
 
+		if(ob_get_contents())
 		ob_clean();
 		flush();
 
