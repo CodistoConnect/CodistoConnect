@@ -566,7 +566,7 @@ class Codisto_Sync_Model_Sync
 		{
 			// Categories
 			$categories = Mage::getModel('catalog/category')->getCollection()
-								->addAttributeToSelect(array('name', 'image', 'is_active'), 'left');
+								->addAttributeToSelect(array('name', 'image', 'is_active', 'updated_at', 'parent_id', 'position'), 'left');
 
 			Mage::getSingleton('core/resource_iterator')->walk($categories->getSelect(), array(array($this, 'SyncCategory')), array( 'db' => $db, 'preparedStatement' => $insertCategory, 'store' => $store ));
 

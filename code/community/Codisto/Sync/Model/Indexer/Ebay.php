@@ -104,6 +104,8 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 		{
 			$syncDb = Mage::getBaseDir("var") . "/codisto-ebay-sync.db";
 
+			if($event->getDataObject())
+			{
 			$syncObject = Mage::getModel('codistosync/sync');
 
 			if(Mage_Index_Model_Event::TYPE_SAVE == $type)
@@ -127,11 +129,14 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 			}
 		}
+		}
 
 		if(isset($data['codisto_sync_product']))
 		{
 			$syncDb = Mage::getBaseDir("var") . "/codisto-ebay-sync.db";
 
+			if($event->getDataObject())
+			{
 			$syncObject = Mage::getModel('codistosync/sync');
 			$syncIds = Mage::getResourceSingleton('catalog/product_type_configurable')->getParentIdsByChild($event->getDataObject()->getId());
 
@@ -171,6 +176,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 			}
 		}
+	}
 	}
 
 	public function reindexAll()
