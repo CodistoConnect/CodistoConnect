@@ -184,7 +184,10 @@ class Codisto_Sync_Model_Observer
 			document.getElementsByTagName("HEAD")[0].appendChild(s);
 		})();
 		</script>');
-		$layout->getBlock('js')->append($block);
+
+		$jsBlock = $layout->getBlock('js');
+		if($jsBlock)
+			$jsBlock->append($block);
 	}
 
 	private function signalStockChange($stockItems)

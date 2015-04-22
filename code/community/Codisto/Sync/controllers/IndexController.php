@@ -179,12 +179,13 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
 			$ordertaxtotal = floatval($ordercontent->ordertaxtotal[0]);
 
+			$ordersubtotal = $store->roundPrice($ordersubtotal);
+			$ordersubtotalincltax = $store->roundPrice($ordersubtotal + $ordertaxtotal);
+			$ordertotal = $store->roundPrice($ordertotal);
+
 			$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
 			if(!$ebaysalesrecordnumber)
 				$ebaysalesrecordnumber = '';
-
-			$freightcarrier = 'Post';
-			$freightservice = 'Freight';
 
 			$billing_address = $ordercontent->orderaddresses->orderaddress[0];
 			$billing_first_name = $billing_last_name = "";
@@ -240,7 +241,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			{
 				if(in_array($shipping_address->division, array($region['code'], $region['name'])))
 				{
-
 					$regionsel_id_ship = $region['region_id'];
 				}
 			}
@@ -376,14 +376,21 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				}
 			}
 
-			$freighttotal = 0;
-			$freighttotalextax = 0;
+			$freightcarrier = 'Post';
+			$freightservice = 'Freight';
+			$freighttotal =  0.0;
+			$freighttotalextax =  0.0;
+			$freighttax = 0.0;
+			$taxpercent =  0.0;
+			$taxrate =  1.0;
+
 			foreach($ordercontent->orderlines->orderline as $orderline)
 			{
 				if($orderline->productcode[0] == 'FREIGHT')
 				{
 					$freighttotal += floatval($orderline->linetotalinctax[0]);
 					$freighttotalextax += floatval($orderline->linetotalextax[0]);
+					$freighttax = $freighttotal - $freighttotalextax;
 					$freightservice = $orderline->productname[0];
 				}
 			}
@@ -580,6 +587,10 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
 			$ordertaxtotal = floatval($ordercontent->ordertaxtotal[0]);
 
+			$ordersubtotal = $store->roundPrice($ordersubtotal);
+			$ordersubtotalincltax = $store->roundPrice($ordersubtotal + $ordertaxtotal);
+			$ordertotal = $store->roundPrice($ordertotal);
+
 			$freightcarrier = 'Post';
 			$freightservice = 'Freight';
 			$freighttotal =  0.0;
@@ -604,9 +615,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$order->setBaseShippingAmount($freighttotal);
 			$order->setShippingAmount($freighttotal);
 
-			$ordersubtotal = $store->roundPrice($ordersubtotal);
-			$ordersubtotalincltax = $store->roundPrice($ordersubtotal + $ordertaxtotal);
-			$ordertotal = $store->roundPrice($ordertotal);
 
 			$order->setBaseSubtotal($ordersubtotal);
 			$order->setSubtotal($ordersubtotal);
