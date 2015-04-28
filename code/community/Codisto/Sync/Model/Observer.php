@@ -134,7 +134,7 @@ class Codisto_Sync_Model_Observer
 		if ($item->getId() && ($productId = $item->getProductId()) && empty($children) && $qty) {
 
 			$stockItems = array();
-			$stockItems[] = $stockItem->getProductId();
+			$stockItems[] = $item->getProductId();
 
 			$this->signalStockChange($stockItems);
 
