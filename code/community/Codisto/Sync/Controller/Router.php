@@ -129,11 +129,22 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					$remoteUrl.=$querystring;
 				}
 
-				// proxy request
-				$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true, 'strict' => false, 'maxredirects' => 0 ));
+				$starttime = microtime(true);
 
+				$extensionVersion = (string)Mage::getConfig()->getModuleConfig("Codisto_Sync")->version;
+
+				// proxy request
+				$client = new Zend_Http_Client($remoteUrl, array(
+																				'adapter' => 'Zend_Http_Client_Adapter_Curl',
+																				'curloptions' => array(CURLOPT_TIMEOUT => 5, CURLOPT_ENCODING => ''),
+																				'keepalive' => true,
+																				'strict' => false,
+																				'strictredirects' => true,
+																				'maxredirects' => 0,
+																				'timeout' => 5
+																			));
 				$client->setHeaders('X-Admin-Base-Url', Mage::getBaseURL(Mage_Core_Model_Store::URL_TYPE_LINK).'adminhtml/codisto/ebaytab/');
-				$client->setHeaders('X-Codisto-Version', (string)Mage::getConfig()->getModuleConfig("Codisto_Sync")->version);
+				$client->setHeaders('X-Codisto-Version', $extensionVersion);
 
 				// set proxied headers
 				foreach($this->getAllHeaders() as $k=>$v)
@@ -142,22 +153,54 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						$client->setHeaders($k, $v);
 				}
 
-				$client->setHeaders(array('X-HostKey' => $HostKey, 'Accept-Encoding' => 'gzip,deflate'));
+				$client->setHeaders(array('X-HostKey' => $HostKey));
 
 				$requestBody = $request->getRawBody();
 				if($requestBody)
 					$client->setRawData($requestBody);
 
-				$remoteResponse = $client->request($request->getMethod());
-				if($remoteResponse->getStatus() != 403)
+				for($retry = 0; ; $retry++)
 				{
+					$remoteResponse = null;
+
+					try
+					{
+						$remoteResponse = $client->request($request->getMethod());
+
+						if($remoteResponse->isError())
+						{
+							if((microtime(true) - $starttime < 10.0) &&
+									$retry < 3)
+							{
+								usleep(500000);
+								continue;
+							}
+						}
+					}
+					catch(Exception $exception)
+					{
+						if((microtime(true) - $starttime < 10.0) &&
+								$retry < 3)
+						{
+							usleep(500000);
+							continue;
+						}
+					}
+
+					if(!$remoteResponse)
+					{
+						$response->setHttpResponseCode(500);
+						$response->setBody('<!DOCTYPE html><html lang="en"><body><h1>Oops</h1><p>Temporary error encountered, please try again</p></body></html>');
+						return true;
+					}
+
 					// set proxied status and headers
 					$response->setHttpResponseCode($remoteResponse->getStatus());
 					$response->setHeader('Pragma', '', true);
 
 					foreach($remoteResponse->getHeaders() as $k => $v)
 					{
-						if(!in_array(strtolower($k), array('server', 'content-length', 'transfer-encoding', 'date', 'connection'), true))
+						if(!in_array(strtolower($k), array('server', 'content-encoding', 'content-length', 'transfer-encoding', 'date', 'connection'), true))
 						{
 							if(is_array($v))
 							{
@@ -168,23 +211,19 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 							}
 							else
 							{
-							$response->setHeader($k, $v, true);
-					}
+								$response->setHeader($k, $v, true);
+							}
 						}
 					}
 
 					if(!$response->isRedirect())
 					{
-					// set proxied output
-					$response->setBody($remoteResponse->getRawBody());
+						// set proxied output
+						$response->setBody($remoteResponse->getRawBody());
 					}
 
 					return true;
 				}
-
-				// TODO: hostkey don't match!
-
-				return true;
 			}
 			else
 			{
