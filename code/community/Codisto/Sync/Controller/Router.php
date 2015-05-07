@@ -197,6 +197,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					// set proxied status and headers
 					$response->setHttpResponseCode($remoteResponse->getStatus());
 					$response->setHeader('Pragma', '', true);
+					$response->setHeader('Cache-Control', '', true);
 
 					foreach($remoteResponse->getHeaders() as $k => $v)
 					{
@@ -207,7 +208,9 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 								$response->setHeader($k, $v[0], true);
 
 								for($i = 1; $i < count($v); $i++)
+								{
 									$response->setHeader($k, $v[$i]);
+								}
 							}
 							else
 							{
