@@ -26,7 +26,7 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 
 		$this->loadLayout();
 
-		$block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<iframe id="codisto-control-panel" src="'. $url . '" frameborder="0"></iframe>');
+		$block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" src="'. $url . '" frameborder="0"></iframe></div>');
 		$this->_addContent($block);
 
 		$this->renderLayout();
@@ -38,7 +38,7 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 
 		$this->loadLayout();
 
-		$block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<iframe id="codisto-control-panel" src="'. $url . '" frameborder="0"></iframe>');
+		$block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" src="'. $url . '" frameborder="0"></iframe></div>');
 		$this->_addContent($block);
 
 		$this->renderLayout();

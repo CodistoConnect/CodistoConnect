@@ -37,9 +37,17 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			$MerchantID = Mage::getStoreConfig('codisto/merchantid');
 			$HostKey = Mage::getStoreConfig('codisto/hostkey');
 
+			// get logged in state
 			Mage::getSingleton('core/session', array('name'=>'adminhtml'));
+			$loggedIn = Mage::getSingleton('admin/session')->isLoggedIn();
 
-			if(Mage::getSingleton('admin/session')->isLoggedIn())
+			// unlock session
+			if(class_exists('Zend_Session', false) && Zend_Session::isStarted())
+				Zend_Session::writeClose();
+			if(isset($_SESSION))
+				session_write_close();
+
+			if($loggedIn)
 			{
 				if(!isset($MerchantID) || !isset($HostKey))
 				{
@@ -136,12 +144,12 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				// proxy request
 				$client = new Zend_Http_Client($remoteUrl, array(
 																				'adapter' => 'Zend_Http_Client_Adapter_Curl',
-																				'curloptions' => array(CURLOPT_TIMEOUT => 5, CURLOPT_ENCODING => ''),
+																				'curloptions' => array(CURLOPT_TIMEOUT => 10, CURLOPT_ENCODING => ''),
 																				'keepalive' => true,
 																				'strict' => false,
 																				'strictredirects' => true,
 																				'maxredirects' => 0,
-																				'timeout' => 5
+																				'timeout' => 10
 																			));
 				$client->setHeaders('X-Admin-Base-Url', Mage::getBaseURL(Mage_Core_Model_Store::URL_TYPE_LINK).'adminhtml/codisto/ebaytab/');
 				$client->setHeaders('X-Codisto-Version', $extensionVersion);
