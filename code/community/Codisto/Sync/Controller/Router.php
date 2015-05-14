@@ -28,7 +28,6 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 		{
 			$request->setDispatched(true);
 
-
 			$front = $this->getFront();
 			$response = $front->getResponse();
 
@@ -141,11 +140,16 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 				$extensionVersion = (string)Mage::getConfig()->getModuleConfig("Codisto_Sync")->version;
 
+				$curlOptions = array(CURLOPT_TIMEOUT => 10, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0);
+				$acceptEncoding = $request->getHeader('Accept-Encoding');
+				if(!$acceptEncoding)
+					$curlOptions[CURLOPT_ENCODING] = '';
+
 				// proxy request
 				$client = new Zend_Http_Client($remoteUrl, array(
 																				'adapter' => 'Zend_Http_Client_Adapter_Curl',
-																				'curloptions' => array(CURLOPT_TIMEOUT => 10, CURLOPT_ENCODING => ''),
-																				'keepalive' => true,
+																				'curloptions' => $curlOptions,
+																				'keepalive' => false,
 																				'strict' => false,
 																				'strictredirects' => true,
 																				'maxredirects' => 0,
@@ -207,9 +211,13 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					$response->setHeader('Pragma', '', true);
 					$response->setHeader('Cache-Control', '', true);
 
+					$filterHeaders = array('server', 'content-length', 'transfer-encoding', 'date', 'connection');
+					if(!$acceptEncoding)
+						$filterHeaders[] = 'content-encoding';
+
 					foreach($remoteResponse->getHeaders() as $k => $v)
 					{
-						if(!in_array(strtolower($k), array('server', 'content-encoding', 'content-length', 'transfer-encoding', 'date', 'connection'), true))
+						if(!in_array(strtolower($k), $filterHeaders, true))
 						{
 							if(is_array($v))
 							{
