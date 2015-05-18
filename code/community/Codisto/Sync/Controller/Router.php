@@ -202,6 +202,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					if(!$remoteResponse)
 					{
 						$response->setHttpResponseCode(500);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 						$response->setBody('<!DOCTYPE html><html lang="en"><body><h1>Oops</h1><p>Temporary error encountered, please try again</p></body></html>');
 						return true;
 					}
