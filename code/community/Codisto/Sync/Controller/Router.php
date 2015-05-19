@@ -112,7 +112,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 					$response->setHeader('Cache-Control', 'public, max-age=86400', true);
 					$response->setHeader('Pragma', 'cache', true);
-					$response->setBody('<!DOCTYPE html><html><head><body><iframe id="codisto" class="codisto-iframe" width="100%" height="800" style="border: none;" src="'.$tabPath.'" frameborder="0"></iframe></body></html>');
+					$response->setBody('<!DOCTYPE html><html><head><body><iframe id="codisto-control-panel" class="codisto-iframe codisto-product" src="'.$tabPath.'" frameborder="0" onmousewheel=""></iframe></body></html>');
 
 					return true;
 				}
