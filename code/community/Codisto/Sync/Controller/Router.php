@@ -33,6 +33,16 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 			$response->clearAllHeaders();
 
+			if(preg_match('/^\/[a-zA-z0-9-_]+\/codisto\/index(?:\/|$)/', $path) && $request->getQuery('productid'))
+			{
+				$productUrl = Mage::helper('adminhtml')->getUrl('adminhtml/catalog_product/edit', array('id' => $request->getQuery('productid')));
+
+				$response->setRedirect($productUrl);
+				$response->sendResponse();
+
+				return true;
+			}
+
 			$MerchantID = Mage::getStoreConfig('codisto/merchantid');
 			$HostKey = Mage::getStoreConfig('codisto/hostkey');
 
