@@ -24,7 +24,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 	{
 		$path = $request->getPathInfo();
 
-		if(preg_match('/^\/[a-zA-z0-9-_]+\/codisto\//', $path))
+		if(preg_match('/^\/codisto\//', $path))
 		{
 			$request->setDispatched(true);
 
@@ -33,7 +33,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 			$response->clearAllHeaders();
 
-			if(preg_match('/^\/[a-zA-z0-9-_]+\/codisto\/ebaytab(?:\/|$)/', $path) && $request->getQuery('productid'))
+			if(preg_match('/^\/codisto\/ebaytab(?:\/|$)/', $path) && $request->getQuery('productid'))
 			{
 				$productUrl = Mage::helper('adminhtml')->getUrl('adminhtml/catalog_product/edit', array('id' => $request->getQuery('productid')));
 
@@ -127,7 +127,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					return true;
 				}
 
-				$remotePath = preg_replace('/^\/[a-zA-z0-9-_]+\/codisto\/\/?|key\/[a-zA-z0-9]*\//', '', $path);
+				$remotePath = preg_replace('/^\/codisto\/\/?|key\/[a-zA-z0-9]*\//', '', $path);
 				if($MerchantID)
 				{
 					$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/' . $remotePath;
@@ -165,7 +165,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 																				'maxredirects' => 0,
 																				'timeout' => 10
 																			));
-				$client->setHeaders('X-Admin-Base-Url', Mage::getBaseURL(Mage_Core_Model_Store::URL_TYPE_LINK).'adminhtml/codisto/ebaytab/');
+				$client->setHeaders('X-Admin-Base-Url', Mage::getBaseURL(Mage_Core_Model_Store::URL_TYPE_LINK).'codisto/ebaytab/');
 				$client->setHeaders('X-Codisto-Version', $extensionVersion);
 
 				// set proxied headers
