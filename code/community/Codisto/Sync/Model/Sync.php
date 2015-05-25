@@ -32,7 +32,7 @@ class Codisto_Sync_Model_Sync
 
 	public function __construct()
 	{
-		if(method_exists(new Mage(), 'getEdition'))
+		if(method_exists('Mage', 'getEdition'))
 		{
 				$edition = Mage::getEdition();
 		}
