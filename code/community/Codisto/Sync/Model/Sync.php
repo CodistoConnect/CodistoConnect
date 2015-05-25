@@ -32,7 +32,14 @@ class Codisto_Sync_Model_Sync
 
 	public function __construct()
 	{
-		$edition = Mage::getEdition();
+		if(method_exists(new Mage(), 'getEdition'))
+		{
+				$edition = Mage::getEdition();
+		}
+		else
+		{
+				$edition = 'Community';
+		}
 
 		$version = Mage::getVersionInfo();
 
