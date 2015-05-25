@@ -185,13 +185,13 @@
 
 	<admin>
 		<routers>
-			<admin>
+			<adminhtml>
 				<args>
 					<modules>
 						<Codisto_Sync after="Mage_Adminhtml">Codisto_Sync</Codisto_Sync>
 					</modules>
 				</args>
-			</admin>
+			</adminhtml>
 		</routers>
 	</admin>
 
