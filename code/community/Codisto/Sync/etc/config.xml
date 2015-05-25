@@ -192,6 +192,13 @@
 					</modules>
 				</args>
 			</adminhtml>
+			<admin>
+				<args>
+					<modules>
+						<Codisto_Sync after="Mage_Adminhtml">Codisto_Sync</Codisto_Sync>
+					</modules>
+				</args>
+			</admin>
 		</routers>
 	</admin>
 
