@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * Codisto eBay Sync Extension
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magentocommerce.com so you can be sent a copy immediately.
+ *
+ * @category   Codisto
+ * @package	   Codisto_Sync
+ * @copyright  Copyright (c) 2015 On Technology Pty. Ltd. (http://codisto.com)
+ * @license	   http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+-->
+
+<config>
+	<menu>
+		<codisto translate="title">
+			<title>eBay | Codisto</title>
+			<sort_order>99</sort_order>
+			<children>
+				<subitem translate="title">
+					<title>Manage Listings</title>
+					<sort_order>1</sort_order>
+					<action>adminhtml/codisto/index</action>
+				</subitem>
+				<subitem1 translate="title">
+					<title>Settings</title>
+					<sort_order>2</sort_order>
+					<action>adminhtml/codisto/settings</action>
+				</subitem1>
+			</children>
+		</codisto>
+	</menu>
+
+	<acl>
+		<resources>
+			<admin>
+				<children>
+					<codisto translate="title">
+						<title>Top Level Codisto Menu Item</title>
+						<sort_order>1</sort_order>
+						<children>
+							<subitem>
+								<title>Manage Listings</title>
+							</subitem >
+							<subitem>
+								<title>Settings</title>
+							</subitem>
+						</children>
+					</codisto>
+				</children>
+			</admin>
+		</resources>
+	</acl>
+</config>

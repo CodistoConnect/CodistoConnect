@@ -4,7 +4,6 @@
 .project
 .metadata
 
-
 #Github Magento .gitignore
 .modgit/
 .modman/
@@ -127,9 +126,14 @@ skin/frontend/default/modern/
 skin/frontend/enterprise
 skin/install/
 var/
+etc/
+code/
+design/
+locale/
+Mage.php
 
 #Allow Codisto Plugin whitelist
 !code/community/Codisto/*
 !etc/modules/Codisto*
 
-
+.remote-sync.json
