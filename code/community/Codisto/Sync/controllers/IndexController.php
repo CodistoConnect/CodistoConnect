@@ -159,11 +159,14 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 	private function ProcessOrderCreate($xml)
 	{
+
+		$connection = Mage::getSingleton('core/resource')->getConnection('core_write');
+		$connection->beginTransaction();
+
 		try
 		{
-
 			$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
-
+			
 			foreach($ordercontent->orderlines->orderline as $orderline)
 			{
 				if($orderline->productcode[0] != 'FREIGHT') {
@@ -172,15 +175,13 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					if($productid)
 						$product = Mage::getModel('catalog/product')->load($productid);
 					if(!$product) {
+						$connection->rollback();
+						$response = $this->getResponse();
 						$response->setHeader("Content-Type", "application/json");
 						$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => 'externalreference not found')));
-						die();
 					}
 				}
 			}
-
-			$connection = Mage::getSingleton('core/resource')->getConnection('core_write');
-			$connection->beginTransaction();
 
 			$website = Mage::app()->getWebsite();
 			$websiteId = $website->getId();
@@ -323,6 +324,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$quote->getBillingAddress()->addData($addressData_billing);
 			$quote->getShippingAddress()->addData($addressData_shipping);
 
+			$totalquantity = 0;
 			foreach($ordercontent->orderlines->orderline as $orderline)
 			{
 				if($orderline->productcode[0] != 'FREIGHT')
@@ -336,6 +338,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					$subtotalinctax = floatval($orderline->linetotalinctax[0]);
 					$subtotal = floatval($orderline->linetotal[0]);
 
+					$totalquantity += $qty;
+					
 					$item = Mage::getModel('sales/quote_item');
 					$item->setProduct($product);
 					$item->setSku($productcode);
@@ -368,22 +372,27 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 							}
 
 							$stockData = $stockItem->getData();
+							
+							if(isset($stockData['use_config_manage_stock'])) {
+							
+								if($stockData['use_config_manage_stock'] != 0) {
+									$stockcontrol = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
+								} else {
+									$stockcontrol = $stockData['manage_stock'];
+								}
 
-							if($stockData['use_config_manage_stock'] != 0) {
-								$stockcontrol = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
-							} else {
-								$stockcontrol = $stockData['manage_stock'];
-							}
-
-							if($stockcontrol !=0) {
-								$stockItem->subtractQty(intval($qty));
-								$stockItem->save();
+								if($stockcontrol !=0) {
+									$stockItem->subtractQty(intval($qty));
+									$stockItem->save();
+								}
 							}
 						}
 					}
 				}
 			}
 
+			$order->setTotalQtyOrdered((int)$totalquantity);
+			
 			$freightcarrier = 'Post';
 			$freightservice = 'Freight';
 			$freighttotal =  0.0;
@@ -397,8 +406,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				if($orderline->productcode[0] == 'FREIGHT')
 				{
 					$freighttotal += floatval($orderline->linetotalinctax[0]);
-					$freighttotalextax += floatval($orderline->linetotalextax[0]);
-					$freighttax = $freighttotal - $freighttotalextax;
+					$freighttotalextax += floatval($orderline->linetotal[0]);
+					$freighttax = (float)$freighttotal - $freighttotalextax;
 					$freightservice = $orderline->productname[0];
 				}
 			}
@@ -530,16 +539,39 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
 			$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
 
-			$order->setBaseSubtotal($ordersubtotal);
-			$order->setSubtotal($ordersubtotal);
-			$order->setBaseSubtotalInclTax($ordersubtotalincltax);
-			$order->setSubtotalInclTax($ordersubtotalincltax);
-			$order->setBaseGrandTotal($ordertotal);
-			$order->setGrandTotal($ordertotal);
+			$order->setShippingMethod('flatrate_flatrate');
+			$order->setShippingDescription($freightservice);
+
+			$order->setBaseShippingAmount($freighttotal);
+			$order->setShippingAmount($freighttotal);
+
+			$order->setBaseShippingInclTax($freighttotal);
+			$order->setShippingInclTax($freighttotal);
 
 			$order->setBaseShippingTaxAmount($freighttax);
 			$order->setShippingTaxAmount($freighttax);
+			
+			$order->setBaseSubtotal($ordersubtotal);
+			$order->setSubtotal($ordersubtotal);
 
+			$order->setBaseSubtotalInclTax($ordersubtotalincltax);
+			$order->setSubtotalInclTax($ordersubtotalincltax);
+
+			$order->setBaseTaxAmount($ordertaxtotal);
+			$order->setTaxAmount($ordertaxtotal);
+
+			$order->setDiscountAmount(0.0);
+			$order->setShippingDiscountAmount(0.0);
+			$order->setBaseShippingDiscountAmount(0.0);
+			
+			$order->setBaseHiddenTaxAmount(0.0);
+			$order->setHiddenTaxAmount(0.0);
+			$order->setBaseHiddenShippingTaxAmnt(0.0);
+			$order->setHiddenShippingTaxAmount(0.0);
+
+			$order->setBaseGrandTotal($ordertotal);
+			$order->setGrandTotal($ordertotal);
+			
 			$order->save();
 
 			if($paypaltransactionid) {
@@ -612,7 +644,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				if($orderline->productcode[0] == 'FREIGHT')
 				{
 					$freighttotal += floatval($orderline->linetotalinctax[0]);
-					$freighttotalextax += floatval($orderline->linetotalextax[0]);
+					$freighttotalextax += floatval($orderline->linetotal[0]);
 					$freighttax = $freighttotal - $freighttotalextax;
 					$freightservice = $orderline->productname[0];
 				}
@@ -620,19 +652,37 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 			$order->setShippingMethod('flatrate_flatrate');
 			$order->setShippingDescription($freightservice);
+
 			$order->setBaseShippingAmount($freighttotal);
 			$order->setShippingAmount($freighttotal);
 
-
-			$order->setBaseSubtotal($ordersubtotal);
-			$order->setSubtotal($ordersubtotal);
-			$order->setBaseSubtotalInclTax($ordersubtotalincltax);
-			$order->setSubtotalInclTax($ordersubtotalincltax);
-			$order->setBaseGrandTotal($ordertotal);
-			$order->setGrandTotal($ordertotal);
+			$order->setBaseShippingInclTax($freighttotal);
+			$order->setShippingInclTax($freighttotal);
 
 			$order->setBaseShippingTaxAmount($freighttax);
 			$order->setShippingTaxAmount($freighttax);
+			
+			$order->setBaseSubtotal($ordersubtotal);
+			$order->setSubtotal($ordersubtotal);
+
+			$order->setBaseSubtotalInclTax($ordersubtotalincltax);
+			$order->setSubtotalInclTax($ordersubtotalincltax);
+
+			$order->setBaseTaxAmount($ordertaxtotal);
+			$order->setTaxAmount($ordertaxtotal);
+
+			$order->setDiscountAmount(0.0);
+			$order->setShippingDiscountAmount(0.0);
+			$order->setBaseShippingDiscountAmount(0.0);
+			
+			$order->setBaseHiddenTaxAmount(0.0);
+			$order->setHiddenTaxAmount(0.0);
+			$order->setBaseHiddenShippingTaxAmnt(0.0);
+			$order->setHiddenShippingTaxAmount(0.0);
+
+			$order->setBaseGrandTotal($ordertotal);
+			$order->setGrandTotal($ordertotal);
+
 
 			/* States: cancelled, processing, captured, inprogress, complete */
 			if($ordercontent->orderstate == 'captured' && ($orderstatus!='pending' || $orderstatus!='new')) {
@@ -653,6 +703,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
 			}
 
+			$totalquantity = 0;
+			
 			if(($ordercontent->orderstate == 'cancelled' && $orderstatus!='canceled') || ($ordercontent->orderstate != 'cancelled' && $orderstatus == 'canceled')) {
 				foreach($ordercontent->orderlines->orderline as $orderline)
 				{
@@ -662,6 +714,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						$prodid = $catalog->getIdBySku((string)$orderline->productcode[0]);
 						$product = Mage::getModel('catalog/product')->load($prodid);
 						$qty = $orderline->quantity[0];
+						$totalquantity += $qty;
 
 						if (!($stockItem = $product->getStockItem())) {
 							$stockItem = Mage::getModel('cataloginventory/stock_item');
@@ -672,17 +725,19 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						$stockItem = $product->getStockItem();
 						$stockData = $stockItem->getData();
 
-						if($stockData['use_config_manage_stock'] != 0) {
-							$stockcontrol = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
-						} else {
-							$stockcontrol = $stockData['manage_stock'];
-						}
-
-						if($stockcontrol !=0) {
-							if($ordercontent->orderstate == 'cancelled') {
-								$stockItem->addQty(intval($qty));
+						if(isset($stockData['use_config_manage_stock'])) {
+							if($stockData['use_config_manage_stock'] != 0) {
+								$stockcontrol = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
 							} else {
-								$stockItem->subtractQty(intval($qty));
+								$stockcontrol = $stockData['manage_stock'];
+							}
+
+							if($stockcontrol !=0) {
+								if($ordercontent->orderstate == 'cancelled') {
+									$stockItem->addQty(intval($qty));
+								} else {
+									$stockItem->subtractQty(intval($qty));
+								}
 							}
 						}
 
@@ -691,6 +746,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					}
 				}
 			}
+			
+			$order->setTotalQtyOrdered((int)$totalquantity);
 
 			if($ordercontent->paymentstatus == 'complete')
 			{

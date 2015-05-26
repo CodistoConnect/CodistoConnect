@@ -20,9 +20,13 @@
 
 class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 {
+
 	public function indexAction()
 	{
-		$url = preg_replace('/\/admin\//', '/', Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/index'));
+		
+		$adminurl = Mage::getStoreConfig('admin/url/use_custom_path') ? Mage::getStoreConfig('admin/url/custom_path') : 'admin';
+		$reg = '/\/' . $adminurl . '\//';
+		$url = preg_replace($reg, '/', Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/index'));
 
 		$this->loadLayout();
 
@@ -34,7 +38,9 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 
 	public function settingsAction()
 	{
-		$url = preg_replace('/\/admin\//', '/', Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/settings'));
+		$adminurl = Mage::getStoreConfig('admin/url/use_custom_path') ? Mage::getStoreConfig('admin/url/custom_path') : 'admin';
+		$reg = '/\/' . $adminurl . '\//';
+		$url = preg_replace($reg, '/', Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/settings'));
 
 		$this->loadLayout();
 
