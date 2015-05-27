@@ -179,6 +179,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						$response = $this->getResponse();
 						$response->setHeader("Content-Type", "application/json");
 						$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => 'externalreference not found')));
+						die();
 					}
 				}
 			}
@@ -391,8 +392,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				}
 			}
 
-			$order->setTotalQtyOrdered((int)$totalquantity);
-			
 			$freightcarrier = 'Post';
 			$freightservice = 'Freight';
 			$freighttotal =  0.0;
@@ -440,6 +439,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 			$convertquote = Mage::getSingleton('sales/convert_quote');
 			$order = $convertquote->toOrder($quote);
+			$order->setTotalQtyOrdered((int)$totalquantity);
 
 			$convertquote->addressToOrder($quote->getShippingAddress(), $order);
 			$order->setGlobal_currency_code($currencyCode);
