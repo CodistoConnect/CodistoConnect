@@ -156,7 +156,9 @@ class Codisto_Sync_Model_Observer
 			{
 				$entity_id = $product->getId();
 
-				$url = preg_replace('/\/admin\//', '/', Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/', array('product' => $entity_id, 'iframe' => 1)));
+				$adminurl = Mage::getStoreConfig('admin/url/use_custom_path') ? Mage::getStoreConfig('admin/url/custom_path') : 'admin';
+				$reg = '/\/' . $adminurl . '\//';
+				$url = preg_replace($reg, '/', Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/', array('product' => $entity_id, 'iframe' => 1)));
 
 				$block->addTab('codisto_ebay_tab', array(
 					'label' => 'eBay',
