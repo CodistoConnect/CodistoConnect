@@ -127,28 +127,37 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 	public function indexAction()
 	{
+		$request = $this->getRequest();
 		$method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
 		$content_type = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : "";
+		$server = $request->getServer();
 
-		if($method == 'POST')
+		if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 		{
-			if($content_type == "text/xml")
+			if($method == 'POST')
 			{
-				$xml = simplexml_load_string(file_get_contents("php://input"));
+				if($content_type == "text/xml")
+				{
+					$xml = simplexml_load_string(file_get_contents("php://input"));
 
-				$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
+					$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
-				$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)->getFirstItem();
+					$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)->getFirstItem();
 
-				if($order && $order->getId()) {
+					if($order && $order->getId()) {
 
-					$this->ProcessOrderSync($order, $xml);
+						$this->ProcessOrderSync($order, $xml);
 
-				} else {
+					} else {
 
-					$this->ProcessOrderCreate($xml);
+						$this->ProcessOrderCreate($xml);
 
+					}
 				}
+			}
+			else
+			{
+				include_once Mage::getBaseDir() . '/errors/404.php';
 			}
 		}
 		else
