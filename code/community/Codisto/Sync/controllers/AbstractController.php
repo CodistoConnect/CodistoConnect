@@ -33,7 +33,7 @@ abstract class Codisto_Sync_AbstractController extends Mage_Core_Controller_Fron
 		return true;
 	}
 
-	private function getAllHeaders($extra = false)
+	protected function getAllHeaders($extra = false)
 	{
 		$server = $this->getRequest()->getServer();
 
