@@ -18,7 +18,7 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
+class Codisto_Sync_IndexController extends Codisto_Sync_AbstractController
 {
 	protected $_PayPalmethodType = Mage_Paypal_Model_Config::METHOD_WPP_EXPRESS;
 
