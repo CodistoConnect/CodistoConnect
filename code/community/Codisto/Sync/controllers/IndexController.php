@@ -127,16 +127,13 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 	public function indexAction()
 	{
-		syslog(LOG_INFO, " in indexAction");
 		$request = $this->getRequest();
 		$method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
 		$content_type = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : "";
 		$server = $request->getServer();
 
-		syslog(LOG_INFO, "Checking hash baby");
 		if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 		{
-			syslog(LOG_INFO, " all good");
 			if($method == 'POST')
 			{
 				if($content_type == "text/xml")
