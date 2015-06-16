@@ -63,14 +63,21 @@ class Codisto_Sync_Model_Sync
 		$dir = rtrim($dir, '\\/');
 		$result = array();
 
-		foreach (scandir($dir) as $f) {
-			if ($f !== '.' and $f !== '..') {
-				if (is_dir("$dir/$f")) {
-					$result = array_merge($result, $this->FilesInDir("$dir/$f", "$f/"));
-				} else {
-					$result[] = $prefix.$f;
+		try
+		{
+			foreach (scandir($dir) as $f) {
+				if ($f !== '.' and $f !== '..') {
+					if (is_dir("$dir/$f")) {
+						$result = array_merge($result, $this->FilesInDir("$dir/$f", "$f/"));
+					} else {
+						$result[] = $prefix.$f;
+					}
 				}
 			}
+		}
+		catch(Exception $e)
+		{
+			
 		}
 
 		return $result;
