@@ -19,7 +19,7 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Codisto_Sync_SyncController extends Codisto_Sync_BaseController
+class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 {
 	private $defaultSyncTimeout = 10;
 	private $defaultSleep = 100000;
