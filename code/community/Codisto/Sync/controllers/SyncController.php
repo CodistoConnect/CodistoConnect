@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Codisto eBay Sync Extension
  *
@@ -18,7 +19,7 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
+class Codisto_Sync_SyncController extends Codisto_Sync_BaseController
 {
 	private $defaultSyncTimeout = 10;
 	private $defaultSleep = 100000;
@@ -347,27 +348,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		}
 	}
 
-	private function getAllHeaders($extra = false)
-	{
-		$server = $this->getRequest()->getServer();
-
-		foreach ($server as $name => $value)
-		{
-			if (substr($name, 0, 5) == 'HTTP_')
-			{
-				$name = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
-				$headers[$name] = $value;
-			} else if ($name == 'CONTENT_TYPE') {
-				$headers['Content-Type'] = $value;
-			} else if ($name == 'CONTENT_LENGTH') {
-				$headers['Content-Length'] = $value;
-			}
-		}
-		if($extra)
-			$headers = array_merge($headers, $extra);
-		return $headers;
-	}
-
 	private function getConfig()
 	{
 		$response = $this->getResponse();
@@ -380,20 +360,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			$response->setBody('Config Error - Missing MerchantID');
 		if (!$this->config['HostKey'] || $this->config['HostKey'] == '')
 			$response->setBody('Config Error - Missing HostKey');
-	}
-
-
-	private function checkHash($HostKey, $Nonce, $Hash)
-	{
-		$response = $this->getResponse();
-		$r = $HostKey . $Nonce;
-		$base = hash('sha256', $r, true);
-		$checkHash = base64_encode($base);
-		if ($Hash != $checkHash)
-		{
-			$response->setBody('Hash Mismatch Error.');
-		}
-		return true;
 	}
 
 	private function Send($syncDb)
