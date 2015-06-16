@@ -58,6 +58,147 @@ class Codisto_Sync_Model_Sync
 		$this->cmsHelper = Mage::helper('cms');
 	}
 
+	private function FilesInDir($dir, $prefix = '')
+	{
+		$dir = rtrim($dir, '\\/');
+		$result = array();
+
+		try
+		{
+			if(is_dir($dir))
+			{
+				$scan = @scandir($dir);
+
+				if($scan !== false)
+				{
+					foreach ($scan as $f) {
+						if ($f !== '.' and $f !== '..') {
+							if (is_dir("$dir/$f")) {
+								$result = array_merge($result, $this->FilesInDir("$dir/$f", "$f/"));
+							} else {
+								$result[] = $prefix.$f;
+							}
+						}
+					}
+				}
+			}
+		}
+		catch(Exception $e)
+		{
+
+		}
+
+		return $result;
+	}
+
+	public function TemplateRead($templateDb)
+	{
+		$ebayDesignDir = Mage::getBaseDir('design').'/ebay/';
+
+		try
+		{
+			$db = $this->GetTemplateDb($templateDb);
+
+			$insert = $db->prepare('INSERT OR IGNORE INTO File(Name, Content, LastModified) VALUES (?, ?, ?)');
+			$update = $db->prepare('UPDATE File SET Content = ?, Changed = -1 WHERE Name = ? AND LastModified != ?');
+
+			$filelist = $this->FilesInDir(Mage::getBaseDir('design').'/ebay/');
+
+			$db->exec('BEGIN EXCLUSIVE TRANSACTION');
+
+			foreach ($filelist as $key => $name)
+			{
+				try
+				{
+					$fileName = $ebayDesignDir.$name;
+
+					if(!in_array($name, array('README')))
+					{
+						$content = @file_get_contents($fileName);
+						if($content !== false)
+						{
+							$lastModified = strftime('%Y-%m-%d %H:%M:%S', stat($fileName)['mtime']);
+
+							$update->bindParam(1, $content);
+							$update->bindParam(2, $name);
+							$update->bindParam(3, $lastModified);
+							$update->execute();
+
+							if($update->rowCount() == 0)
+							{
+								$insert->bindParam(1, $name);
+								$insert->bindParam(2, $content);
+								$insert->bindParam(3, $lastModified);
+								$insert->execute();
+							}
+						}
+					}
+				}
+				catch(Exception $e)
+				{
+
+				}
+			}
+			$db->exec('COMMIT TRANSACTION');
+		}
+		catch(Exception $e)
+		{
+			return $e->getMessage();
+		}
+
+		return 'ok';
+	}
+
+	public function TemplateWrite($templateDb)
+	{
+		$ebayDesignDir = Mage::getBaseDir('design').'/ebay/';
+
+		try
+		{
+			$db = new PDO('sqlite:' . $templateDb);
+			$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+			$db->exec('PRAGMA synchronous=0');
+			$db->exec('PRAGMA temp_store=2');
+			$db->exec('PRAGMA page_size=65536');
+			$db->exec('PRAGMA encoding=\'UTF-8\'');
+			$db->exec('PRAGMA cache_size=15000');
+			$db->exec('PRAGMA soft_heap_limit=67108864');
+			$db->exec('PRAGMA journal_mode=MEMORY');
+
+			$files = $db->prepare('SELECT Name, Content FROM File');
+			$files->execute();
+
+			$files->bindColumn(1, $name);
+			$files->bindColumn(2, $content);
+
+			while($files->fetch())
+			{
+				$fileName = $ebayDesignDir.$name;
+
+				if(strpos($name, '..') === false)
+				{
+					if(!file_exists($fileName))
+					{
+						$dir = dirname($fileName);
+
+						if(!is_dir($dir))
+						{
+							mkdir($dir.'/', 0755, true);
+						}
+
+						@file_put_contents($fileName, $content);
+					}
+				}
+			}
+		}
+		catch(Exception $e)
+		{
+			return $e->getMessage();
+		}
+
+		return 'ok';
+	}
 
 	public function UpdateCategory($syncDb, $id)
 	{
@@ -680,6 +821,26 @@ class Codisto_Sync_Model_Sync
 
 		$db->exec('CREATE TABLE IF NOT EXISTS Configuration (configuration_id integer, configuration_title text, configuration_key text, configuration_value text, configuration_description text, configuration_group_id integer, sort_order integer, last_modified datetime, date_added datetime, use_function text, set_function text)');
 		$db->exec('CREATE TABLE IF NOT EXISTS Log (ID, Type text NOT NULL, Content text NOT NULL)');
+		$db->exec('COMMIT TRANSACTION');
+
+		return $db;
+	}
+
+	private function GetTemplateDb($templateDb)
+	{
+		$db = new PDO('sqlite:' . $templateDb);
+		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+		$db->exec('PRAGMA synchronous=0');
+		$db->exec('PRAGMA temp_store=2');
+		$db->exec('PRAGMA page_size=65536');
+		$db->exec('PRAGMA encoding=\'UTF-8\'');
+		$db->exec('PRAGMA cache_size=15000');
+		$db->exec('PRAGMA soft_heap_limit=67108864');
+		$db->exec('PRAGMA journal_mode=MEMORY');
+
+		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
+		$db->exec('CREATE TABLE IF NOT EXISTS File(Name text NOT NULL PRIMARY KEY, Content blob NOT NULL, LastModified datetime NOT NULL, Changed bit NOT NULL DEFAULT -1)');
 		$db->exec('COMMIT TRANSACTION');
 
 		return $db;

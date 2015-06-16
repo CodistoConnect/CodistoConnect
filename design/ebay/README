@@ -1,0 +1,6 @@
+Template Editing is described here:
+
+https://codisto.zendesk.com/hc/en-us/articles/205212765-Editing-the-ImageSmart-eBay-Listing-Template
+
+To receive a copy of the default template files ensure that <MAGENTO_BASE_DIR>app/design/ebay folder is writable by the user context of the webserver/fpm pool
+
