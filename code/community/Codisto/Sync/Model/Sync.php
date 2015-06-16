@@ -91,15 +91,19 @@ class Codisto_Sync_Model_Sync
 		foreach ($filelist as $key => $value)
 		{
 			$fileName = Mage::getBaseDir('design').'/ebay/'.$value;
-			$fp = fopen($fileName, 'rb');
-			$lastModified = strftime('%Y-%m-%d %H:%M:%S', fstat($fp)['mtime']);
 
-			$stmt->bindParam(1, $value);
-			$stmt->bindParam(2, $fp, PDO::PARAM_LOB);
-			$stmt->bindParam(3, $lastModified);
-			$stmt->execute();
+			if(!in_array($value, 'README'))
+			{
+				$fp = fopen($fileName, 'rb');
+				$lastModified = strftime('%Y-%m-%d %H:%M:%S', fstat($fp)['mtime']);
 
-			fclose($fp);
+				$stmt->bindParam(1, $value);
+				$stmt->bindParam(2, $fp, PDO::PARAM_LOB);
+				$stmt->bindParam(3, $lastModified);
+				$stmt->execute();
+
+				fclose($fp);
+			}
 		}
 		$db->exec('COMMIT TRANSACTION');
 	}
