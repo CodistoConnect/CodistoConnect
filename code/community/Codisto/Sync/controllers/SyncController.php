@@ -289,36 +289,51 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 							if($request->getQuery('markreceived'))
 							{
-								$db = new PDO('sqlite:' . $templateDb);
-								$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-								$update = $db->prepare('UPDATE File SET LastModified = ? WHERE Name = ?');
-
-								$files = $db->query('SELECT Name FROM File WHERE Changed != 0');
-								$files->execute();
-
-								$db->exec('BEGIN EXCLUSIVE TRANSACTION');
-
-								while($row = $files->fetch())
+								try
 								{
-									$stat = stat(Mage::getBaseDir('design').'/ebay/'.$row['Name']);
+									$db = new PDO('sqlite:' . $templateDb);
+									$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-									$lastModified = strftime('%Y-%m-%d %H:%M:%S', $stat['mtime']);
+									$update = $db->prepare('UPDATE File SET LastModified = ? WHERE Name = ?');
 
-									$update->bindParam(1, $lastModified);
-									$update->bindParam(2, $row['Name']);
-									$update->execute();
+									$files = $db->query('SELECT Name FROM File WHERE Changed != 0');
+									$files->execute();
+
+									$db->exec('BEGIN EXCLUSIVE TRANSACTION');
+
+									while($row = $files->fetch())
+									{
+										$stat = stat(Mage::getBaseDir('design').'/ebay/'.$row['Name']);
+
+										$lastModified = strftime('%Y-%m-%d %H:%M:%S', $stat['mtime']);
+
+										$update->bindParam(1, $lastModified);
+										$update->bindParam(2, $row['Name']);
+										$update->execute();
+									}
+
+									$db->exec('UPDATE File SET Changed = 0');
+									$db->exec('COMMIT TRANSACTION');
+									$db = null;
+
+									$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+									$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+									$response->setHeader('Pragma', 'no-cache', true);
+									$response->setBody(json_encode(array( 'ack' => 'ok' )));
+									$response->sendResponse();
 								}
-
-								$db->exec('UPDATE File SET Changed = 0');
-								$db->exec('COMMIT TRANSACTION');
-								$db = null;
-
-								$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-								$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-								$response->setHeader('Pragma', 'no-cache', true);
-								$response->setBody(json_encode(array( 'ack' => 'ok' )));
-								$response->sendResponse();
+								catch(Exception $e)
+								{
+									http_response_code(500);
+									$response->setStatusCode(500);
+									$response->setRawHeader('HTTP/1.0 500 Internal Server Error');
+									$response->setRawHeader('Status: 500 Internal Server Error');
+									$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+									$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+									$response->setHeader('Pragma', 'no-cache', true);
+									$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => $e->getMessage() )));
+									$response->sendResponse();
+								}
 							}
 							else
 							{
