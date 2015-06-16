@@ -264,6 +264,55 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$response->setBody('Security Error');
 						$response->sendResponse();
 					}
+					die;
+
+				case 'TEMPLATE':
+
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
+						if($request->isGet())
+						{
+							$templateDb = Mage::getBaseDir('var') . '/codisto-ebay-template.db';
+
+							$syncObject = Mage::getModel('codistosync/sync');
+
+							$syncObject->TemplateRead($templateDb);
+
+							$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-template-');
+
+							copy($templateDb, $tmpDb);
+
+							$db = new PDO('sqlite:' . $tmpDb);
+							$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+							$db->exec('VACUUM');
+
+							$this->Send($tmpDb);
+
+							unlink($tmpDb);
+						}
+						else if($request->isPost() || $request->isPut())
+						{
+							$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-template-');
+
+							file_put_contents($tmpDb, $request->getRawBody());
+
+							$syncObject = Mage::getModel('codistosync/sync');
+
+							$syncObject->TemplateWrite($tmpDb);
+
+							unlink($tmpDb);
+						}
+					}
+					else
+					{
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setRawHeader('Status: 400 Bad Request');
+						$response->setBody('Security Error');
+						$response->sendResponse();
+					}
+					die;
 
 
 				default:
