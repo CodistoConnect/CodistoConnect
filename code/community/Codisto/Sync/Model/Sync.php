@@ -65,19 +65,27 @@ class Codisto_Sync_Model_Sync
 
 		try
 		{
-			foreach (scandir($dir) as $f) {
-				if ($f !== '.' and $f !== '..') {
-					if (is_dir("$dir/$f")) {
-						$result = array_merge($result, $this->FilesInDir("$dir/$f", "$f/"));
-					} else {
-						$result[] = $prefix.$f;
+			if(is_dir($dir))
+			{
+				$scan = scandir($dir);
+
+				if($scan !== false)
+				{
+					foreach ($scan as $f) {
+						if ($f !== '.' and $f !== '..') {
+							if (is_dir("$dir/$f")) {
+								$result = array_merge($result, $this->FilesInDir("$dir/$f", "$f/"));
+							} else {
+								$result[] = $prefix.$f;
+							}
+						}
 					}
 				}
 			}
 		}
 		catch(Exception $e)
 		{
-			
+
 		}
 
 		return $result;
@@ -85,6 +93,8 @@ class Codisto_Sync_Model_Sync
 
 	public function TemplateRead($templateDb)
 	{
+		$ebayDesignDir = Mage::getBaseDir('design').'/ebay/';
+
 		$db = $this->GetTemplateDb($templateDb);
 
 		$stmt = $db->prepare("INSERT INTO File(Name, Content, LastModified) VALUES (?, ?, ?)");
@@ -97,7 +107,7 @@ class Codisto_Sync_Model_Sync
 
 		foreach ($filelist as $key => $value)
 		{
-			$fileName = Mage::getBaseDir('design').'/ebay/'.$value;
+			$fileName = $ebayDesignDir.$value;
 
 			if(!in_array($value, 'README'))
 			{
