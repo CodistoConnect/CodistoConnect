@@ -259,6 +259,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			else
 			{
 				include_once Mage::getBaseDir() . '/errors/404.php';
+
+				return true;
 			}
 		}
 

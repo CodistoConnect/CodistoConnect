@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Codisto eBay Sync Extension
  *
@@ -18,7 +19,7 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
+class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 {
 	private $defaultSyncTimeout = 10;
 	private $defaultSleep = 100000;
@@ -102,10 +103,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						http_response_code(400);
+						$response->setStatusCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setRawHeader('Status: 400 Bad Request');
 						$response->setBody('Security Error');
 						$response->sendResponse();
 					}
@@ -138,10 +142,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						http_response_code(400);
+						$response->setStatusCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setRawHeader('Status: 400 Bad Request');
 						$response->setBody('Security Error');
 						$response->sendResponse();
 					}
@@ -204,10 +211,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						http_response_code(400);
+						$response->setStatusCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setRawHeader('Status: 400 Bad Request');
 						$response->setBody('Security Error');
 						$response->sendResponse();
 					}
@@ -257,13 +267,146 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						http_response_code(400);
+						$response->setStatusCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setRawHeader('Status: 400 Bad Request');
 						$response->setBody('Security Error');
 						$response->sendResponse();
 					}
+					die;
+
+				case 'TEMPLATE':
+
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
+						if($request->isGet())
+						{
+							$templateDb = Mage::getBaseDir('var') . '/codisto-ebay-template.db';
+
+							if($request->getQuery('markreceived'))
+							{
+								try
+								{
+									$db = new PDO('sqlite:' . $templateDb);
+									$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+									$update = $db->prepare('UPDATE File SET LastModified = ? WHERE Name = ?');
+
+									$files = $db->query('SELECT Name FROM File WHERE Changed != 0');
+									$files->execute();
+
+									$db->exec('BEGIN EXCLUSIVE TRANSACTION');
+
+									while($row = $files->fetch())
+									{
+										$stat = stat(Mage::getBaseDir('design').'/ebay/'.$row['Name']);
+
+										$lastModified = strftime('%Y-%m-%d %H:%M:%S', $stat['mtime']);
+
+										$update->bindParam(1, $lastModified);
+										$update->bindParam(2, $row['Name']);
+										$update->execute();
+									}
+
+									$db->exec('UPDATE File SET Changed = 0');
+									$db->exec('COMMIT TRANSACTION');
+									$db = null;
+
+									$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+									$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+									$response->setHeader('Pragma', 'no-cache', true);
+									$response->setBody(json_encode(array( 'ack' => 'ok' )));
+									$response->sendResponse();
+								}
+								catch(Exception $e)
+								{
+									http_response_code(500);
+									$response->setStatusCode(500);
+									$response->setRawHeader('HTTP/1.0 500 Internal Server Error');
+									$response->setRawHeader('Status: 500 Internal Server Error');
+									$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+									$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+									$response->setHeader('Pragma', 'no-cache', true);
+									$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => $e->getMessage() )));
+									$response->sendResponse();
+								}
+							}
+							else
+							{
+								$syncObject = Mage::getModel('codistosync/sync');
+
+								$syncObject->TemplateRead($templateDb);
+
+								$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-template-');
+
+								copy($templateDb, $tmpDb);
+
+								$db = new PDO('sqlite:' . $tmpDb);
+								$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+								$db->exec('DELETE FROM File WHERE Changed = 0');
+								$db->exec('VACUUM');
+
+								$fileCountStmt = $db->query('SELECT COUNT(*) AS fileCount FROM File');
+								$fileCountStmt->execute();
+								$fileCount = $fileCountStmt->fetch()['fileCount'];
+								$db = null;
+
+								if($fileCount == 0)
+								{
+									http_response_code(204);
+									$response->setStatusCode(204);
+									$response->setRawHeader('HTTP/1.0 204 No Content');
+									$response->setRawHeader('Status: 204 No Content');
+									$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+									$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+									$response->setHeader('Pragma', 'no-cache', true);
+									$response->setBody('');
+									$response->sendResponse();
+								}
+								else
+								{
+									$this->Send($tmpDb);
+								}
+
+								unlink($tmpDb);
+							}
+						}
+						else if($request->isPost() || $request->isPut())
+						{
+							$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-template-');
+
+							file_put_contents($tmpDb, $request->getRawBody());
+
+							$syncObject = Mage::getModel('codistosync/sync');
+
+							$syncObject->TemplateWrite($tmpDb);
+
+							unlink($tmpDb);
+
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
+							$response->setBody(json_encode(array( 'ack' => 'ok' )));
+							$response->sendResponse();
+						}
+					}
+					else
+					{
+						http_response_code(400);
+						$response->setStatusCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setBody('Security Error');
+						$response->sendResponse();
+					}
+					die;
 
 
 				default:
@@ -296,7 +439,10 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		}
 		else
 		{
-			$response->setRawHeader('Status: 400 Bad Request');
+			http_response_code(400);
+			$response->setStatusCode(400);
+			$response->setRawHeader('HTTP/1.0 400 Security Error');
+			$response->setRawHeader('Status: 400 Security Error');
 			$response->setBody('Security Error');
 		}
 
@@ -347,27 +493,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		}
 	}
 
-	private function getAllHeaders($extra = false)
-	{
-		$server = $this->getRequest()->getServer();
-
-		foreach ($server as $name => $value)
-		{
-			if (substr($name, 0, 5) == 'HTTP_')
-			{
-				$name = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
-				$headers[$name] = $value;
-			} else if ($name == 'CONTENT_TYPE') {
-				$headers['Content-Type'] = $value;
-			} else if ($name == 'CONTENT_LENGTH') {
-				$headers['Content-Length'] = $value;
-			}
-		}
-		if($extra)
-			$headers = array_merge($headers, $extra);
-		return $headers;
-	}
-
 	private function getConfig()
 	{
 		$response = $this->getResponse();
@@ -380,20 +505,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			$response->setBody('Config Error - Missing MerchantID');
 		if (!$this->config['HostKey'] || $this->config['HostKey'] == '')
 			$response->setBody('Config Error - Missing HostKey');
-	}
-
-
-	private function checkHash($HostKey, $Nonce, $Hash)
-	{
-		$response = $this->getResponse();
-		$r = $HostKey . $Nonce;
-		$base = hash('sha256', $r, true);
-		$checkHash = base64_encode($base);
-		if ($Hash != $checkHash)
-		{
-			$response->setBody('Hash Mismatch Error.');
-		}
-		return true;
 	}
 
 	private function Send($syncDb)
