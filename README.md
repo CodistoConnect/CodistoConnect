@@ -1,3 +1,5 @@
+[logo]: https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 2"
+
 <h2>Welcome</h2>
 <p>
 Welcome to Codisto Connect Magento to eBay Integration!
