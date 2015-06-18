@@ -14,7 +14,7 @@ If you're not sure about the following, you probably need a little help before y
 * How do I get assistance with Codisto Connect ? Articles are available <a href="https://codisto.com/help.html">here</a> or support is reachable <a href="https://codisto.com/contact-us.html">here</a>.
 
 
-<h2>Assistance with Magento ?</h3>
+<h2>Assistance with Magento ?</h2>
 Magento documentation is outside of the scope of Codisto Connect. Assistance is provided for some common Magento related queries below.
 
 *	Is the Magento software <a href="http://devdocs.magento.com/guides/v1.0/install-gde/basics/basics_magento-installed.html">installed already</a>?
