@@ -1,5 +1,3 @@
-[logo]: https://github.com/ontech/kiama-downs/blob/bm_readme/codistoconnect.png "Codisto Connect logo"
-
 <h2>Welcome</h2>
 <p>
 Welcome to Codisto Connect Magento to eBay Integration!
