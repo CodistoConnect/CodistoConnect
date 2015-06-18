@@ -37,7 +37,7 @@ Use the following table to verify you have the correct prerequisites to install 
 			<th>For more information</th>
 		</tr>
 		<tr>
-			<td>Magento Community Edition (versions 1.6 - 1.9.1) <br>
+			<td>Magento Community Edition (versions 1.6.0.0 - 1.9.1.1) <br>
 			Magento Enterprise Edition (versions 1.11 - 1.14)</td>
 			<td>To check your version consult Magento documentation or use a site such as <a href="http://magentoversion.com/">http://magentoversion.com/</a></td>
 			<td><a href="http://magento.com/products/overview">Magento products overview</a></td>
