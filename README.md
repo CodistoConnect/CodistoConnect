@@ -80,16 +80,7 @@ rm plugin.tgz
 <h2>Contributing to the Codisto Connect code base</h2>
 Contributions can take the form of new components or features, changes to existing features, tests, documentation (such as developer guides, user guides, examples, or specifications), bug fixes, optimizations, or just good suggestions.
 
-To learn about how to make a contribution, click [here][1].
-
-To learn about issues, click [here][2]. To open an issue, click [here][3].
-
-To suggest documentation improvements, click [here][4].
-
-[1]: <http://devdocs.magento.com/guides/v1.0/contributor-guide/CONTRIBUTING.html>
-[2]: <http://devdocs.magento.com/guides/v1.0/contributor-guide/CONTRIBUTING.html#report>
-[3]: <https://github.com/magento/magento2/issues>
-[4]: <http://devdocs.magento.com>
+Please contact <a href="https://codisto.com/contact-us.html">support</a> with your ideas and feel free to contribute
 
 <h2>Copyright and license</h2>
 Codisto Connect code set is licensed under the Open Software License 3.0 (OSL-3.0)
