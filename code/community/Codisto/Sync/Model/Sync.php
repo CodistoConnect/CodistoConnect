@@ -691,11 +691,41 @@ class Codisto_Sync_Model_Sync
 			'mediaurl' => Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA),
 			'jsurl' => Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS),
 			'storeurl' => Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB),
-			'logourl' => Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN) . 'frontend/' .
-				Mage::getDesign()->getTheme('frontend') . '/' . Mage::getDesign()->getTheme('frontend') . '/' .
-				Mage::getStoreConfig('design/header/logo_src'),
 			'theme' => Mage::getDesign()->getTheme('frontend')
 		);
+
+		$imagepdf = Mage::getStoreConfig('sales/identity/logo', $store);
+		$imagehtml = Mage::getStoreConfig('sales/identity/logo_html', $store);
+
+		$path = null;
+		if($imagepdf) {
+			$path = Mage::getBaseDir('media') . '/sales/store/logo/' . $imagepdf;
+		}
+		if($imagehtml) {
+			$path = Mage::getBaseDir('media') . '/sales/store/logo_html/' . $imagehtml;
+		}
+
+		if($path) {
+
+			//Invoice and Packing Slip image location isn't accessible from frontend place into DB
+			$data = file_get_contents($path);
+			$base64 = base64_encode($data);
+
+			$config['logobase64'] = $base64;
+			$config['logourl'] = $path; //still stuff url in so we can get the MIME type to determine extra conversion on the other side
+
+		}
+
+		else {
+
+			$package = Mage::getDesign()->getPackageName();
+			$theme = Mage::getDesign()->getTheme('frontend');
+
+			$config['logourl'] = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN) . 'frontend/' .
+				$package . '/' . $theme . '/' . Mage::getStoreConfig('design/header/logo_src', $store);
+
+		}
+
 		$insertConfiguration = $db->prepare('INSERT INTO Configuration(configuration_key, configuration_value) VALUES(?,?)');
 
 		foreach ($config as $key => $value) {
