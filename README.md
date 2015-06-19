@@ -1,3 +1,8 @@
+[![GitHub release](http://img.shields.io/badge/release-1.04-blue.svg?style=plastic)](https://github.com/CodistoConnect/CodistoConnect/releases)
+[ ![License] [license-image] ] [license]
+
+![CodistoConnect eBay better logo](https://s3-ap-southeast-2.amazonaws.com/codisto/CodistoHeaderLogo.jpg)
+
 <h2>Welcome</h2>
 <p>
 Welcome to Codisto Connect Magento to eBay Integration!
@@ -82,4 +87,11 @@ Please contact <a href="https://codisto.com/contact-us.html">support</a> with yo
 
 <h2>Copyright and license</h2>
 Codisto Connect code set is licensed under the Open Software License 3.0 (OSL-3.0)
-<a href="http://opensource.org/licenses/OSL-3.0">http://opensource.org/licenses/OSL-3.0</a> You may not claim intellectual property or exclusive ownership rights to Codisto Connect. Codisto Connect is the property of On Technology.
+<a href="[license]">http://opensource.org/licenses/OSL-3.0</a> You may not claim intellectual property or exclusive ownership rights to Codisto Connect. Codisto Connect is the property of On Technology.
+
+**Codisto Connect - Magento to eBay Integration**
+[Twitter](https://twitter.com/Codisto/) | [Facebook](https://www.facebook.com/Codisto) | [Google](https://plus.google.com/+CodistoConnect/)
+
+
+[license-image]: https://img.shields.io/badge/license-OSL--3.0-blue.svg
+[license]: http://opensource.org/licenses/OSL-3.0
