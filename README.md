@@ -1,4 +1,4 @@
-[![GitHub release](http://img.shields.io/badge/release-1.04-blue.svg?style=plastic)](https://github.com/CodistoConnect/CodistoConnect/releases)
+[![GitHub release](https://img.shields.io/github/release/CodistoConnect/CodistoConnect.svg?style=plastic)](https://github.com/CodistoConnect/CodistoConnect/releases)
 [ ![License] [license-image] ] [license]
 
 ![CodistoConnect eBay better logo](https://s3-ap-southeast-2.amazonaws.com/codisto/CodistoHeaderLogo.jpg)
