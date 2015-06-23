@@ -23,10 +23,25 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 
 	public function indexAction()
 	{
-		
+
 		$adminurl = Mage::getStoreConfig('admin/url/use_custom_path') ? Mage::getStoreConfig('admin/url/custom_path') : 'admin';
 		$reg = '/\/' . $adminurl . '\//';
 		$url = preg_replace($reg, '/', Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/index'));
+
+		$this->loadLayout();
+
+		$block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" class="codisto-iframe codisto-bulk-editor" src="'. $url . '" frameborder="0" onmousewheel=""></iframe></div>');
+		$this->_addContent($block);
+
+		$this->renderLayout();
+	}
+	
+	public function introAction()
+	{
+		
+		$adminurl = Mage::getStoreConfig('admin/url/use_custom_path') ? Mage::getStoreConfig('admin/url/custom_path') : 'admin';
+		$reg = '/\/' . $adminurl . '\//';
+		$url = preg_replace($reg, '/', Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/ebaytab/intro')) . "?intro=1";
 
 		$this->loadLayout();
 
@@ -44,7 +59,7 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 
 		$this->loadLayout();
 
-		$block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" class="codisto-iframe codisto-getting-started" src="'. $url . '" frameborder="0" onmousewheel=""></iframe></div>');
+		$block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" class="codisto-iframe codisto-settings" src="'. $url . '" frameborder="0" onmousewheel=""></iframe></div>');
 		$this->_addContent($block);
 
 		$this->renderLayout();
