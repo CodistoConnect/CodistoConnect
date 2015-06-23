@@ -59,6 +59,8 @@ Use the following table to verify you have the correct prerequisites to install 
 
 After verifying your prerequisites, perform the following task in order to prepare to install the Codisto Connect plugin.
 
+<hr>
+
 Download the Codisto Connect plugin from Codisto.com at <a href="https://codisto.com/plugin/getstable">https://codisto.com/plugin/getstable</a>. Substitute getstable with getbeta
 for the latest development branch. (Other feature branches will have to be packaged manually - <a href="http://www.magentocommerce.com/magento-connect/create_your_extension/">Create your extension</a>)
 
@@ -66,16 +68,14 @@ for the latest development branch. (Other feature branches will have to be packa
 OR
 
 Download the plugin from https://github.com/codistoconnect/codistoconnect/releases.
-The latest release is available from https://github.com/codistoconnect/codistoconnect/releases/latest. The plugin.tgz located here is ready to install in Magento.
+The latest release is available from https://github.com/codistoconnect/codistoconnect/releases/latest.
 
+
+The plugin.tgz file located here is ready to install in Magento.
 
 <h2>Step 3: Install and verify the installation</h2>
 
 Follow the guide here <a href="https://codisto.zendesk.com/hc/en-us/articles/204681879-Downloading-and-Installing-the-CodistoConnect-Plugin">Installing Codisto Connect</a>.
-
-OR
-
-Open the Admin area on your Magento site and click System -> Magento Connect -> Magento Connect Manager. In the area "Direct package file upload" select "Choose File" (select the file from Step 2 point 1, followed by Upload
 
 OR via SSH (Replace paths as appropriate)
 
