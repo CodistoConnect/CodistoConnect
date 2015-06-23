@@ -182,7 +182,7 @@ class Codisto_Sync_Model_Observer
 		};
 		(function() {
 			var s = document.createElement("script");
-			s.src = "https://ui.codisto.com/" + window.codisto.merchantid + "/js/app/adminhtml.js";
+			s.src = "https://ui.codisto.com/" + window.codisto.merchantid + "/js/app/adminhtml.js?v2";
 			document.getElementsByTagName("HEAD")[0].appendChild(s);
 		})();
 		</script>');
