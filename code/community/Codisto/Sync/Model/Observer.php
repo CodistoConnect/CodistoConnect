@@ -172,6 +172,8 @@ class Codisto_Sync_Model_Observer
 
 	public function addScript($observer)
 	{
+		$version = (string)Mage::getConfig()->getModuleConfig("Codisto_Sync")->version;
+
 		$controller = $observer->getAction();
 		$layout = $controller->getLayout();
 		$block = $layout->createBlock('core/text');
@@ -182,7 +184,7 @@ class Codisto_Sync_Model_Observer
 		};
 		(function() {
 			var s = document.createElement("script");
-			s.src = "https://ui.codisto.com/" + window.codisto.merchantid + "/js/app/adminhtml.js?v2";
+			s.src = "https://ui.codisto.com/" + window.codisto.merchantid + "/js/app/adminhtml.js?v'.$version.'";
 			document.getElementsByTagName("HEAD")[0].appendChild(s);
 		})();
 		</script>');
