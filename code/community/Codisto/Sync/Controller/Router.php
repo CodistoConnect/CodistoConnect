@@ -69,6 +69,15 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						{
 							try
 							{
+								Mage::getModel("admin/user");
+								$session = Mage::getSingleton('admin/session');
+
+								$user = $session->getUser();
+								if(!$user)
+								{
+									$user = Mage::getModel('admin/user')->getCollection()->getFirstItem();
+								}
+
 								$url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
 								$version = Mage::getVersion();
 								$storename = Mage::getStoreConfig('general/store_information/name');
