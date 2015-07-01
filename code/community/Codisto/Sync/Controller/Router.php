@@ -43,6 +43,17 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				return true;
 			}
 
+			if(preg_match('/^\/codisto\/link(?:\/|$)/', $path))
+			{
+				$section =  $request->getQuery('section');
+				$action = $request->getQuery('action');
+				$destUrl = Mage::helper('adminhtml')->getUrl('adminhtml/codisto/' . $section) . '?action=' . $action;
+				$response->setRedirect($destUrl);
+				$response->sendResponse();
+
+				return true;
+			}
+
 			$MerchantID = Mage::getStoreConfig('codisto/merchantid');
 			$HostKey = Mage::getStoreConfig('codisto/hostkey');
 
