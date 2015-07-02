@@ -352,7 +352,8 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 								$fileCountStmt = $db->query('SELECT COUNT(*) AS fileCount FROM File');
 								$fileCountStmt->execute();
-								$fileCount = $fileCountStmt->fetch()['fileCount'];
+								$fileCountRow = $fileCountStmt->fetch();
+								$fileCount = $fileCountRow['fileCount'];
 								$db = null;
 
 								if($fileCount == 0)

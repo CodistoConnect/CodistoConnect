@@ -117,7 +117,9 @@ class Codisto_Sync_Model_Sync
 						$content = @file_get_contents($fileName);
 						if($content !== false)
 						{
-							$lastModified = strftime('%Y-%m-%d %H:%M:%S', stat($fileName)['mtime']);
+							$stat = stat($fileName);
+
+							$lastModified = strftime('%Y-%m-%d %H:%M:%S', $stat['mtime']);
 
 							$update->bindParam(1, $content);
 							$update->bindParam(2, $name);
