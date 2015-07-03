@@ -360,7 +360,7 @@ class Codisto_Sync_Model_Sync
 
 		$stockData = Mage::getModel('cataloginventory/stock_item')->loadByProduct($skuData['entity_id'])->getData();
 
-		$totalPrice = $product->getFinalPrice();
+		$totalPrice = $args['baseprice'];
 
 		foreach ($attributes as $attribute) {
 
@@ -492,7 +492,7 @@ class Codisto_Sync_Model_Sync
 		$childProducts = $configurableData->getUsedProductCollection()
 							->addAttributeToSelect(array('name', 'image', 'status', 'price', 'special_price', 'tax_class_id'), 'left');
 
-		Mage::getSingleton('core/resource_iterator')->walk($childProducts->getSelect(), array(array($this, 'SyncSKU')), array( 'parent_id' => $productData['entity_id'], 'attributes' => $configurableAttributes, 'prices' => $pricesByAttributeValues, 'db' => $db, 'preparedStatement' => $insertSQL, 'preparedskumatrixStatement' => $insertSKUMatrixSQL, 'preparedcategoryproductStatement' => $insertCategorySQL, 'preparedimageStatement' => $insertImageSQL, 'store' => $store ));
+		Mage::getSingleton('core/resource_iterator')->walk($childProducts->getSelect(), array(array($this, 'SyncSKU')), array( 'parent_id' => $productData['entity_id'], 'attributes' => $configurableAttributes, 'baseprice' => $basePrice, 'prices' => $pricesByAttributeValues, 'db' => $db, 'preparedStatement' => $insertSQL, 'preparedskumatrixStatement' => $insertSKUMatrixSQL, 'preparedcategoryproductStatement' => $insertCategorySQL, 'preparedimageStatement' => $insertImageSQL, 'store' => $store ));
 
 		$this->productsProcessed[] = $productData['entity_id'];
 
