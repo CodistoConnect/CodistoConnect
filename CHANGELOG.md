@@ -1,5 +1,15 @@
 # Change Log
 
+## [1.1.4](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.4) (2015-07-07)
+
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.3...1.1.4)
+
+**Merged pull requests:**
+
+- release [\#25](https://github.com/CodistoConnect/CodistoConnect/pull/25) ([lamery](https://github.com/lamery))
+
+- fix incorrect admin URLs [\#24](https://github.com/CodistoConnect/CodistoConnect/pull/24) ([jlivas](https://github.com/jlivas))
+
 ## [1.1.3](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.3) (2015-07-06)
 
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.1...1.1.3)
