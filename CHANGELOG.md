@@ -1,5 +1,15 @@
 # Change Log
 
+## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
+
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.4...HEAD)
+
+**Merged pull requests:**
+
+- release [\#28](https://github.com/CodistoConnect/CodistoConnect/pull/28) ([lamery](https://github.com/lamery))
+
+- only reindex ebay index if required during setup [\#27](https://github.com/CodistoConnect/CodistoConnect/pull/27) ([lamery](https://github.com/lamery))
+
 ## [1.1.4](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.4) (2015-07-07)
 
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.3...1.1.4)
