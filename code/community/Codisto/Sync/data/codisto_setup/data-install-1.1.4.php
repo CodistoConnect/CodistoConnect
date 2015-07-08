@@ -21,8 +21,12 @@
 $MerchantID = Mage::getStoreConfig('codisto/merchantid');
 $HostKey = Mage::getStoreConfig('codisto/hostkey');
 
+$reindexRequired = true;
+
 if(!isset($MerchantID) || !isset($HostKey))
 {
+	$reindexRequired = false;
+
 	// load admin/user so that cookie deserialize will work properly
 	Mage::getModel("admin/user");
 
@@ -65,6 +69,8 @@ if(!isset($MerchantID) || !isset($HostKey))
 				{
 					Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['merchantid']);
 					Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['hostkey']);
+
+					$reindexRequired = true;
 				}
 			}
 			catch(Exception $e)
@@ -87,7 +93,10 @@ if(!isset($MerchantID) || !isset($HostKey))
 	}
 }
 
-$indexer = Mage::getModel('index/process');
-$indexer->load('codistoebayindex', 'indexer_code')
+if($reindexRequired)
+{
+	$indexer = Mage::getModel('index/process');
+	$indexer->load('codistoebayindex', 'indexer_code')
 			->changeStatus(Mage_Index_Model_Process::STATUS_REQUIRE_REINDEX)
 			->reindexAll();
+}
