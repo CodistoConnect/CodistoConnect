@@ -250,6 +250,8 @@ class Codisto_Sync_Model_Sync
 		$insertSKUMatrix = $db->prepare('INSERT INTO SKUMatrix(SKUExternalReference, Code, OptionName, OptionValue, ProductOptionExternalReference, ProductOptionValueExternalReference) VALUES(?,?,?,?,?,?)');
 		$insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence) VALUES(?,?,?,?)');
 		$insertSKUImage = $db->prepare('INSERT INTO SKUImage(SKUExternalReference, URL, Tag, Sequence) VALUES(?,?,?,?)');
+		$insertProductOption = $db->prepare('INSERT INTO ProductOption (ExternalReference, Sequence, ProductExternalReference) VALUES (?,?,?)');
+		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence, ProductOptionExternalReference, ProductExternalReference) VALUES (?,?,?,?)');
 
 		$this->productsProcessed = array();
 
@@ -279,7 +281,7 @@ class Codisto_Sync_Model_Sync
 		$db->exec('DELETE FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM CategoryProduct WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 
-		Mage::getSingleton('core/resource_iterator')->walk($configurableProducts->getSelect(), array(array($this, 'SyncConfigurableProduct')), array( 'type' => 'configurable', 'db' => $db, 'preparedStatement' => $insertProduct, 'preparedskuStatement' => $insertSKU, 'preparedskumatrixStatement' => $insertSKUMatrix, 'preparedcategoryproductStatement' => $insertCategoryProduct, 'preparedimageStatement' => $insertImage, 'preparedskuimageStatement' => $insertSKUImage, 'store' => $store ));
+		Mage::getSingleton('core/resource_iterator')->walk($configurableProducts->getSelect(), array(array($this, 'SyncConfigurableProduct')), array( 'type' => 'configurable', 'db' => $db, 'preparedStatement' => $insertProduct, 'preparedskuStatement' => $insertSKU, 'preparedskumatrixStatement' => $insertSKUMatrix, 'preparedcategoryproductStatement' => $insertCategoryProduct, 'preparedimageStatement' => $insertImage, 'preparedskuimageStatement' => $insertSKUImage, 'preparedproductoptionStatement' => $insertProductOption,  'preparedproductoptionvalueStatement' => $insertProductOptionValue, 'store' => $store ));
 
 		$db->exec('DELETE FROM Product WHERE ExternalReference IN ('.implode(',', $ids).') AND ExternalReference NOT IN (SELECT ProductExternalReference FROM SKU WHERE ProductExternalReference IS NOT NULL)');
 
@@ -401,10 +403,10 @@ class Codisto_Sync_Model_Sync
 			$productAttribute = $attribute->getProductAttribute();
 			$productOptionId = $productAttribute->getId();
 			$productOptionValueId = $product->getData($productAttribute->getAttributeCode());
-			
+
 			$attributeName = $productAttribute->getFrontendLabel();
 			$attributeValue = $product->getAttributeText($productAttribute->getAttributeCode());
-			
+
 			$insertSKUMatrixSQL->execute(array($skuData['entity_id'], '', $attributeName, $attributeValue, $productOptionId, $productOptionValueId));
 		}
 
@@ -497,7 +499,7 @@ class Codisto_Sync_Model_Sync
 			$attributeid = $attribute->getAttributeId();
 			$position = $attribute->getPosition();
 			$pid = $attribute->getProductId();
-			
+
 			$insertProductOptionSQL->execute(array($attributeid, $position, $pid));
 
 			$options = Mage::getResourceModel('eav/entity_attribute_option_collection')
@@ -514,7 +516,7 @@ class Codisto_Sync_Model_Sync
 		}
 
 		$productOptionValueSequence = array();
-		
+
 		$childProducts = $configurableData->getUsedProductCollection()
 							->addAttributeToSelect(array('name', 'image', 'status', 'price', 'special_price', 'tax_class_id'), 'left');
 
@@ -713,7 +715,7 @@ class Codisto_Sync_Model_Sync
 		$insertSKUImage = $db->prepare('INSERT INTO SKUImage(SKUExternalReference, URL, Tag, Sequence) VALUES(?,?,?,?)');
 		$insertProductOption = $db->prepare('INSERT INTO ProductOption (ExternalReference, Sequence, ProductExternalReference) VALUES (?,?,?)');
 		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence, ProductOptionExternalReference, ProductExternalReference) VALUES (?,?,?,?)');
-		
+
 		// Configuration
 		$config = array(
 			'baseurl' => Mage::getBaseUrl(),
@@ -869,10 +871,10 @@ class Codisto_Sync_Model_Sync
 					'Enabled bit NOT NULL,  '.
 					'StockControl bit NOT NULL, StockLevel integer NOT NULL, '.
 					'Weight real NULL)');
-					
-		$db->exec('CREATE TABLE IF NOT EXISTS ProductOption (ExternalReference integer NOT NULL, Sequence integer NOT NULL, ProductExternalReference integer NOT NULL)');			
+
+		$db->exec('CREATE TABLE IF NOT EXISTS ProductOption (ExternalReference integer NOT NULL, Sequence integer NOT NULL, ProductExternalReference integer NOT NULL)');
 		$db->exec('CREATE TABLE IF NOT EXISTS ProductOptionValue (ExternalReference integer NOT NULL, Sequence integer NOT NULL, ProductOptionExternalReference integer NOT NULL, ProductExternalReference integer NOT NULL)');
-					
+
 		$db->exec('CREATE TABLE IF NOT EXISTS SKU (ExternalReference text NOT NULL PRIMARY KEY, Code text NULL, ProductExternalReference text NOT NULL, Name text NOT NULL, StockControl bit NOT NULL, StockLevel integer NOT NULL, Price real NOT NULL, Enabled bit NOT NULL)');
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_SKU_ProductExternalReference ON SKU(ProductExternalReference)');
 		$db->exec('CREATE TABLE IF NOT EXISTS SKUMatrix (SKUExternalReference text NOT NULL, Code text NULL, OptionName text NOT NULL, OptionValue text NOT NULL, ProductOptionExternalReference, ProductOptionValueExternalReference)');
