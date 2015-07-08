@@ -873,7 +873,10 @@ class Codisto_Sync_Model_Sync
 					'Weight real NULL)');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS ProductOption (ExternalReference integer NOT NULL, Sequence integer NOT NULL, ProductExternalReference integer NOT NULL)');
+		$db->exec('CREATE INDEX IF NOT EXISTS IX_ProductOption_ProductExternalReference ON ProductOption(ProductExternalReference)');
 		$db->exec('CREATE TABLE IF NOT EXISTS ProductOptionValue (ExternalReference integer NOT NULL, Sequence integer NOT NULL, ProductOptionExternalReference integer NOT NULL, ProductExternalReference integer NOT NULL)');
+		$db->exec('CREATE INDEX IF NOT EXISTS IX_ProductOptionValue_ProductOptionExternalReference ON ProductOptionValue(ProductOptionExternalReference)');
+
 
 		$db->exec('CREATE TABLE IF NOT EXISTS SKU (ExternalReference text NOT NULL PRIMARY KEY, Code text NULL, ProductExternalReference text NOT NULL, Name text NOT NULL, StockControl bit NOT NULL, StockLevel integer NOT NULL, Price real NOT NULL, Enabled bit NOT NULL)');
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_SKU_ProductExternalReference ON SKU(ProductExternalReference)');
