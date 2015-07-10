@@ -2,7 +2,19 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.4...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.5...HEAD)
+
+**Merged pull requests:**
+
+- further fixes to productoption/productoptionvalue sequencing [\#31](https://github.com/CodistoConnect/CodistoConnect/pull/31) ([lamery](https://github.com/lamery))
+
+- release [\#30](https://github.com/CodistoConnect/CodistoConnect/pull/30) ([lamery](https://github.com/lamery))
+
+- add productoption/productoptionvalue statements to single product case [\#29](https://github.com/CodistoConnect/CodistoConnect/pull/29) ([lamery](https://github.com/lamery))
+
+## [1.1.5](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.5) (2015-07-08)
+
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.4...1.1.5)
 
 **Merged pull requests:**
 
