@@ -89,7 +89,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 									$user = Mage::getModel('admin/user')->getCollection()->getFirstItem();
 								}
 
-								$url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
+								$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . substr($path, 0, strpos($path, 'codisto'));
 								$version = Mage::getVersion();
 								$storename = Mage::getStoreConfig('general/store_information/name');
 								$email = $user->getEmail();
@@ -138,7 +138,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 				if(preg_match('/product\/\d+\/iframe\/\d+\//', $path))
 				{
-					$tabPath = $request->getBaseUrl().preg_replace('/iframe\/\d+\//', '', $path);
+					$tabPath = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST')  .preg_replace('/iframe\/\d+\//', '', $path);
 
 					$response->setHeader('Cache-Control', 'public, max-age=86400', true);
 					$response->setHeader('Pragma', 'cache', true);
@@ -185,7 +185,10 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 																				'maxredirects' => 0,
 																				'timeout' => 10
 																			));
-				$client->setHeaders('X-Admin-Base-Url', Mage::getBaseURL(Mage_Core_Model_Store::URL_TYPE_LINK).'codisto/ebaytab/');
+
+				$adminBase = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . substr($path, 0, strpos($path, 'codisto')) . 'codisto/ebaytab/';
+
+				$client->setHeaders('X-Admin-Base-Url', $adminBase);
 				$client->setHeaders('X-Codisto-Version', $extensionVersion);
 
 				// set proxied headers
