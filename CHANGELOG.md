@@ -1,8 +1,20 @@
 # Change Log
 
-## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
+## [1.1.7](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.7) (2015-07-13)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.5...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.6...1.1.7)
+
+**Merged pull requests:**
+
+- release [\#34](https://github.com/CodistoConnect/CodistoConnect/pull/34) ([lamery](https://github.com/lamery))
+
+- Use current request state for url values [\#33](https://github.com/CodistoConnect/CodistoConnect/pull/33) ([lamery](https://github.com/lamery))
+
+- start synchronising short description [\#32](https://github.com/CodistoConnect/CodistoConnect/pull/32) ([lamery](https://github.com/lamery))
+
+## [1.1.6](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.6) (2015-07-10)
+
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.5...1.1.6)
 
 **Merged pull requests:**
 
