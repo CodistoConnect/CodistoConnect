@@ -1,5 +1,15 @@
 # Change Log
 
+## [1.1.8](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.8) (2015-07-13)
+
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.7...1.1.8)
+
+**Merged pull requests:**
+
+- release [\#36](https://github.com/CodistoConnect/CodistoConnect/pull/36) ([lamery](https://github.com/lamery))
+
+- - Add mysql4-install file [\#35](https://github.com/CodistoConnect/CodistoConnect/pull/35) ([bradmccormack](https://github.com/bradmccormack))
+
 ## [1.1.7](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.7) (2015-07-13)
 
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.6...1.1.7)
