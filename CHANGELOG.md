@@ -1,8 +1,8 @@
 # Change Log
 
-## [1.1.8](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.8) (2015-07-13)
+## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.7...1.1.8)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.7...HEAD)
 
 **Merged pull requests:**
 
