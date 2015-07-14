@@ -139,7 +139,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				if(preg_match('/product\/\d+\/iframe\/\d+\//', $path))
 				{
 					$tabPort = $request->getServer('SERVER_PORT');
-					$tabPort = $tabPathPort = '' || $tabPathPort == '80' || $tabPathPort == '443' ? '' : ':'.$tabPathPort;
+					$tabPort = $tabPort = '' || $tabPort == '80' || $tabPort == '443' ? '' : ':'.$tabPort;
 					$tabPath = $request->getServer('REQUEST_URI');
 					$tabPath = preg_replace('/iframe\/\d+\//', '', $tabPath);
 					$tabURL = $request->getScheme() . '://' . $request->getHttpHost() . $tabPort . $tabPath;
