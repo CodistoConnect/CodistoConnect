@@ -138,11 +138,15 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 				if(preg_match('/product\/\d+\/iframe\/\d+\//', $path))
 				{
-					$tabPath = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST')  .preg_replace('/iframe\/\d+\//', '', $path);
+					$tabPort = $request->getServer('SERVER_PORT');
+					$tabPort = $tabPort = '' || $tabPort == '80' || $tabPort == '443' ? '' : ':'.$tabPort;
+					$tabPath = $request->getServer('REQUEST_URI');
+					$tabPath = preg_replace('/iframe\/\d+\//', '', $tabPath);
+					$tabURL = $request->getScheme() . '://' . $request->getHttpHost() . $tabPort . $tabPath;
 
 					$response->setHeader('Cache-Control', 'public, max-age=86400', true);
 					$response->setHeader('Pragma', 'cache', true);
-					$response->setBody('<!DOCTYPE html><html><head><body><iframe id="codisto-control-panel" class="codisto-iframe codisto-product" src="'.$tabPath.'" frameborder="0" onmousewheel=""></iframe></body></html>');
+					$response->setBody('<!DOCTYPE html><html><head><body><iframe id="codisto-control-panel" class="codisto-iframe codisto-product" src="'.$tabURL.'" frameborder="0" onmousewheel=""></iframe></body></html>');
 
 					return true;
 				}
@@ -186,9 +190,13 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 																				'timeout' => 10
 																			));
 
-				$adminBase = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . substr($path, 0, strpos($path, 'codisto')) . 'codisto/ebaytab/';
+				$adminBasePort = $request->getServer('SERVER_PORT');
+				$adminBasePort = $adminBasePort = '' || $adminBasePort == '80' || $adminBasePort == '443' ? '' : ':'.$adminBasePort;
+				$adminBasePath = $request->getServer('REQUEST_URI');
+				$adminBasePath = substr($adminBasePath, 0, strpos($adminBasePath, '/codisto/'));
+				$adminBaseURL = $request->getScheme() . '://' . $request->getHttpHost() . $adminBasePort . $adminBasePath . '/codisto/ebaytab/';
 
-				$client->setHeaders('X-Admin-Base-Url', $adminBase);
+				$client->setHeaders('X-Admin-Base-Url', $adminBaseURL);
 				$client->setHeaders('X-Codisto-Version', $extensionVersion);
 
 				// set proxied headers
