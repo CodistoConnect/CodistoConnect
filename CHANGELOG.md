@@ -2,7 +2,17 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.7...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.8...HEAD)
+
+**Merged pull requests:**
+
+- Release [\#38](https://github.com/CodistoConnect/CodistoConnect/pull/38) ([bradmccormack](https://github.com/bradmccormack))
+
+- use current url - not getBaseURL to calculate references [\#37](https://github.com/CodistoConnect/CodistoConnect/pull/37) ([lamery](https://github.com/lamery))
+
+## [1.1.8](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.8) (2015-07-13)
+
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.7...1.1.8)
 
 **Merged pull requests:**
 
