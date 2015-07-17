@@ -33,24 +33,19 @@ abstract class Codisto_Sync_Controller_BaseController extends Mage_Core_Controll
 		return true;
 	}
 
-	private function getAllHeaders($extra = false)
+	protected function getConfig()
 	{
-		$server = $this->getRequest()->getServer();
+		$this->config = array(
+			'MerchantID' => Mage::getStoreConfig('codisto/merchantid'),
+			'HostKey' => Mage::getStoreConfig('codisto/hostkey')
+		);
 
-		foreach ($server as $name => $value)
+		if(!isset($this->config['MerchantID']) || $this->config['MerchantID'] == '' ||
+			!isset($this->config['HostKey']) || $this->config['HostKey'] == '')
 		{
-			if (substr($name, 0, 5) == 'HTTP_')
-			{
-				$name = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
-				$headers[$name] = $value;
-			} else if ($name == 'CONTENT_TYPE') {
-				$headers['Content-Type'] = $value;
-			} else if ($name == 'CONTENT_LENGTH') {
-				$headers['Content-Length'] = $value;
-			}
+			return false;
 		}
-		if($extra)
-			$headers = array_merge($headers, $extra);
-		return $headers;
+
+		return true;
 	}
 }

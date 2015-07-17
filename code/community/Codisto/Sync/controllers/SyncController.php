@@ -26,9 +26,17 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 	public function indexAction()
 	{
-		$response = $this->getResponse();
+		if(!$this->getConfig())
+		{
+			http_response_code(500);
+			$response->setStatusCode(500);
+			$response->setRawHeader('HTTP/1.0 500 Security Error');
+			$response->setRawHeader('Status: 500 Security Error');
+			$response->setBody('Config Error');
+			return;
+		}
 
-		$this->getConfig();
+		$response = $this->getResponse();
 		$request = $this->getRequest();
 		$request->setDispatched(true);
 		$server = $request->getServer();
@@ -429,6 +437,16 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 	public function testHashAction()
 	{
+		if(!$this->getConfig())
+		{
+			http_response_code(500);
+			$response->setStatusCode(500);
+			$response->setRawHeader('HTTP/1.0 500 Security Error');
+			$response->setRawHeader('Status: 500 Security Error');
+			$response->setBody('Config Error');
+			return;
+		}
+
 		$server = $this->getRequest()->getServer();
 		$response = $this->getResponse();
 
@@ -436,7 +454,6 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 		$response->setHeader('Pragma', 'no-cache', true);
 
-		$this->getConfig();
 		if($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 		{
 			$version = (string)Mage::getConfig()->getModuleConfig("Codisto_Sync")->version;
@@ -457,7 +474,17 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 	public function checkPluginAction()
 	{ // End Point: index.php/codisto-sync/sync/checkPlugin
-		$this->getConfig();
+
+		if(!$this->getConfig())
+		{
+			http_response_code(500);
+			$response->setStatusCode(500);
+			$response->setRawHeader('HTTP/1.0 500 Config Error');
+			$response->setRawHeader('Status: 500 Config Error');
+			$response->setBody('Config Error');
+			return;
+		}
+
 		$response = $this->getResponse();
 
 		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
@@ -470,9 +497,19 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 	public function resetPluginAction()
 	{ // End Point index.php/codisto-sync/sync/resetPlugin
+
+		if(!$this->getConfig())
+		{
+			http_response_code(500);
+			$response->setStatusCode(500);
+			$response->setRawHeader('HTTP/1.0 500 Security Error');
+			$response->setRawHeader('Status: 500 Security Error');
+			$response->setBody('Config Error');
+			return;
+		}
+
 		$request = $this->getRequest();
 		$response = $this->getResponse();
-		$this->getConfig();
 		$server = $request->getServer();
 
 		if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
@@ -498,20 +535,6 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 			$response->setBody('Invalid Request');
 		}
-	}
-
-	private function getConfig()
-	{
-		$response = $this->getResponse();
-		$this->config = array(
-			'MerchantID' => Mage::getStoreConfig('codisto/merchantid'),
-			'HostKey' => Mage::getStoreConfig('codisto/hostkey')
-		);
-
-		if (!$this->config['MerchantID'] || $this->config['MerchantID'] == '')
-			$response->setBody('Config Error - Missing MerchantID');
-		if (!$this->config['HostKey'] || $this->config['HostKey'] == '')
-			$response->setBody('Config Error - Missing HostKey');
 	}
 
 	private function Send($syncDb)
