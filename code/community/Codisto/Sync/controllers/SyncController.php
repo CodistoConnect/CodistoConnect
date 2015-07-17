@@ -28,7 +28,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 	{
 		if(!$this->getConfig())
 		{
-			$response->setHttpResponseCode(500);
+			http_response_code(500);
+			$response->setStatusCode(500);
+			$response->setRawHeader('HTTP/1.0 500 Security Error');
+			$response->setRawHeader('Status: 500 Security Error');
 			$response->setBody('Config Error');
 			return;
 		}
@@ -436,7 +439,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 	{
 		if(!$this->getConfig())
 		{
-			$response->setHttpResponseCode(500);
+			http_response_code(500);
+			$response->setStatusCode(500);
+			$response->setRawHeader('HTTP/1.0 500 Security Error');
+			$response->setRawHeader('Status: 500 Security Error');
 			$response->setBody('Config Error');
 			return;
 		}
@@ -471,7 +477,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 		if(!$this->getConfig())
 		{
-			$response->setHttpResponseCode(500);
+			http_response_code(500);
+			$response->setStatusCode(500);
+			$response->setRawHeader('HTTP/1.0 500 Config Error');
+			$response->setRawHeader('Status: 500 Config Error');
 			$response->setBody('Config Error');
 			return;
 		}
@@ -491,7 +500,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 		if(!$this->getConfig())
 		{
-			$response->setHttpResponseCode(500);
+			http_response_code(500);
+			$response->setStatusCode(500);
+			$response->setRawHeader('HTTP/1.0 500 Security Error');
+			$response->setRawHeader('Status: 500 Security Error');
 			$response->setBody('Config Error');
 			return;
 		}
