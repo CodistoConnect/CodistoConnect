@@ -2,7 +2,17 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.8...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.9...HEAD)
+
+**Merged pull requests:**
+
+- Development [\#40](https://github.com/CodistoConnect/CodistoConnect/pull/40) ([bradmccormack](https://github.com/bradmccormack))
+
+- standardise retrieval of sync configuration [\#39](https://github.com/CodistoConnect/CodistoConnect/pull/39) ([lamery](https://github.com/lamery))
+
+## [1.1.9](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.9) (2015-07-14)
+
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.8...1.1.9)
 
 **Merged pull requests:**
 
