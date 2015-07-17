@@ -198,7 +198,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 						$response = $this->getResponse();
 						$response->setHeader("Content-Type", "application/json");
 						$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => 'externalreference not found')));
-						die();
+						return;
 					}
 				}
 			}
