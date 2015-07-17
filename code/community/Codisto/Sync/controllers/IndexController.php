@@ -127,6 +127,16 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 	public function indexAction()
 	{
+		if(!$this->getConfig())
+		{
+			http_response_code(500);
+			$response->setStatusCode(500);
+			$response->setRawHeader('HTTP/1.0 500 Security Error');
+			$response->setRawHeader('Status: 500 Security Error');
+			$response->setBody('Config Error');
+			return;
+		}
+
 		$request = $this->getRequest();
 		$method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
 		$content_type = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : "";
@@ -175,7 +185,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		try
 		{
 			$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
-			
+
 			foreach($ordercontent->orderlines->orderline as $orderline)
 			{
 				if($orderline->productcode[0] != 'FREIGHT') {
@@ -349,7 +359,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					$subtotal = floatval($orderline->linetotal[0]);
 
 					$totalquantity += $qty;
-					
+
 					$item = Mage::getModel('sales/quote_item');
 					$item->setProduct($product);
 					$item->setSku($productcode);
@@ -382,9 +392,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 							}
 
 							$stockData = $stockItem->getData();
-							
+
 							if(isset($stockData['use_config_manage_stock'])) {
-							
+
 								if($stockData['use_config_manage_stock'] != 0) {
 									$stockcontrol = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
 								} else {
@@ -559,7 +569,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 			$order->setBaseShippingTaxAmount($freighttax);
 			$order->setShippingTaxAmount($freighttax);
-			
+
 			$order->setBaseSubtotal($ordersubtotal);
 			$order->setSubtotal($ordersubtotal);
 
@@ -572,7 +582,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$order->setDiscountAmount(0.0);
 			$order->setShippingDiscountAmount(0.0);
 			$order->setBaseShippingDiscountAmount(0.0);
-			
+
 			$order->setBaseHiddenTaxAmount(0.0);
 			$order->setHiddenTaxAmount(0.0);
 			$order->setBaseHiddenShippingTaxAmnt(0.0);
@@ -580,7 +590,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 			$order->setBaseGrandTotal($ordertotal);
 			$order->setGrandTotal($ordertotal);
-			
+
 			$order->save();
 
 			if($paypaltransactionid) {
@@ -670,7 +680,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 			$order->setBaseShippingTaxAmount($freighttax);
 			$order->setShippingTaxAmount($freighttax);
-			
+
 			$order->setBaseSubtotal($ordersubtotal);
 			$order->setSubtotal($ordersubtotal);
 
@@ -683,7 +693,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$order->setDiscountAmount(0.0);
 			$order->setShippingDiscountAmount(0.0);
 			$order->setBaseShippingDiscountAmount(0.0);
-			
+
 			$order->setBaseHiddenTaxAmount(0.0);
 			$order->setHiddenTaxAmount(0.0);
 			$order->setBaseHiddenShippingTaxAmnt(0.0);
@@ -713,7 +723,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			}
 
 			$totalquantity = 0;
-			
+
 			if(($ordercontent->orderstate == 'cancelled' && $orderstatus!='canceled') || ($ordercontent->orderstate != 'cancelled' && $orderstatus == 'canceled')) {
 				foreach($ordercontent->orderlines->orderline as $orderline)
 				{
@@ -755,7 +765,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					}
 				}
 			}
-			
+
 			$order->setTotalQtyOrdered((int)$totalquantity);
 
 			if($ordercontent->paymentstatus == 'complete')
