@@ -28,10 +28,14 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 	{
 		if(!$this->getConfig())
 		{
-			http_response_code(500);
-			$response->setStatusCode(500);
+			if(function_exists('http_response_code'))
+				http_response_code(500);
+			$response->setHttpResponseCode(500);
 			$response->setRawHeader('HTTP/1.0 500 Security Error');
 			$response->setRawHeader('Status: 500 Security Error');
+			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+			$response->setHeader('Pragma', 'no-cache', true);
 			$response->setBody('Config Error');
 			return;
 		}
@@ -114,8 +118,9 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					else
 					{
-						http_response_code(400);
-						$response->setStatusCode(400);
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						$response->setHttpResponseCode(400);
 						$response->setRawHeader('HTTP/1.0 400 Security Error');
 						$response->setRawHeader('Status: 400 Security Error');
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
@@ -153,8 +158,9 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					else
 					{
-						http_response_code(400);
-						$response->setStatusCode(400);
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						$response->setHttpResponseCode(400);
 						$response->setRawHeader('HTTP/1.0 400 Security Error');
 						$response->setRawHeader('Status: 400 Security Error');
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
@@ -222,8 +228,9 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					else
 					{
-						http_response_code(400);
-						$response->setStatusCode(400);
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						$response->setHttpResponseCode(400);
 						$response->setRawHeader('HTTP/1.0 400 Security Error');
 						$response->setRawHeader('Status: 400 Security Error');
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
@@ -281,8 +288,9 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					else
 					{
-						http_response_code(400);
-						$response->setStatusCode(400);
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						$response->setHttpResponseCode(400);
 						$response->setRawHeader('HTTP/1.0 400 Security Error');
 						$response->setRawHeader('Status: 400 Security Error');
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
@@ -338,8 +346,9 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 								}
 								catch(Exception $e)
 								{
-									http_response_code(500);
-									$response->setStatusCode(500);
+									if(function_exists('http_response_code'))
+										http_response_code(500);
+									$response->setHttpResponseCode(500);
 									$response->setRawHeader('HTTP/1.0 500 Internal Server Error');
 									$response->setRawHeader('Status: 500 Internal Server Error');
 									$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
@@ -357,11 +366,18 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 								$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-template-');
 
-								copy($templateDb, $tmpDb);
-
 								$db = new PDO('sqlite:' . $tmpDb);
 								$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-								$db->exec('DELETE FROM File WHERE Changed = 0');
+								$db->exec('PRAGMA synchronous=0');
+								$db->exec('PRAGMA temp_store=2');
+								$db->exec('PRAGMA page_size=512');
+								$db->exec('PRAGMA encoding=\'UTF-8\'');
+								$db->exec('PRAGMA cache_size=15000');
+								$db->exec('PRAGMA soft_heap_limit=67108864');
+								$db->exec('PRAGMA journal_mode=OFF');
+								$db->exec("ATTACH DATABASE '".$templateDb."' AS Source");
+								$db->exec('CREATE TABLE File AS SELECT * FROM Source.File WHERE Changed != 0');
+								$db->exec('DETACH DATABASE Source');
 								$db->exec('VACUUM');
 
 								$fileCountStmt = $db->query('SELECT COUNT(*) AS fileCount FROM File');
@@ -372,8 +388,9 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 								if($fileCount == 0)
 								{
-									http_response_code(204);
-									$response->setStatusCode(204);
+									if(function_exists('http_response_code'))
+										http_response_code(204);
+									$response->setHttpResponseCode(204);
 									$response->setRawHeader('HTTP/1.0 204 No Content');
 									$response->setRawHeader('Status: 204 No Content');
 									$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
@@ -411,8 +428,9 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					else
 					{
-						http_response_code(400);
-						$response->setStatusCode(400);
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						$response->setHttpResponseCode(400);
 						$response->setRawHeader('HTTP/1.0 400 Security Error');
 						$response->setRawHeader('Status: 400 Security Error');
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
@@ -439,10 +457,14 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 	{
 		if(!$this->getConfig())
 		{
-			http_response_code(500);
-			$response->setStatusCode(500);
+			if(function_exists('http_response_code'))
+				http_response_code(500);
+			$response->setHttpResponseCode(500);
 			$response->setRawHeader('HTTP/1.0 500 Security Error');
 			$response->setRawHeader('Status: 500 Security Error');
+			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+			$response->setHeader('Pragma', 'no-cache', true);
 			$response->setBody('Config Error');
 			return;
 		}
@@ -463,10 +485,14 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 		}
 		else
 		{
-			http_response_code(400);
-			$response->setStatusCode(400);
+			if(function_exists('http_response_code'))
+				http_response_code(400);
+			$response->setHttpResponseCode(400);
 			$response->setRawHeader('HTTP/1.0 400 Security Error');
 			$response->setRawHeader('Status: 400 Security Error');
+			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+			$response->setHeader('Pragma', 'no-cache', true);
 			$response->setBody('Security Error');
 		}
 
@@ -477,10 +503,14 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 		if(!$this->getConfig())
 		{
-			http_response_code(500);
-			$response->setStatusCode(500);
+			if(function_exists('http_response_code'))
+				http_response_code(500);
+			$response->setHttpResponseCode(500);
 			$response->setRawHeader('HTTP/1.0 500 Config Error');
 			$response->setRawHeader('Status: 500 Config Error');
+			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+			$response->setHeader('Pragma', 'no-cache', true);
 			$response->setBody('Config Error');
 			return;
 		}
@@ -500,10 +530,14 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 		if(!$this->getConfig())
 		{
-			http_response_code(500);
-			$response->setStatusCode(500);
+			if(function_exists('http_response_code'))
+				http_response_code(500);
+			$response->setHttpResponseCode(500);
 			$response->setRawHeader('HTTP/1.0 500 Security Error');
 			$response->setRawHeader('Status: 500 Security Error');
+			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+			$response->setHeader('Pragma', 'no-cache', true);
 			$response->setBody('Config Error');
 			return;
 		}
