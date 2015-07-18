@@ -366,11 +366,18 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 								$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-template-');
 
-								copy($templateDb, $tmpDb);
-
 								$db = new PDO('sqlite:' . $tmpDb);
 								$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-								$db->exec('DELETE FROM File WHERE Changed = 0');
+								$db->exec('PRAGMA synchronous=0');
+								$db->exec('PRAGMA temp_store=2');
+								$db->exec('PRAGMA page_size=512');
+								$db->exec('PRAGMA encoding=\'UTF-8\'');
+								$db->exec('PRAGMA cache_size=15000');
+								$db->exec('PRAGMA soft_heap_limit=67108864');
+								$db->exec('PRAGMA journal_mode=OFF');
+								$db->exec("ATTACH DATABASE '".$templateDb."' AS Source");
+								$db->exec('CREATE TABLE File AS SELECT * FROM Source.File WHERE Changed != 0');
+								$db->exec('DETACH DATABASE Source');
 								$db->exec('VACUUM');
 
 								$fileCountStmt = $db->query('SELECT COUNT(*) AS fileCount FROM File');
