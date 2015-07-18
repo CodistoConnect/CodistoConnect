@@ -129,10 +129,14 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 	{
 		if(!$this->getConfig())
 		{
-			http_response_code(500);
-			$response->setStatusCode(500);
+			if(function_exists('http_response_code'))
+				http_response_code(500);
+			$response->setHttpResponseCode(500);
 			$response->setRawHeader('HTTP/1.0 500 Security Error');
 			$response->setRawHeader('Status: 500 Security Error');
+			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+			$response->setHeader('Pragma', 'no-cache', true);
 			$response->setBody('Config Error');
 			return;
 		}
