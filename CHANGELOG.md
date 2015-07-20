@@ -2,7 +2,21 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.9...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.10...HEAD)
+
+**Merged pull requests:**
+
+- release [\#44](https://github.com/CodistoConnect/CodistoConnect/pull/44) ([lamery](https://github.com/lamery))
+
+- adjust how templateread action is calculated [\#43](https://github.com/CodistoConnect/CodistoConnect/pull/43) ([lamery](https://github.com/lamery))
+
+- standardise on status code and expiry headers in sync operations [\#42](https://github.com/CodistoConnect/CodistoConnect/pull/42) ([lamery](https://github.com/lamery))
+
+- Fix Order creation when a product is missing - Make sure response is sent [\#41](https://github.com/CodistoConnect/CodistoConnect/pull/41) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.10](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.10) (2015-07-17)
+
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.9...1.1.10)
 
 **Merged pull requests:**
 
