@@ -204,7 +204,7 @@ class Codisto_Sync_Model_Sync
 
 	public function UpdateCategory($syncDb, $id)
 	{
-		$store = Mage::app()->getStore('default');
+		$store = Mage::app()->getStore(0);
 
 		$db = $this->GetSyncDb($syncDb);
 
@@ -240,7 +240,7 @@ class Codisto_Sync_Model_Sync
 
 	public function UpdateProducts($syncDb, $ids)
 	{
-		$store = Mage::app()->getStore('default');
+		$store = Mage::app()->getStore(0);
 
 		$db = $this->GetSyncDb($syncDb);
 
@@ -712,7 +712,7 @@ class Codisto_Sync_Model_Sync
 
 	public function SyncChunk($syncDb)
 	{
-		$store = Mage::app()->getStore('default');
+		$store = Mage::app()->getStore(0);
 
 		$db = $this->GetSyncDb($syncDb);
 
