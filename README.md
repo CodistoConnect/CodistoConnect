@@ -48,9 +48,9 @@ Use the following table to verify you have the correct prerequisites to install 
 			<td><a href="http://magento.com/products/overview">Magento products overview</a></td>
 		</tr>
 		<tr>
-			<td>PHP, Apache and MySQL versions supported are those specified by the supported Magento versions.</td>
-			<td>Consult the table on Magento's github.com repository <a href="https://github.com/magento/magento2/blob/develop/README.md">here</a></td>
-			<td><a href="http://magento.com/resources/system-requirements">Magento system requirements</td>
+			<td>PHP, Apache and MySQL versions supported are those specified by the supported Magento versions. (Whilst Magento 1.X requires PHP 5.4 CodistoConnect aims to be compatible with PHP 5.0) </td>
+			<td><a href="http://magento.com/resources/system-requirements">Magento system requirements</a></td>
+			<td><a href="http://help.codisto.com/article/25-verify-your-prerequisites">See our help article</a></td>
 		</tr>
 </tbody>
 </table>
