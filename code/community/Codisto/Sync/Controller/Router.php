@@ -18,6 +18,10 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
+/*
+ * Testing by brad so this file is part of the change set and comment api will work
+ */
+
 class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_Admin {
 
 	public function match(Zend_Controller_Request_Http $request)
