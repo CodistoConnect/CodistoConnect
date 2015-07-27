@@ -1,1 +1,4 @@
-http_response_code(500);
+<?php
+	http_response_code(500);
+?>
+
