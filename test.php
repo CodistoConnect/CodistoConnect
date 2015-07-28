@@ -5,5 +5,7 @@
 // @codingStandardsIgnoreStart
 	http_response_code(500);
 // @codingStandardsIgnoreEnd
+
+	http_response_code(500);
 ?>
 
