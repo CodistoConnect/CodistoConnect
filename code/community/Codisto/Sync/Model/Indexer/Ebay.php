@@ -115,8 +115,8 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 			try
 			{
-				$MerchantID = Mage::getStoreConfig('codisto/merchantid');
-				$HostKey = Mage::getStoreConfig('codisto/hostkey');
+				$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+				$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 
 				$client = new Zend_Http_Client('https://api.codisto.com/'.$MerchantID, array( 'keepalive' => true, 'maxredirects' => 0 ));
 				$client->setStream();
@@ -156,8 +156,8 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 			try
 			{
-				$MerchantID = Mage::getStoreConfig('codisto/merchantid');
-				$HostKey = Mage::getStoreConfig('codisto/hostkey');
+				$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+				$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 
 				$client = new Zend_Http_Client('https://api.codisto.com/'.$MerchantID, array( 'keepalive' => true, 'maxredirects' => 0 ));
 				$client->setStream();
@@ -181,8 +181,8 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 	public function reindexAll()
 	{
-		$MerchantID = Mage::getStoreConfig('codisto/merchantid');
-		$HostKey = Mage::getStoreConfig('codisto/hostkey');
+		$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+		$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 
 		$client = new Zend_Http_Client('https://api.codisto.com/'.$MerchantID, array( 'keepalive' => true, 'maxredirects' => 0 ));
 		$client->setHeaders('X-HostKey', $HostKey);

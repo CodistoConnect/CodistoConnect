@@ -18,8 +18,8 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-$MerchantID = Mage::getStoreConfig('codisto/merchantid');
-$HostKey = Mage::getStoreConfig('codisto/hostkey');
+$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 
 $reindexRequired = true;
 
@@ -54,7 +54,7 @@ if(!isset($MerchantID) || !isset($HostKey))
 			{
 				$url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
 				$version = Mage::getVersion();
-				$storename = Mage::getStoreConfig('general/store_information/name');
+				$storename = Mage::getStoreConfig('general/store_information/name', 0);
 				$email = $user->getEmail();
 
 				$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(), 'url' => $url, 'email' => $email, 'storename' => $storename )))->request('POST');

@@ -28,7 +28,7 @@ abstract class Codisto_Sync_Controller_BaseController extends Mage_Core_Controll
 		$checkHash = base64_encode($base);
 		if ($Hash != $checkHash)
 		{
-			$response->setBody('Hash Mismatch Error.');
+			return false;
 		}
 		return true;
 	}
@@ -36,8 +36,8 @@ abstract class Codisto_Sync_Controller_BaseController extends Mage_Core_Controll
 	protected function getConfig()
 	{
 		$this->config = array(
-			'MerchantID' => Mage::getStoreConfig('codisto/merchantid'),
-			'HostKey' => Mage::getStoreConfig('codisto/hostkey')
+			'MerchantID' => Mage::getStoreConfig('codisto/merchantid', 0),
+			'HostKey' => Mage::getStoreConfig('codisto/hostkey', 0)
 		);
 
 		if(!isset($this->config['MerchantID']) || $this->config['MerchantID'] == '' ||
