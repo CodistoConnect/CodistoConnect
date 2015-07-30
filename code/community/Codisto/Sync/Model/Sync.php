@@ -557,7 +557,8 @@ class Codisto_Sync_Model_Sync
 		$price = $this->getExTaxPrice($product, $product->getFinalPrice(), $store);
 		$listPrice = $this->getExTaxPrice($product, $product->getPrice(), $store);
 
-		$description = $this->cmsHelper->getBlockTemplateProcessor()->filter(preg_replace('/^\s+|\s+$/', '', $productData['description']));
+		$description = isset($productData['description']) ? $productData['description'] : '';
+		$description = $this->cmsHelper->getBlockTemplateProcessor()->filter(preg_replace('/^\s+|\s+$/', '', $description));
 		if($type == 'simple' &&
 			$description == '')
 		{
@@ -606,7 +607,9 @@ class Codisto_Sync_Model_Sync
 
 		if(isset($productData['short_description']) && strlen($productData['short_description']) > 0)
 		{
-			$insertHTMLSQL->execute(array($productData['entity_id'], 'Short Description', $productData['short_description']));
+			$shortDescription = $this->cmsHelper->getBlockTemplateProcessor()->filter(preg_replace('/^\s+|\s+$/', '', $productData['short_description']));
+
+			$insertHTMLSQL->execute(array($productData['entity_id'], 'Short Description', $shortDescription));
 		}
 
 		$hasImage = false;
