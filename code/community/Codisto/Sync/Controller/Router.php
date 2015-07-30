@@ -54,8 +54,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				return true;
 			}
 
-			$MerchantID = Mage::getStoreConfig('codisto/merchantid');
-			$HostKey = Mage::getStoreConfig('codisto/hostkey');
+			$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 
 			// get logged in state
 			Mage::getSingleton('core/session', array('name'=>'adminhtml'));
@@ -91,7 +91,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 								$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . substr($path, 0, strpos($path, 'codisto'));
 								$version = Mage::getVersion();
-								$storename = Mage::getStoreConfig('general/store_information/name');
+								$storename = Mage::getStoreConfig('general/store_information/name', 0);
 								$email = $user->getEmail();
 
 								$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(), 'url' => $url, 'email' => $email, 'storename' => $storename )))->request('POST');
