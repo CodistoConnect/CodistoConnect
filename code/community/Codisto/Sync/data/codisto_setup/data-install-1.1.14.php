@@ -20,6 +20,7 @@
 
 $MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
 $HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
+$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
 
 $reindexRequired = true;
 
@@ -57,7 +58,8 @@ if(!isset($MerchantID) || !isset($HostKey))
 				$storename = Mage::getStoreConfig('general/store_information/name', 0);
 				$email = $user->getEmail();
 
-				$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(), 'url' => $url, 'email' => $email, 'storename' => $storename )))->request('POST');
+				$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
+					'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey)))->request('POST');
 
 				if(!$remoteResponse->isSuccessful())
 					throw new Exception('Error Creating Account');

@@ -56,6 +56,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 			$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
 			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
+			$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
+
 
 			// get logged in state
 			Mage::getSingleton('core/session', array('name'=>'adminhtml'));
@@ -94,7 +96,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 								$storename = Mage::getStoreConfig('general/store_information/name', 0);
 								$email = $user->getEmail();
 
-								$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(), 'url' => $url, 'email' => $email, 'storename' => $storename )))->request('POST');
+								$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
+									'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey)))->request('POST');
 
 								if(!$remoteResponse->isSuccessful())
 									throw new Exception('Error Creating Account');
