@@ -130,24 +130,6 @@
 					</codisto_taxsync>
 				</observers>
 			</tax_settings_change_after>
-			<store_group_save>
-				<observers>
-					<codisto_storesync>
-						<type>singleton</type>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>storeViewsChanged</method>
-					</codisto_storesync>
-				</observers>
-			</store_group_save>
-			<store_delete>
-				<observers>
-					<codisto_storesync>
-						<type>singleton</type>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>storeViewsChanged</method>
-					</codisto_storesync>
-				</observers>
-			</store_delete>
 
 			<core_block_abstract_prepare_layout_after>
 				<observers>

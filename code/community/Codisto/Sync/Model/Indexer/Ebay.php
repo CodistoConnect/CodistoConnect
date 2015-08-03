@@ -64,6 +64,13 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 			return true;
 		}
 
+		if($entity == Mage_Core_Model_Store::ENTITY ||
+			$entity == Mage_Core_Model_Store_Group::ENTITY)
+		{
+			$event->addNewData(self::EVENT_MATCH_RESULT_KEY, true);
+			return true;
+		}
+
 		$result = parent::matchEvent($event);
 
 		$event->addNewData(self::EVENT_MATCH_RESULT_KEY, $result);
@@ -91,6 +98,12 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 			case Mage_Catalog_Model_Convert_Adapter_Product::ENTITY:
 
 				$event->addNewData('codisto_sync_bulkproduct', true);
+				break;
+
+			case Mage_Core_Model_Store::ENTITY:
+			case Mage_Core_Model_Store_Group::ENTITY:
+
+				$event->addNewData('codisto_sync_store', true);
 				break;
 		}
 		return $this;
@@ -225,6 +238,42 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 					{
 
 					}
+				}
+			}
+		}
+
+		if(isset($data['codisto_sync_store']))
+		{
+			$merchants = array();
+			$visited = array();
+
+			$stores = Mage::getModel('core/store')->getCollection();
+
+			foreach($stores as $store)
+			{
+				$merchantId = $store->getConfig('codisto/merchantid');
+
+				if(!in_array($merchantId, $visited, true))
+				{
+					$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $store->getConfig('codisto/hostkey'), 'storeid' => $store->getId() );
+					$visited[] = $merchantId;
+				}
+			}
+
+			unset($visited);
+
+			foreach($merchants as $merchant)
+			{
+				try
+				{
+					$client = new Zend_Http_Client('https://api.codisto.com/'.$merchant['merchantid'], array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 2 ));
+					$client->setHeaders('X-HostKey', $merchant['hostkey']);
+
+					$client->setRawData('action=syncstores')->request('POST');
+				}
+				catch(Exception $e)
+				{
+
 				}
 			}
 		}
