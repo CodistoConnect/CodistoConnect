@@ -33,6 +33,7 @@ if(!isset($MerchantID) || !isset($HostKey))
 
 		$lockDb = new PDO('sqlite:' . $lockFile);
 		$lockDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		$lockDb->setAttribute(PDO::ATTR_TIMEOUT, 1);
 		$lockDb->exec('CREATE TABLE IF NOT EXISTS Lock (id real NOT NULL)');
 		$lockDb->exec('BEGIN EXCLUSIVE TRANSACTION');
 
@@ -46,10 +47,11 @@ if(!isset($MerchantID) || !isset($HostKey))
 			$createMerchant = true;
 
 			$lockDb->exec('DELETE FROM Lock');
-			$lockDb->exec('INSERT INTO Lock (id) VALUES('. microtime() .')');
+			$lockDb->exec('INSERT INTO Lock (id) VALUES('. microtime(true) .')');
 		}
 
 		$lockDb->exec('COMMIT TRANSACTION');
+		$lockDb = null;
 	}
 	catch (Exception $e)
 	{
@@ -124,8 +126,6 @@ if(!isset($MerchantID) || !isset($HostKey))
 		{
 
 		}
-
-		@unlink($lockFile);
 	}
 }
 
