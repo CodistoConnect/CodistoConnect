@@ -26,7 +26,14 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 	public function indexAction()
 	{
-		if(!$this->getConfig())
+		$response = $this->getResponse();
+		$request = $this->getRequest();
+		$request->setDispatched(true);
+		$server = $request->getServer();
+
+		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
+
+		if(!$this->getConfig($storeId))
 		{
 			if(function_exists('http_response_code'))
 				http_response_code(500);
@@ -40,11 +47,6 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 			return;
 		}
 
-		$response = $this->getResponse();
-		$request = $this->getRequest();
-		$request->setDispatched(true);
-		$server = $request->getServer();
-
 		if (isset($server['HTTP_X_SYNC'])) {
 			if (!isset($server['HTTP_X_ACTION'])) {
 				$server['HTTP_X_ACTION'] = '';
@@ -56,7 +58,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 					{
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync.db';
+						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
 
 						if($request->getQuery('productid') || $request->getQuery('categoryid'))
 						{
@@ -135,18 +137,17 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 					{
-
 						$indexer = Mage::getModel('index/process');
 						$indexer->load('codistoebayindex', 'indexer_code')
 									->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
 
 						$syncObject = Mage::getModel('codistosync/sync');
 
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync.db';
+						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
 						if(file_exists($syncDb))
 							unlink($syncDb);
 
-						$syncObject->Sync($syncDb);
+						$syncObject->Sync($syncDb, $storeId);
 
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
@@ -174,15 +175,15 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 				case 'EXECUTECHUNK':
 
-					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
-
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
 						$indexer = Mage::getModel('index/process');
 						$indexer->load('codistoebayindex', 'indexer_code')
 									->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
 
 						$syncObject = Mage::getModel('codistosync/sync');
 
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync.db';
+						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
 
 						if($request->getPost('Init') == '1')
 						{
@@ -202,10 +203,13 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 						for(;;)
 						{
-							$result = $syncObject->SyncChunk($syncDb);
+							$result = $syncObject->SyncChunk($syncDb, $storeId);
 
 							if($result == 'complete')
 							{
+								$syncObject->SyncTax($syncDb, $storeId);
+								$syncObject->SyncStores($syncDb, $storeId);
+
 								$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
 								break;
 							}
@@ -245,14 +249,14 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 					{
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync.db';
+						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
 
-						$ProductID = intval($request->getPost('ProductID'));
+						$ProductID = (int)$request->getPost('ProductID');
 						$productIds = array($ProductID);
 
 						$syncObject = Mage::getModel('codistosync/sync');
 
-						$syncObject->UpdateProducts($syncDb, $productIds);
+						$syncObject->UpdateProducts($syncDb, $productIds, $storeId);
 
 						$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
 
@@ -279,6 +283,58 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 						$db->exec('CREATE TABLE ProductOption AS SELECT * FROM SyncDb.ProductOption WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 						$db->exec('CREATE TABLE ProductOptionValue AS SELECT * FROM SyncDb.ProductOptionValue WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 						$db->exec('CREATE TABLE ProductHTML AS SELECT * FROM SyncDb.ProductHTML WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+						$db->exec('COMMIT TRANSACTION');
+						$db->exec('VACUUM');
+
+						$this->Send($tmpDb);
+
+						unlink($tmpDb);
+					}
+					else
+					{
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						$response->setHttpResponseCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setBody('Security Error');
+						$response->sendResponse();
+					}
+					die;
+
+				case 'TAX':
+
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
+						$syncObject = Mage::getModel('codistosync/sync');
+
+						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+
+						$syncObject->SyncTax($syncDb, $storeId);
+
+						$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
+
+						$db = new PDO('sqlite:' . $tmpDb);
+						$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+						$db->exec('PRAGMA synchronous=0');
+						$db->exec('PRAGMA temp_store=2');
+						$db->exec('PRAGMA page_size=65536');
+						$db->exec('PRAGMA encoding=\'UTF-8\'');
+						$db->exec('PRAGMA cache_size=15000');
+						$db->exec('PRAGMA soft_heap_limit=67108864');
+						$db->exec('PRAGMA journal_mode=MEMORY');
+
+						$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
+
+						$db->exec('BEGIN EXCLUSIVE TRANSACTION');
+						$db->exec('CREATE TABLE TaxClass AS SELECT * FROM SyncDb.TaxClass');
+						$db->exec('CREATE TABLE TaxCalculation AS SELECT * FROM SyncDb.TaxCalculation');
+						$db->exec('CREATE TABLE TaxCalculationRule AS SELECT * FROM SyncDb.TaxCalculationRule');
+						$db->exec('CREATE TABLE TaxCalculationRate AS SELECT * FROM SyncDb.TaxCalculationRate');
 						$db->exec('COMMIT TRANSACTION');
 						$db->exec('VACUUM');
 
@@ -375,7 +431,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 								$db->exec('PRAGMA cache_size=15000');
 								$db->exec('PRAGMA soft_heap_limit=67108864');
 								$db->exec('PRAGMA journal_mode=OFF');
-								$db->exec("ATTACH DATABASE '".$templateDb."' AS Source");
+								$db->exec('ATTACH DATABASE \''.$templateDb.'\' AS Source');
 								$db->exec('CREATE TABLE File AS SELECT * FROM Source.File WHERE Changed != 0');
 								$db->exec('DETACH DATABASE Source');
 								$db->exec('VACUUM');
@@ -441,7 +497,6 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					die;
 
-
 				default:
 
 					$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
@@ -455,13 +510,19 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 	public function testHashAction()
 	{
-		if(!$this->getConfig())
+		$request = $this->getRequest();
+		$response = $this->getResponse();
+		$server = $request->getServer();
+
+		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
+
+		if(!$this->getConfig($storeId))
 		{
 			if(function_exists('http_response_code'))
 				http_response_code(500);
 			$response->setHttpResponseCode(500);
-			$response->setRawHeader('HTTP/1.0 500 Security Error');
-			$response->setRawHeader('Status: 500 Security Error');
+			$response->setRawHeader('HTTP/1.0 500 Config Error');
+			$response->setRawHeader('Status: 500 Config Error');
 			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 			$response->setHeader('Pragma', 'no-cache', true);
@@ -469,16 +530,13 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 			return;
 		}
 
-		$server = $this->getRequest()->getServer();
-		$response = $this->getResponse();
-
 		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 		$response->setHeader('Pragma', 'no-cache', true);
 
 		if($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 		{
-			$version = (string)Mage::getConfig()->getModuleConfig("Codisto_Sync")->version;
+			$version = (string)Mage::getConfig()->getModuleConfig('Codisto_Sync')->version;
 			$response->setHeader('X-Codisto-Version', $version, true);
 
 			$response->setBody('OK');
@@ -501,7 +559,13 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 	public function checkPluginAction()
 	{ // End Point: index.php/codisto-sync/sync/checkPlugin
 
-		if(!$this->getConfig())
+		$request = $this->getRequest();
+		$response = $this->getResponse();
+		$server = $request->getServer();
+
+		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
+
+		if(!$this->getConfig($storeId))
 		{
 			if(function_exists('http_response_code'))
 				http_response_code(500);
@@ -515,8 +579,6 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 			return;
 		}
 
-		$response = $this->getResponse();
-
 		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 		$response->setHeader('Pragma', 'no-cache', true);
@@ -528,7 +590,13 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 	public function resetPluginAction()
 	{ // End Point index.php/codisto-sync/sync/resetPlugin
 
-		if(!$this->getConfig())
+		$request = $this->getRequest();
+		$response = $this->getResponse();
+		$server = $request->getServer();
+
+		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
+
+		if(!$this->getConfig($storeId))
 		{
 			if(function_exists('http_response_code'))
 				http_response_code(500);
@@ -542,26 +610,37 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 			return;
 		}
 
-		$request = $this->getRequest();
-		$response = $this->getResponse();
-		$server = $request->getServer();
+		if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+		{
+			$config = Mage::getConfig();
 
-		if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH'])) {
+			if($storeId == 0)
+			{
+				$config->saveConfig('codisto/merchantid', null);
+				$config->saveConfig('codisto/hostkey', null);
+			}
+			else
+			{
+				$store = Mage::app()->getStore($storeId);
 
-			Mage::getModel('core/config')->saveConfig('codisto/merchantid', null);
-			Mage::getModel('core/config')->saveConfig('codisto/hostkey', null);
+				$config->saveConfig('stores/'.$store->getCode().'/codisto/merchantid', null);
+				$config->saveConfig('stores/'.$store->getCode().'/codisto/hostkey', null);
+			}
 
-			//Mage::app()->cleanCache();
+			$config->cleanCache();
+
 			Mage::app()->removeCache('config_store_data');
 			Mage::app()->getCacheInstance()->cleanType('config');
-			Mage::app()->getStore()->resetConfig();
+			Mage::app()->reinitStores();
 
 			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 			$response->setHeader('Pragma', 'no-cache', true);
 
 			$response->setBody('SUCCESS');
-		} else {
+		}
+		else
+		{
 
 			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);

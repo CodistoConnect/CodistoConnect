@@ -121,6 +121,15 @@
 					</codisto_stockmovements>
 				</observers>
 			</sales_order_item_cancel>
+			<tax_settings_change_after>
+				<observers>
+					<codisto_taxsync>
+						<type>singleton</type>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>taxSettingsChangeAfter</method>
+					</codisto_taxsync>
+				</observers>
+			</tax_settings_change_after>
 
 			<core_block_abstract_prepare_layout_after>
 				<observers>
