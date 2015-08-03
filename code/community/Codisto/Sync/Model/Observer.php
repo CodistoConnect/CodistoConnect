@@ -79,6 +79,44 @@ class Codisto_Sync_Model_Observer
 		return $this;
 	}
 
+	public function storeViewsChanged(Varien_Event_Observer $observer)
+	{
+		$merchants = array();
+		$visited = array();
+
+		$stores = Mage::getModel('core/store')->getCollection();
+
+		foreach($stores as $store)
+		{
+			$merchantId = $store->getConfig('codisto/merchantid');
+
+			if(!in_array($merchantId, $visited, true))
+			{
+				$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $store->getConfig('codisto/hostkey'), 'storeid' => $store->getId() );
+				$visited[] = $merchantId;
+			}
+		}
+
+		unset($visited);
+
+		foreach($merchants as $merchant)
+		{
+			try
+			{
+				$client = new Zend_Http_Client('https://api.codisto.com/'.$merchant['merchantid'], array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 2 ));
+				$client->setHeaders('X-HostKey', $merchant['hostkey']);
+
+				$client->setRawData('action=syncstores')->request('POST');
+			}
+			catch(Exception $e)
+			{
+
+			}
+		}
+
+		return $this;
+	}
+
 	public function salesOrderShipmentSaveAfter(Varien_Event_Observer $observer)
 	{
 		$shipment = $observer->getEvent()->getShipment();

@@ -357,6 +357,55 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					die;
 
+					case 'STOREVIEW':
+
+						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+						{
+							$syncObject = Mage::getModel('codistosync/sync');
+
+							$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+
+							$syncObject->SyncStores($syncDb, $storeId);
+
+							$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
+
+							$db = new PDO('sqlite:' . $tmpDb);
+							$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+							$db->exec('PRAGMA synchronous=0');
+							$db->exec('PRAGMA temp_store=2');
+							$db->exec('PRAGMA page_size=65536');
+							$db->exec('PRAGMA encoding=\'UTF-8\'');
+							$db->exec('PRAGMA cache_size=15000');
+							$db->exec('PRAGMA soft_heap_limit=67108864');
+							$db->exec('PRAGMA journal_mode=MEMORY');
+
+							$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
+
+							$db->exec('BEGIN EXCLUSIVE TRANSACTION');
+							$db->exec('CREATE TABLE Store AS SELECT * FROM SyncDb.Store');
+							$db->exec('COMMIT TRANSACTION');
+							$db->exec('VACUUM');
+
+							$this->Send($tmpDb);
+
+							unlink($tmpDb);
+						}
+						else
+						{
+							if(function_exists('http_response_code'))
+								http_response_code(400);
+							$response->setHttpResponseCode(400);
+							$response->setRawHeader('HTTP/1.0 400 Security Error');
+							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
+							$response->setBody('Security Error');
+							$response->sendResponse();
+						}
+						die;
+
 				case 'TEMPLATE':
 
 					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
