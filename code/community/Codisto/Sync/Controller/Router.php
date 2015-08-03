@@ -84,7 +84,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 						$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
 						$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
-						
+
 						if(!isset($MerchantID) || !isset($HostKey))
 						{
 							$client = new Zend_Http_Client('https://ui.codisto.com/create', array( 'keepalive' => true, 'maxredirects' => 0 ));
