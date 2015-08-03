@@ -73,57 +73,75 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				{
 					try
 					{
-						$client = new Zend_Http_Client('https://ui.codisto.com/create', array( 'keepalive' => true, 'maxredirects' => 0 ));
-						$client->setHeaders('Content-Type', 'application/json');
+						$createLockFile = Mage::getBaseDir('var') . '/codisto-create-lock';
 
-						for($retry = 0; ; $retry++)
+						$createLockDb = new PDO('sqlite:' . $createLockFile);
+						$createLockDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+						$createLockDb->setAttribute(PDO::ATTR_TIMEOUT, 60);
+						$createLockDb->exec('BEGIN EXCLUSIVE TRANSACTION');
+
+						Mage::app()->getStore(0)->resetConfig();
+
+						$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+						$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
+						
+						if(!isset($MerchantID) || !isset($HostKey))
 						{
-							try
+							$client = new Zend_Http_Client('https://ui.codisto.com/create', array( 'keepalive' => true, 'maxredirects' => 0 ));
+							$client->setHeaders('Content-Type', 'application/json');
+
+							for($retry = 0; ; $retry++)
 							{
-								Mage::getModel("admin/user");
-								$session = Mage::getSingleton('admin/session');
-
-								$user = $session->getUser();
-								if(!$user)
+								try
 								{
-									$user = Mage::getModel('admin/user')->getCollection()->getFirstItem();
+									Mage::getModel("admin/user");
+									$session = Mage::getSingleton('admin/session');
+
+									$user = $session->getUser();
+									if(!$user)
+									{
+										$user = Mage::getModel('admin/user')->getCollection()->getFirstItem();
+									}
+
+									$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . substr($path, 0, strpos($path, 'codisto'));
+									$version = Mage::getVersion();
+									$storename = Mage::getStoreConfig('general/store_information/name', 0);
+									$email = $user->getEmail();
+
+									$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(), 'url' => $url, 'email' => $email, 'storename' => $storename )))->request('POST');
+
+									if(!$remoteResponse->isSuccessful())
+										throw new Exception('Error Creating Account');
+
+									$data = json_decode($remoteResponse->getRawBody(), true);
+
+									if(isset($data['merchantid']) && $data['merchantid'] &&
+										isset($data['hostkey']) && $data['hostkey'])
+									{
+										Mage::getModel('core/config')->saveConfig('codisto/merchantid', $data['merchantid']);
+										Mage::getModel('core/config')->saveConfig('codisto/hostkey', $data['hostkey']);
+
+										$MerchantID = $data['merchantid'];
+										$HostKey = $data['hostkey'];
+									}
+								}
+								catch(Exception $e)
+								{
+									if($retry < 3)
+									{
+										usleep(1000000);
+										continue;
+									}
+
+									throw $e;
 								}
 
-								$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . substr($path, 0, strpos($path, 'codisto'));
-								$version = Mage::getVersion();
-								$storename = Mage::getStoreConfig('general/store_information/name', 0);
-								$email = $user->getEmail();
-
-								$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(), 'url' => $url, 'email' => $email, 'storename' => $storename )))->request('POST');
-
-								if(!$remoteResponse->isSuccessful())
-									throw new Exception('Error Creating Account');
-
-								$data = json_decode($remoteResponse->getRawBody(), true);
-
-								if(isset($data['merchantid']) && $data['merchantid'] &&
-									isset($data['hostkey']) && $data['hostkey'])
-								{
-									Mage::getModel('core/config')->saveConfig('codisto/merchantid', $data['merchantid']);
-									Mage::getModel('core/config')->saveConfig('codisto/hostkey', $data['hostkey']);
-
-									$MerchantID = $data['merchantid'];
-									$HostKey = $data['hostkey'];
-								}
+								break;
 							}
-							catch(Exception $e)
-							{
-								if($retry < 3)
-								{
-									usleep(1000000);
-									continue;
-								}
-
-								throw $e;
-							}
-
-							break;
 						}
+
+						$createLockDb->exec('COMMIT TRANSACTION');
+						$createLockDb = null;
 					}
 					catch(Exception $e)
 					{
