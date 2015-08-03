@@ -34,8 +34,8 @@ if(!isset($MerchantID) || !isset($HostKey))
 		$lockDb = new PDO('sqlite:' . $lockFile);
 		$lockDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		$lockDb->setAttribute(PDO::ATTR_TIMEOUT, 1);
-		$lockDb->exec('CREATE TABLE IF NOT EXISTS Lock (id real NOT NULL)');
 		$lockDb->exec('BEGIN EXCLUSIVE TRANSACTION');
+		$lockDb->exec('CREATE TABLE IF NOT EXISTS Lock (id real NOT NULL)');
 
 		$lockQuery = $lockDb->query('SELECT id FROM Lock UNION SELECT 0 WHERE NOT EXISTS(SELECT 1 FROM Lock)');
 		$lockQuery->execute();
@@ -80,49 +80,67 @@ if(!isset($MerchantID) || !isset($HostKey))
 
 		try
 		{
-			$client = new Zend_Http_Client("https://ui.codisto.com/create", array( 'keepalive' => true, 'maxredirects' => 0 ));
-			$client->setHeaders('Content-Type', 'application/json');
+			$createLockFile = Mage::getBaseDir('var') . '/codisto-create-lock';
 
-			for($retry = 0; ; $retry++)
+			$createLockDb = new PDO('sqlite:' . $createLockFile);
+			$createLockDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+			$createLockDb->setAttribute(PDO::ATTR_TIMEOUT, 60);
+			$createLockDb->exec('BEGIN EXCLUSIVE TRANSACTION');
+
+			Mage::app()->getStore(0)->resetConfig();
+
+			$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
+			
+			if(!isset($MerchantID) || !isset($HostKey))
 			{
-				try
+				$client = new Zend_Http_Client("https://ui.codisto.com/create", array( 'keepalive' => true, 'maxredirects' => 0 ));
+				$client->setHeaders('Content-Type', 'application/json');
+
+				for($retry = 0; ; $retry++)
 				{
-					$url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
-					$version = Mage::getVersion();
-					$storename = Mage::getStoreConfig('general/store_information/name', 0);
-					$email = $user->getEmail();
-
-					$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(), 'url' => $url, 'email' => $email, 'storename' => $storename )))->request('POST');
-
-					if(!$remoteResponse->isSuccessful())
-						throw new Exception('Error Creating Account');
-
-					// @codingStandardsIgnoreStart
-					$data = json_decode($remoteResponse->getRawBody(), true);
-					// @codingStandardsIgnoreEnd
-
-					if(isset($data['merchantid']) && $data['merchantid'] &&
-						isset($data['hostkey']) && $data['hostkey'])
+					try
 					{
-						Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['merchantid']);
-						Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['hostkey']);
+						$url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
+						$version = Mage::getVersion();
+						$storename = Mage::getStoreConfig('general/store_information/name', 0);
+						$email = $user->getEmail();
 
-						$reindexRequired = true;
+						$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(), 'url' => $url, 'email' => $email, 'storename' => $storename )))->request('POST');
+
+						if(!$remoteResponse->isSuccessful())
+							throw new Exception('Error Creating Account');
+
+						// @codingStandardsIgnoreStart
+						$data = json_decode($remoteResponse->getRawBody(), true);
+						// @codingStandardsIgnoreEnd
+
+						if(isset($data['merchantid']) && $data['merchantid'] &&
+							isset($data['hostkey']) && $data['hostkey'])
+						{
+							Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['merchantid']);
+							Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['hostkey']);
+
+							$reindexRequired = true;
+						}
 					}
-				}
-				catch(Exception $e)
-				{
-					if($retry < 3)
+					catch(Exception $e)
 					{
-						usleep(1000000);
-						continue;
+						if($retry < 3)
+						{
+							usleep(1000000);
+							continue;
+						}
+
+						throw $e;
 					}
 
-					throw $e;
+					break;
 				}
-
-				break;
 			}
+
+			$createLockDb->exec('COMMIT TRANSACTION');
+			$createLockDb = null;
 		}
 		catch(Exception $e)
 		{
