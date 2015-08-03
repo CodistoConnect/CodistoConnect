@@ -124,7 +124,8 @@ if(!isset($MerchantID) || !isset($HostKey))
 		}
 		catch(Exception $e)
 		{
-
+			// remove lock file immediately if any error during account creation
+			@unlink($lockFile);
 		}
 	}
 }
