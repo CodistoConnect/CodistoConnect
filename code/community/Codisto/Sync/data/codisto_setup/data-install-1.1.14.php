@@ -97,7 +97,9 @@ if(!isset($MerchantID) || !isset($HostKey))
 					if(!$remoteResponse->isSuccessful())
 						throw new Exception('Error Creating Account');
 
+					// @codingStandardsIgnoreStart
 					$data = json_decode($remoteResponse->getRawBody(), true);
+					// @codingStandardsIgnoreEnd
 
 					if(isset($data['merchantid']) && $data['merchantid'] &&
 						isset($data['hostkey']) && $data['hostkey'])
