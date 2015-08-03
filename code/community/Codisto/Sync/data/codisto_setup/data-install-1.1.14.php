@@ -103,8 +103,6 @@ if(!isset($MerchantID) || !isset($HostKey))
 						Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['merchantid']);
 						Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['hostkey']);
 
-						unlink($lockFile);
-
 						$reindexRequired = true;
 					}
 				}
@@ -126,6 +124,8 @@ if(!isset($MerchantID) || !isset($HostKey))
 		{
 
 		}
+
+		@unlink($lockFile);
 	}
 }
 
