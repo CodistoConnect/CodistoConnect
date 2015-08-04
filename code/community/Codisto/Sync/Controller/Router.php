@@ -98,12 +98,17 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 								$storename = Mage::getStoreConfig('general/store_information/name');
 								$email = $user->getEmail();
 
+//@codingStandardsIgnoreStart
 								$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(), 'url' => $url, 'email' => $email, 'storename' => $storename )))->request('POST');
+//@codingStandardsIgnoreEnd
+
 
 								if(!$remoteResponse->isSuccessful())
 									throw new Exception('Error Creating Account');
 
+//@codingStandardsIgnoreStart
 								$data = json_decode($remoteResponse->getRawBody(), true);
+//@codingStandardsIgnoreEnd
 
 								if(isset($data['merchantid']) && $data['merchantid'] &&
 									isset($data['hostkey']) && $data['hostkey'])
