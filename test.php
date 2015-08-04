@@ -1,7 +1,7 @@
 <?php
-	@codingStandardsIgnoreStart
+	//@codingStandardsIgnoreStart
 	http_response_code(500);
-	@codingStandardsIgnoreEnd
+	//@codingStandardsIgnoreEnd
 
 	/* Adding a change to test pull request hook */
 
@@ -9,8 +9,8 @@
 	http_response_code(500);
 // @codingStandardsIgnoreEnd
 
-	@codingStandardsIgnoreStart
+	//@codingStandardsIgnoreStart
 	http_response_code(500);
-	@codingStandardsIgnoreEnd
+	//@codingStandardsIgnoreEnd
 ?>
 
