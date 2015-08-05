@@ -144,8 +144,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 				if(!$this->getConfig($storeId))
 				{
+					//@codingStandardsIgnoreStart
 					if(function_exists('http_response_code'))
 						http_response_code(500);
+					//@codingStandardsIgnoreEnd
 					$response->setHttpResponseCode(500);
 					$response->setRawHeader('HTTP/1.0 500 Security Error');
 					$response->setRawHeader('Status: 500 Security Error');
