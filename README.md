@@ -21,7 +21,6 @@ Codisto Connect is revolutionary eBay integration for Magento. Incredibly fast s
 |<a href="https://github.com/CodistoConnect/CodistoConnect/tree/bm_readme_update#step-1-verify-your-prerequisites">Pre-requisites</a>  |
 |<a href="https://github.com/CodistoConnect/CodistoConnect/tree/bm_readme_update#step-2-prepare-to-install">Installation</a>  |
 |<a href="https://github.com/CodistoConnect/CodistoConnect/tree/bm_readme_update#contributing-to-the-codisto-connect-code-base">Contributing</a>  |
-|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/bm_readme_update#contributing-to-the-codisto-connect-code-base">Contributing</a>  |
 |<a href="https://github.com/CodistoConnect/CodistoConnect/tree/bm_readme_update#copyright-and-license">License</a>  |
 
 
@@ -83,13 +82,15 @@ After verifying your prerequisites, perform the following task in order to prepa
 
 [ ![Stable] [stable-image] ] [stable] <a href="https://codisto.com/plugin/getstable">https://qa.codisto.com/plugin/getstable</a> <br>
 [ ![Beta] [beta-image] ] [beta] <a href="https://codisto.com/plugin/getstable">https://qa.codisto.com/plugin/getbeta</a> <br>
+[ ![Feature] [feature-image] [feature] qa.codisto.com/plugin/build/manual?branch=$FEATUREBRANCH&download=1
+
 
 OR
 
 <h5>Download from github</h5>
 
-Download the plugin from https://github.com/codistoconnect/codistoconnect/releases.
-The latest release is available from https://github.com/codistoconnect/codistoconnect/releases/latest.
+Download the plugin from https://github.com/codistoconnect/codistoconnect/releases. <br>
+The latest release is available from https://github.com/codistoconnect/codistoconnect/releases/latest. <br>
 The plugin.tgz file located here is ready to install in Magento.
 
 
@@ -135,6 +136,9 @@ Codisto Connect code set is licensed under the Open Software License 3.0 (OSL-3.
 
 **Codisto Connect - Magento to eBay Integration**
 [Twitter](https://twitter.com/Codisto/) | [Facebook](https://www.facebook.com/Codisto) | [Google](https://plus.google.com/+CodistoConnect/)
+
+[feature]: Feature Branch
+[feature-image]: https://img.shields.io/badge/-Feature-yellow.svg
 
 [stable]: Stable
 [stable-image]: https://img.shields.io/badge/-Stable-brightgreen.svg
