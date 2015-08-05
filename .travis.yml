@@ -1,6 +1,6 @@
 language: php
 php:
-  - 5.2
+  #- 5.2
   - 5.3
   - 5.4
   - 5.5
@@ -34,6 +34,7 @@ branches:
     - master
     - development
 
-#use container based infrastructure for faster building .. TODO confirm of sudo is required for anything.If not,  uncomment below. 
-#sudo: false
+#use container based infrastructure for faster building is the default now , confirm if I need sudo and uncomment below if required
+#there are ways to install software using travis without sudo so be certain 
+#sudo: required
 
