@@ -188,8 +188,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			}
 			else
 			{
+				//@codingStandardsIgnoreStart
 				if(function_exists('http_response_code'))
 					http_response_code(400);
+				//@codingStandardsIgnoreEnd
 				$response->setHttpResponseCode(400);
 				$response->setRawHeader('HTTP/1.0 400 Invalid Content Type');
 				$response->setRawHeader('Status: 400 Invalid Content Type');

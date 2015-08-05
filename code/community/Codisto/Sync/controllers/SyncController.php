@@ -35,8 +35,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 		if(!$this->getConfig($storeId))
 		{
+			//@codingStandardsIgnoreStart
 			if(function_exists('http_response_code'))
 				http_response_code(500);
+			//@codingStandardsIgnoreEnd
 			$response->setHttpResponseCode(500);
 			$response->setRawHeader('HTTP/1.0 500 Security Error');
 			$response->setRawHeader('Status: 500 Security Error');
@@ -120,8 +122,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					else
 					{
+						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
+						//@codingStandardsIgnoreEnd
 						$response->setHttpResponseCode(400);
 						$response->setRawHeader('HTTP/1.0 400 Security Error');
 						$response->setRawHeader('Status: 400 Security Error');
@@ -159,8 +163,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					else
 					{
+						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
+						//@codingStandardsIgnoreEnd
 						$response->setHttpResponseCode(400);
 						$response->setRawHeader('HTTP/1.0 400 Security Error');
 						$response->setRawHeader('Status: 400 Security Error');
@@ -232,8 +238,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					else
 					{
+						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
+						//@codingStandardsIgnoreEnd
 						$response->setHttpResponseCode(400);
 						$response->setRawHeader('HTTP/1.0 400 Security Error');
 						$response->setRawHeader('Status: 400 Security Error');
@@ -292,8 +300,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					else
 					{
+						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
+						//@codingStandardsIgnoreEnd
 						$response->setHttpResponseCode(400);
 						$response->setRawHeader('HTTP/1.0 400 Security Error');
 						$response->setRawHeader('Status: 400 Security Error');
@@ -344,8 +354,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					else
 					{
+						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
+						//@codingStandardsIgnoreEnd
 						$response->setHttpResponseCode(400);
 						$response->setRawHeader('HTTP/1.0 400 Security Error');
 						$response->setRawHeader('Status: 400 Security Error');
@@ -393,8 +405,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 						}
 						else
 						{
+							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
 								http_response_code(400);
+							//@codingStandardsIgnoreEnd
 							$response->setHttpResponseCode(400);
 							$response->setRawHeader('HTTP/1.0 400 Security Error');
 							$response->setRawHeader('Status: 400 Security Error');
@@ -451,8 +465,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 								}
 								catch(Exception $e)
 								{
+									//@codingStandardsIgnoreStart
 									if(function_exists('http_response_code'))
 										http_response_code(500);
+									//@codingStandardsIgnoreEnd
 									$response->setHttpResponseCode(500);
 									$response->setRawHeader('HTTP/1.0 500 Internal Server Error');
 									$response->setRawHeader('Status: 500 Internal Server Error');
@@ -493,8 +509,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 								if($fileCount == 0)
 								{
+									//@codingStandardsIgnoreStart
 									if(function_exists('http_response_code'))
 										http_response_code(204);
+									//@codingStandardsIgnoreEnd
 									$response->setHttpResponseCode(204);
 									$response->setRawHeader('HTTP/1.0 204 No Content');
 									$response->setRawHeader('Status: 204 No Content');
@@ -533,8 +551,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					else
 					{
+						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
+						//@codingStandardsIgnoreEnd
 						$response->setHttpResponseCode(400);
 						$response->setRawHeader('HTTP/1.0 400 Security Error');
 						$response->setRawHeader('Status: 400 Security Error');
@@ -567,8 +587,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 		if(!$this->getConfig($storeId))
 		{
+			//@codingStandardsIgnoreStart
 			if(function_exists('http_response_code'))
 				http_response_code(500);
+			//@codingStandardsIgnoreEnd
 			$response->setHttpResponseCode(500);
 			$response->setRawHeader('HTTP/1.0 500 Config Error');
 			$response->setRawHeader('Status: 500 Config Error');
@@ -592,8 +614,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 		}
 		else
 		{
+			//@codingStandardsIgnoreStart
 			if(function_exists('http_response_code'))
 				http_response_code(400);
+			//@codingStandardsIgnoreEnd
 			$response->setHttpResponseCode(400);
 			$response->setRawHeader('HTTP/1.0 400 Security Error');
 			$response->setRawHeader('Status: 400 Security Error');
@@ -616,8 +640,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 		if(!$this->getConfig($storeId))
 		{
+			//@codingStandardsIgnoreStart
 			if(function_exists('http_response_code'))
 				http_response_code(500);
+			//@codingStandardsIgnoreEnd
 			$response->setHttpResponseCode(500);
 			$response->setRawHeader('HTTP/1.0 500 Config Error');
 			$response->setRawHeader('Status: 500 Config Error');
@@ -647,8 +673,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 		if(!$this->getConfig($storeId))
 		{
+			//@codingStandardsIgnoreStart
 			if(function_exists('http_response_code'))
 				http_response_code(500);
+			//@codingStandardsIgnoreEnd
 			$response->setHttpResponseCode(500);
 			$response->setRawHeader('HTTP/1.0 500 Security Error');
 			$response->setRawHeader('Status: 500 Security Error');
