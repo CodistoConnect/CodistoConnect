@@ -82,7 +82,7 @@ After verifying your prerequisites, perform the following task in order to prepa
 
 [ ![Stable] [stable-image] ] [stable] <a href="https://qa.codisto.com/plugin/getstable">https://qa.codisto.com/plugin/getstable</a> <br>
 [ ![Beta] [beta-image] ] [beta] <a href="https://qa.codisto.com/plugin/getstable">https://qa.codisto.com/plugin/getbeta</a> <br>
-[ ![Feature] [feature-image] ] [feature] https&#58;//qa.codisto.com/plugin/build/manual?branch=$FEATUREBRANCH&download=1
+[ ![Feature] [feature-image] ] [feature] Make a POST request to https&#58;//qa.codisto.com/plugin/build/manual?branch=$FEATUREBRANCH&download=1 with the header x-codisto-build set to 1
 
 
 OR
