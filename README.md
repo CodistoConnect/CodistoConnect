@@ -66,8 +66,14 @@ After verifying your prerequisites, perform the following task in order to prepa
 
 <hr>
 
-Download the Codisto Connect plugin from Codisto.com at <a href="https://codisto.com/plugin/getstable">https://codisto.com/plugin/getstable</a>. Substitute getstable with getbeta
-for the latest development branch.)
+<h5>Download the Codisto Connect plugin</h5>
+
+[ ![Stable] [stable-image] ] [stable]
+[ ![Beta] [beta-image] ] [beta]
+
+
+from Codisto.com at <a href="https://codisto.com/plugin/getstable">https://codisto.com/plugin/getstable</a>.
+Substitute getstable with getbeta for the latest development branch.)
 
 
 OR
@@ -102,7 +108,7 @@ OR
 ssh $USER@$DOMAIN "wget -O install.sh https://qa.codisto.com/plugin/install && chmod +x ./install.sh && ./install.sh"
 ```
 
-You may also pipe to your shell of choice but that is discourage as things can go wrong
+You may also pipe to your shell of choice but that is discouraged as things can go wrong
 ``` bash
 ssh $USER@DOMAIN "wget -O - https://qa.codisto.com/plugin/install | $SHELL"
 ```
@@ -120,6 +126,11 @@ Codisto Connect code set is licensed under the Open Software License 3.0 (OSL-3.
 **Codisto Connect - Magento to eBay Integration**
 [Twitter](https://twitter.com/Codisto/) | [Facebook](https://www.facebook.com/Codisto) | [Google](https://plus.google.com/+CodistoConnect/)
 
+[stable]: Stable
+[stable-image]: https://img.shields.io/badge/-Stable-brightgreen.svg
+
+[beta]: Beta
+[beta-image]: https://img.shields.io/badge/-Beta-orange.svg
 
 [license-image]: https://img.shields.io/badge/license-OSL--3.0-blue.svg
 [license]: http://opensource.org/licenses/OSL-3.0
