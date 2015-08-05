@@ -26,6 +26,12 @@ notifications:
       - bot@codisto.com
     on_success: always
     on_failure: always
+
+branches:
+  only:
+    - master
+    - development
+
 #use container based infrastructure for faster building .. TODO confirm of sudo is required for anything.If not,  uncomment below. 
 #sudo: false
 
