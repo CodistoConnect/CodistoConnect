@@ -113,7 +113,7 @@ rm plugin.tgz
 
 OR
 
-<h5>via SSH (using the CodistoConnect plugin install helper script)</h5>
+<h5>via SSH (using the CodistoConnect <a href="https://qa.codisto.com/plugin/install">plugin install helper script</a>)</h5>
 
 ``` bash
 ssh $USER@$DOMAIN "wget -O install.sh https://qa.codisto.com/plugin/install && chmod +x ./install.sh && ./install.sh"
@@ -128,7 +128,7 @@ ssh $USER@DOMAIN "wget -O - https://qa.codisto.com/plugin/install | $SHELL"
 <h2>Contributing to the Codisto Connect code base</h2>
 Contributions can take the form of new components or features, changes to existing features, tests, documentation (such as developer guides, user guides, examples, or specifications), bug fixes, optimizations, or just good suggestions.
 
-Please contact <a href="https://codisto.com/contact-us.html">support</a> with your ideas and feel free to contribute
+Please contact <a href="https://codisto.com/contact-us.html">support</a> with your ideas or submit a pull request and feel free to contribute.
 
 <h2>Copyright and license</h2>
 Codisto Connect code set is licensed under the Open Software License 3.0 (OSL-3.0)
