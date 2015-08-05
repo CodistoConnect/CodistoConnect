@@ -66,31 +66,28 @@ After verifying your prerequisites, perform the following task in order to prepa
 
 <hr>
 
-<h5>Download the Codisto Connect plugin</h5>
+<h5>Download the Codisto Connect plugin from the site</h5>
 
-[ ![Stable] [stable-image] ] [stable]
-[ ![Beta] [beta-image] ] [beta]
-
-
-from Codisto.com at <a href="https://codisto.com/plugin/getstable">https://codisto.com/plugin/getstable</a>.
-Substitute getstable with getbeta for the latest development branch.)
-
+[ ![Stable] [stable-image] ] [stable] <a href="https://codisto.com/plugin/getstable">https://qa.codisto.com/plugin/getstable</a> <br>
+[ ![Beta] [beta-image] ] [beta] <a href="https://codisto.com/plugin/getstable">https://qa.codisto.com/plugin/getbeta</a> <br>
 
 OR
+
+<h5>Download from github</h5>
 
 Download the plugin from https://github.com/codistoconnect/codistoconnect/releases.
 The latest release is available from https://github.com/codistoconnect/codistoconnect/releases/latest.
-
-
 The plugin.tgz file located here is ready to install in Magento.
+
+
 
 <h2>Step 3: Install and verify the installation</h2>
 
-<h4>Follow the guide here <a href="https://codisto.com/install.html">here</a></h4>
+<h5>Follow the guide here <a href="https://codisto.com/install.html">here</a></h5>
 
 OR
 
-<h4>via SSH (Replace paths as appropriate)</h4>
+<h5>via SSH (Replace paths as appropriate)</h5>
 
 ``` bash
 cd $PATHTOYOURMAGENTO
@@ -102,7 +99,7 @@ rm plugin.tgz
 
 OR
 
-<h4>via SSH (using the CodistoConnect plugin install helper script)</h4>
+<h5>via SSH (using the CodistoConnect plugin install helper script)</h5>
 
 ``` bash
 ssh $USER@$DOMAIN "wget -O install.sh https://qa.codisto.com/plugin/install && chmod +x ./install.sh && ./install.sh"
