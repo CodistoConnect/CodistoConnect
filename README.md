@@ -12,6 +12,18 @@ Welcome to Codisto Connect Magento to eBay Integration!
 Codisto Connect is revolutionary eBay integration for Magento. Incredibly fast set up and super easy maintenance. Integrate in minutes.
 </p>
 
+
+
+|Contents      |
+|------------- |
+|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/bm_readme_update#new-to-codisto-connect-need-some-help">Help</a>  |
+|Content Cell  |
+
+
+
+
+
+
 <h2>New to Codisto Connect? Need some help?</h2>
 If you're not sure about the following, you probably need a little help before you start installing the Codisto Connect plugin:
 
