@@ -557,7 +557,13 @@ class Codisto_Sync_Model_Sync
 		$price = $this->getExTaxPrice($product, $product->getFinalPrice(), $store);
 		$listPrice = $this->getExTaxPrice($product, $product->getPrice(), $store);
 
-		$description = isset($productData['description']) ? $productData['description'] : '';
+		if(!isset($productData['description']))
+		{
+			$tmpProduct = Mage::getModel('catalog/product')->load($productData['entity_id']);
+			$description = $tmpProduct->getDescription();
+			unset($tmpProduct);
+		}
+
 		$description = $this->cmsHelper->getBlockTemplateProcessor()->filter(preg_replace('/^\s+|\s+$/', '', $description));
 		if($type == 'simple' &&
 			$description == '')
