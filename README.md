@@ -78,16 +78,16 @@ After verifying your prerequisites, perform the following task in order to prepa
 
 <hr>
 
-<h5>Download the Codisto Connect plugin from the site</h5>
+<h5>Download the Codisto Connect plugin from Codisto</h5>
 
-[ ![Stable] [stable-image] ] [stable] <a href="https://codisto.com/plugin/getstable">https://qa.codisto.com/plugin/getstable</a> <br>
-[ ![Beta] [beta-image] ] [beta] <a href="https://codisto.com/plugin/getstable">https://qa.codisto.com/plugin/getbeta</a> <br>
-[ ![Feature] [feature-image] ] [feature] qa.codisto.com/plugin/build/manual?branch=$FEATUREBRANCH&download=1
+[ ![Stable] [stable-image] ] [stable] <a href="https://qa.codisto.com/plugin/getstable">https://qa.codisto.com/plugin/getstable</a> <br>
+[ ![Beta] [beta-image] ] [beta] <a href="https://qa.codisto.com/plugin/getstable">https://qa.codisto.com/plugin/getbeta</a> <br>
+[ ![Feature] [feature-image] ] [feature] https://qa.codisto.com/plugin/build/manual?branch=$FEATUREBRANCH&download=1
 
 
 OR
 
-<h5>Download from github</h5>
+<h5>Download from GitHub</h5>
 
 Download the plugin from https://github.com/codistoconnect/codistoconnect/releases <br> <br>
 The latest release is available from https://github.com/codistoconnect/codistoconnect/releases/latest. <br>
