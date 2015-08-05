@@ -137,7 +137,7 @@ Codisto Connect code set is licensed under the Open Software License 3.0 (OSL-3.
 **Codisto Connect - Magento to eBay Integration**
 [Twitter](https://twitter.com/Codisto/) | [Facebook](https://www.facebook.com/Codisto) | [Google](https://plus.google.com/+CodistoConnect/)
 
-[feature]: Feature Branch
+[feature]: FeatureBranch
 [feature-image]: https://img.shields.io/badge/-Feature-yellow.svg
 
 [stable]: Stable
