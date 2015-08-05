@@ -67,7 +67,7 @@ After verifying your prerequisites, perform the following task in order to prepa
 <hr>
 
 Download the Codisto Connect plugin from Codisto.com at <a href="https://codisto.com/plugin/getstable">https://codisto.com/plugin/getstable</a>. Substitute getstable with getbeta
-for the latest development branch. (Other feature branches will have to be packaged manually - <a href="http://www.magentocommerce.com/magento-connect/create_your_extension/">Create your extension</a>)
+for the latest development branch.)
 
 
 OR
@@ -80,17 +80,33 @@ The plugin.tgz file located here is ready to install in Magento.
 
 <h2>Step 3: Install and verify the installation</h2>
 
-Follow the guide here <a href="https://codisto.zendesk.com/hc/en-us/articles/204681879-Downloading-and-Installing-the-CodistoConnect-Plugin">Installing Codisto Connect</a>.
+<h4>Follow the guide here <a href="https://codisto.com/install.html">here</a></h4>
 
-OR via SSH (Replace paths as appropriate)
+OR
+
+<h4>via SSH (Replace paths as appropriate)</h4>
 
 ``` bash
-cd ~/apps/magento/htdocs/
+cd $PATHTOYOURMAGENTO
 ./mage uninstall community CodistoConnect
 wget -O plugin.tgz https://codisto.com/plugin/getstable
 ./mage install-file plugin.tgz
 rm plugin.tgz
 ```
+
+OR
+
+<h4>via SSH (using the CodistoConnect plugin install helper script)</h4>
+
+``` bash
+ssh $USER@$DOMAIN "wget -O install.sh https://qa.codisto.com/plugin/install && chmod +x ./install.sh && ./install.sh"
+```
+
+You may also pipe to your shell of choice but that is discourage as things can go wrong
+``` bash
+ssh $USER@DOMAIN "wget -O - https://qa.codisto.com/plugin/install | $SHELL"
+```
+
 
 <h2>Contributing to the Codisto Connect code base</h2>
 Contributions can take the form of new components or features, changes to existing features, tests, documentation (such as developer guides, user guides, examples, or specifications), bug fixes, optimizations, or just good suggestions.
