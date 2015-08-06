@@ -33,11 +33,11 @@ abstract class Codisto_Sync_Controller_BaseController extends Mage_Core_Controll
 		return true;
 	}
 
-	protected function getConfig()
+	protected function getConfig($storeId)
 	{
 		$this->config = array(
-			'MerchantID' => Mage::getStoreConfig('codisto/merchantid', 0),
-			'HostKey' => Mage::getStoreConfig('codisto/hostkey', 0)
+			'MerchantID' => Mage::getStoreConfig('codisto/merchantid', $storeId),
+			'HostKey' => Mage::getStoreConfig('codisto/hostkey', $storeId)
 		);
 
 		if(!isset($this->config['MerchantID']) || $this->config['MerchantID'] == '' ||
