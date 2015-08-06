@@ -735,7 +735,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 
 			/* States: cancelled, processing, captured, inprogress, complete */
-			if($ordercontent->orderstate == 'captured' && ($orderstatus!='pending' || $orderstatus!='new')) {
+			if($ordercontent->orderstate == 'captured' && ($orderstatus!='pending' && $orderstatus!='new')) {
 				$order->setState(Mage_Sales_Model_Order::STATE_NEW, true);
 				$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
 			}
