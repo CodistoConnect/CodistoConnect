@@ -1,0 +1,4 @@
+# Codisto Connect modman configuration
+code					app/code/community/Codisto
+design/README			app/design/README
+etc/modules/Codisto_Sync.xml          app/etc/modules/Codisto_Sync.xml
