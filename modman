@@ -1,4 +1,4 @@
 # Codisto Connect modman configuration
-code					app/code/community/
+code					app/code/community/Codisto/Sync/
 design/ebay/README			app/design/ebay/README
 etc/modules/Codisto_Sync.xml          app/etc/modules/Codisto_Sync.xml
