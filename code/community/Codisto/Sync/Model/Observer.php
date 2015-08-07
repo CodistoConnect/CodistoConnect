@@ -112,7 +112,6 @@ class Codisto_Sync_Model_Observer
 
 	public function salesOrderInvoiceSaveAfter(Varien_Event_Observer $observer)
 	{
-Mage::log('save invoice');
 		$invoice = $observer->getEvent()->getInvoice();
 		$order = $invoice->getOrder();
 		$orderid = $order->getCodistoOrderid();
