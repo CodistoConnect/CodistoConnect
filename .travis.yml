@@ -21,6 +21,8 @@ env:
   #- MAGENTO_VERSION=magento-ce-1.7.0.2
 script:
   - curl -sSL https://raw.githubusercontent.com/AOEpeople/MageTestStand/master/setup.sh | bash
+#cache:
+  #TODO think about caching the magento builds so it doesn't have to download them each time
 notifications:
   email:
     recipients:
