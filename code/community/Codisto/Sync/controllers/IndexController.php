@@ -303,7 +303,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				'postcode' => (string)$billing_address->postalcode,
 				'telephone' => (string)$billing_address->phone,
 				'country_id' => (string)$billing_address->countrycode,
-				'region_id' => (string)$regionsel_id, // id from directory_country_region table// id from directory_country_region table
+				'region_id' => (string)$regionsel_id, // id from directory_country_region table
 			);
 
 			$regionsel_id_ship = 0;
@@ -323,7 +323,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				'postcode' => (string)$shipping_address->postalcode,
 				'telephone' => (string)$shipping_address->phone,
 				'country_id' => (string)$shipping_address->countrycode,
-				'region_id' => (string)$regionsel_id_ship, // id from directory_country_region table// id from directory_country_region table
+				'region_id' => (string)$regionsel_id_ship, // id from directory_country_region table
 			);
 
 
@@ -474,8 +474,6 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$shippingAddress->setShippingMethod('flatrate_flatrate');
 			$shippingAddress->setShippingDescription($freightservice);
 			$shippingAddress->setShippingAmountForDiscount(0);
-
-			//$quote->collectTotals();
 
 			$paypalavailable = Mage::getSingleton('paypal/express')->isAvailable();
 			if($paypalavailable) {
@@ -638,6 +636,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$payment->save();
 
 			$quote->setIsActive(false)->save();
+
+			if($ordercontent->paymentstatus == 'complete' && $order->canInvoice())
+			{
+				$invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
+
+				if($invoice->getTotalQty())
+				{
+					$invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
+					$invoice->register();
+				}
+				$invoice->save();
+			}
 
 			$connection->commit();
 
@@ -816,6 +826,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			}
 
 			$order->save();
+
+			if($ordercontent->paymentstatus == 'complete' && $order->canInvoice())
+			{
+				$invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
+
+				if($invoice->getTotalQty())
+				{
+					$invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
+					$invoice->register();
+				}
+				$invoice->save();
+			}
 
 			$connection->commit();
 
