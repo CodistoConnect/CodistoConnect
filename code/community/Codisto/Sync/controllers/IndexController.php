@@ -629,7 +629,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$payment->setTransactionId($paypaltransactionid);
 			}
 
-			$payment->setParentTransactionId($order->getIncrementId())
+			$payment->setParentTransactionId(null)
 				->setIsTransactionClosed(1);
 
 			$payment->setMethod($this->_PayPalmethodType);
