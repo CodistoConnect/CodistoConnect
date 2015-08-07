@@ -92,7 +92,7 @@ if(!isset($MerchantID) || !isset($HostKey))
 
 			$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
 			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
-			
+
 			if(!isset($MerchantID) || !isset($HostKey))
 			{
 				$client = new Zend_Http_Client("https://ui.codisto.com/create", array( 'keepalive' => true, 'maxredirects' => 0 ));
@@ -107,14 +107,14 @@ if(!isset($MerchantID) || !isset($HostKey))
 						$storename = Mage::getStoreConfig('general/store_information/name', 0);
 						$email = $user->getEmail();
 
-						$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
+						$remoteResponse = $client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
 							'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey)))->request('POST');
 
 						if(!$remoteResponse->isSuccessful())
 							throw new Exception('Error Creating Account');
 
 						// @codingStandardsIgnoreStart
-						$data = json_decode($remoteResponse->getRawBody(), true);
+						$data = Zend_Json::decode($remoteResponse->getRawBody(), true);
 						// @codingStandardsIgnoreEnd
 
 						if(isset($data['merchantid']) && $data['merchantid'] &&

@@ -87,6 +87,14 @@
 					</codisto>
 				</observers>
 			</sales_order_shipment_save_after>
+			<sales_order_invoice_save_commit_after>
+				<observers>
+					<codisto_save_invoice>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>salesOrderInvoiceSaveAfter</method>
+					</codisto_save_invoice>
+				</observers>
+			</sales_order_invoice_save_commit_after>
 
 			<checkout_submit_all_after>
 				<observers>
