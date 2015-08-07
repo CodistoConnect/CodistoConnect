@@ -229,7 +229,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 						$connection->rollback();
 						$response = $this->getResponse();
 						$response->setHeader('Content-Type', 'application/json');
-						$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => 'externalreference not found')));
+						$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'message' => 'externalreference not found')));
 						return;
 					}
 				}
@@ -303,7 +303,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				'postcode' => (string)$billing_address->postalcode,
 				'telephone' => (string)$billing_address->phone,
 				'country_id' => (string)$billing_address->countrycode,
-				'region_id' => (string)$regionsel_id, // id from directory_country_region table// id from directory_country_region table
+				'region_id' => (string)$regionsel_id, // id from directory_country_region table
 			);
 
 			$regionsel_id_ship = 0;
@@ -323,7 +323,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				'postcode' => (string)$shipping_address->postalcode,
 				'telephone' => (string)$shipping_address->phone,
 				'country_id' => (string)$shipping_address->countrycode,
-				'region_id' => (string)$regionsel_id_ship, // id from directory_country_region table// id from directory_country_region table
+				'region_id' => (string)$regionsel_id_ship, // id from directory_country_region table
 			);
 
 
@@ -475,8 +475,6 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$shippingAddress->setShippingDescription($freightservice);
 			$shippingAddress->setShippingAmountForDiscount(0);
 
-			//$quote->collectTotals();
-
 			$paypalavailable = Mage::getSingleton('paypal/express')->isAvailable();
 			if($paypalavailable) {
 				$quote->getPayment()->setMethod($this->_PayPalmethodType);
@@ -548,6 +546,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$orderItem->setBaseRowTotalInclTax($subtotalinctax);
 				$orderItem->setRowTotal($subtotal);
 				$orderItem->setRowTotalInclTax($subtotalinctax);
+				$orderItem->setWeeeTaxApplied(serialize(array()));
 
 				$order->addItem($orderItem);
 
@@ -638,19 +637,31 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 			$quote->setIsActive(false)->save();
 
+			if($ordercontent->paymentstatus == 'complete' && $order->canInvoice())
+			{
+				$invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
+
+				if($invoice->getTotalQty())
+				{
+					$invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
+					$invoice->register();
+				}
+				$invoice->save();
+			}
+
 			$connection->commit();
 
 			$response = $this->getResponse();
 
 			$response->setHeader('Content-Type', 'application/json');
-			$response->setBody(json_encode(array( 'productid' => $productid,  'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+			$response->setBody(Zend_Json::encode(array( 'productid' => $productid,  'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 		}
 		catch(Exception $e) {
 			$connection->rollback();
 
 			$response = $this->getResponse();
 			$response->setHeader('Content-Type', 'application/json');
-			$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
+			$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
 
 		}
 	}
@@ -816,18 +827,30 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 			$order->save();
 
+			if($ordercontent->paymentstatus == 'complete' && $order->canInvoice())
+			{
+				$invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
+
+				if($invoice->getTotalQty())
+				{
+					$invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
+					$invoice->register();
+				}
+				$invoice->save();
+			}
+
 			$connection->commit();
 
 			$response = $this->getResponse();
 			$response->setHeader('Content-Type', 'application/json');
-			$response->setBody(json_encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+			$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 		}
 		catch(Exception $e) {
 			$connection->rollback();
 
 			$response = $this->getResponse();
 			$response->setHeader('Content-Type', 'application/json');
-			$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
+			$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
 		}
 	}
 

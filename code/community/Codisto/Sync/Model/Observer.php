@@ -99,7 +99,38 @@ class Codisto_Sync_Model_Observer
 				$client->setHeaders(array('Content-Type' => 'application/json'));
 				$client->setHeaders(array('X-HostKey' => $HostKey));
 
-				$client->setRawData('{"action" : "setebayfeedback" , "orderid" :' . $orderid .'}', 'application/json')->request('POST');
+				$client->setRawData('{"action" : "syncorder" , "orderid" :' . $orderid .'}', 'application/json')->request('POST');
+			}
+			catch(Exception $e)
+			{
+
+			}
+		}
+
+		return $this;
+	}
+
+	public function salesOrderInvoiceSaveAfter(Varien_Event_Observer $observer)
+	{
+		$invoice = $observer->getEvent()->getInvoice();
+		$order = $invoice->getOrder();
+		$orderid = $order->getCodistoOrderid();
+		$storeId = $order->getStoreId();
+
+		if($orderid) {
+
+			$MerchantID = Mage::getStoreConfig('codisto/merchantid', $storeId);
+			$HostKey = Mage::getStoreConfig('codisto/hostkey', $storeId);
+
+			$remoteUrl = 'https://api.codisto.com/' . $MerchantID . '/';
+
+			try
+			{
+				$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true, 'maxredirects' => 0 ));
+				$client->setHeaders(array('Content-Type' => 'application/json'));
+				$client->setHeaders(array('X-HostKey' => $HostKey));
+
+				$client->setRawData('{"action" : "syncorder" , "orderid" :' . $orderid .'}', 'application/json')->request('POST');
 			}
 			catch(Exception $e)
 			{
