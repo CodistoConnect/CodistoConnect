@@ -229,7 +229,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 						$connection->rollback();
 						$response = $this->getResponse();
 						$response->setHeader('Content-Type', 'application/json');
-						$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => 'externalreference not found')));
+						$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'message' => 'externalreference not found')));
 						return;
 					}
 				}
@@ -644,14 +644,14 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$response = $this->getResponse();
 
 			$response->setHeader('Content-Type', 'application/json');
-			$response->setBody(json_encode(array( 'productid' => $productid,  'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+			$response->setBody(Zend_Json::encode(array( 'productid' => $productid,  'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 		}
 		catch(Exception $e) {
 			$connection->rollback();
 
 			$response = $this->getResponse();
 			$response->setHeader('Content-Type', 'application/json');
-			$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
+			$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
 
 		}
 	}
@@ -821,14 +821,14 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 			$response = $this->getResponse();
 			$response->setHeader('Content-Type', 'application/json');
-			$response->setBody(json_encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+			$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 		}
 		catch(Exception $e) {
 			$connection->rollback();
 
 			$response = $this->getResponse();
 			$response->setHeader('Content-Type', 'application/json');
-			$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
+			$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
 		}
 	}
 
