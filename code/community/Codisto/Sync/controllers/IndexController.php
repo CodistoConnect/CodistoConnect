@@ -548,6 +548,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$orderItem->setBaseRowTotalInclTax($subtotalinctax);
 				$orderItem->setRowTotal($subtotal);
 				$orderItem->setRowTotalInclTax($subtotalinctax);
+				$orderItem->setWeeeTaxApplied(serialize(array()));
 
 				$order->addItem($orderItem);
 
@@ -628,7 +629,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$payment->setTransactionId($paypaltransactionid);
 			}
 
-			$payment->setParentTransactionId(null)
+			$payment->setParentTransactionId($order->getIncrementId())
 				->setIsTransactionClosed(1);
 
 			$payment->setMethod($this->_PayPalmethodType);
