@@ -1221,6 +1221,31 @@ class Codisto_Sync_Model_Sync
 
 		$db->exec('CREATE TABLE IF NOT EXISTS Configuration (configuration_id integer, configuration_title text, configuration_key text, configuration_value text, configuration_description text, configuration_group_id integer, sort_order integer, last_modified datetime, date_added datetime, use_function text, set_function text)');
 		$db->exec('CREATE TABLE IF NOT EXISTS Log (ID, Type text NOT NULL, Content text NOT NULL)');
+
+		try
+		{
+			$db->exec('SELECT 1 FROM [Order] WHERE Carrier IS NULL LIMIT 1');
+		}
+		catch(Exception $e)
+		{
+			$db->exec('CREATE TABLE NewOrder (ID integer NOT NULL PRIMARY KEY, Status text NOT NULL, PaymentDate datetime NULL, ShipmentDate datetime NULL, Carrier text NOT NULL, TrackingNumber text NOT NULL)');
+			$db->exec('INSERT INTO NewOrder SELECT ID, Status, PaymentDate, ShipmentDate, \'Unknown\', TrackingNumber FROM [Order]');
+			$db->exec('DROP TABLE [Order]');
+			$db->exec('ALTER TABLE NewOrder RENAME TO [Order]');
+		}
+
+		try
+		{
+			$db->exec('SELECT 1 FROM ProductAttributeValue WHERE ProductExternalReference IS NULL LIMIT 1');
+		}
+		catch(Exception $e)
+		{
+			$db->exec('CREATE TABLE NewProductAttributeValue (ProductExternalReference integer NOT NULL, AttributeID integer NOT NULL, Value any, PRIMARY KEY (ProductExternalReference, AttributeID))');
+			$db->exec('INSERT INTO NewProductAttributeValue SELECT ProductID, AttributeID, Value FROM ProductAttributeValue');
+			$db->exec('DROP TABLE ProductAttributeValue');
+			$db->exec('ALTER TABLE NewProductAttributeValue RENAME TO ProductAttributeValue');
+		}
+
 		$db->exec('COMMIT TRANSACTION');
 
 		return $db;
