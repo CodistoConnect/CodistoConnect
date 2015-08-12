@@ -1,5 +1,5 @@
 <?php
-//MyCustom_Module_Test_Model_Product
+
 
 class Codisto_Sync_Model_SyncTest extends EcomDev_PHPUnit_Test_Case
 {
@@ -8,9 +8,8 @@ class Codisto_Sync_Model_SyncTest extends EcomDev_PHPUnit_Test_Case
 
 	public function setUp()
 	{
-		/* You'll have to load Magento app in any test classes in this method */
-		$app = Mage::app('default');
 
+		$app = Mage::app('default');
 		$this->_syncObject = Mage::getModel('codistosync/sync');
 
 	}
