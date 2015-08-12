@@ -64,6 +64,18 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 						if($request->getQuery('productid') || $request->getQuery('categoryid') || $request->getQuery('orderid'))
 						{
+							if($request->getQuery('orderid'))
+							{
+								$orderIds = Zend_Json::decode($request->getQuery('orderid'));
+								if(!is_array($orderIds))
+									$orderIds = array($orderIds);
+
+								$orderIds = array_map('intval', $orderIds);
+
+								$syncObject = Mage::getModel('codistosync/sync');
+								$syncObject->SyncOrders($syncDb, $orderIds, $storeId);
+							}
+
 							$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
 
 							$db = new PDO('sqlite:' . $tmpDb);
@@ -117,9 +129,6 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 									$orderIds = array($orderIds);
 
 								$orderIds = array_map('intval', $orderIds);
-
-								$syncObject = Mage::getModel('codistosync/sync');
-								$syncObject->SyncOrders($syncDb, $orderIds, $storeId);
 
 								$db->exec('CREATE TABLE [Order] AS SELECT * FROM SyncDb.[Order] WHERE ID IN ('.implode(',', $orderIds).')');
 							}
