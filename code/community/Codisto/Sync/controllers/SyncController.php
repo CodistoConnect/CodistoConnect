@@ -62,7 +62,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					{
 						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
 
-						if($request->getQuery('productid') || $request->getQuery('categoryid'))
+						if($request->getQuery('productid') || $request->getQuery('categoryid') || $request->getQuery('orderid'))
 						{
 							$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
 
@@ -108,6 +108,20 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 								if($db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE name = \'ProductDelete\' COLLATE NOCASE AND type = \'table\') THEN 1 ELSE 0 END')->fetchColumn())
 									$db->exec('CREATE TABLE ProductDelete AS SELECT * FROM SyncDb.ProductDelete WHERE ExternalReference IN ('.implode(',', $productIds).')');
+							}
+
+							if($request->getQuery('orderid'))
+							{
+								$orderIds = Zend_Json::decode($request->getQuery('orderid'));
+								if(!is_array($orderIds))
+									$orderIds = array($orderIds);
+
+								$orderIds = array_map('intval', $orderIds);
+
+								$syncObject = Mage::getModel('codistosync/sync');
+								$syncObject->SyncOrders($syncDb, $orderIds, $storeId);
+
+								$db->exec('CREATE TABLE [Order] AS SELECT * FROM SyncDb.[Order] WHERE ID IN ('.implode(',', $orderIds).')');
 							}
 
 							$db->exec('COMMIT TRANSACTION');
