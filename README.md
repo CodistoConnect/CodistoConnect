@@ -16,12 +16,12 @@ Codisto Connect is revolutionary eBay integration for Magento. Incredibly fast s
 
 |Contents      |
 |------------- |
-|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/bm_readme_update#new-to-codisto-connect-need-some-help">Help</a>  |
-|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/bm_readme_update#assistance-with-magento-">Magento Assistance</a>  |
-|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/bm_readme_update#step-1-verify-your-prerequisites">Pre-requisites</a>  |
-|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/bm_readme_update#step-2-prepare-to-install">Installation</a>  |
-|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/bm_readme_update#contributing-to-the-codisto-connect-code-base">Contributing</a>  |
-|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/bm_readme_update#copyright-and-license">License</a>  |
+|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/master#new-to-codisto-connect-need-some-help">Help</a>  |
+|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/master#assistance-with-magento-">Magento Assistance</a>  |
+|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/master#step-1-verify-your-prerequisites">Pre-requisites</a>  |
+|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/master#step-2-prepare-to-install">Installation</a>  |
+|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/master#contributing-to-the-codisto-connect-code-base">Contributing</a>  |
+|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/master#copyright-and-license">License</a>  |
 
 
 <h2>New to Codisto Connect? Need some help?</h2>
