@@ -41,16 +41,55 @@ class Codisto_Sync_Model_Observer
 		return $this;
 	}
 
+	public function taxSettingsChangeAfter(Varien_Event_Observer $observer)
+	{
+		$merchants = array();
+		$visited = array();
+
+		$stores = Mage::getModel('core/store')->getCollection();
+
+		foreach($stores as $store)
+		{
+			$merchantId = $store->getConfig('codisto/merchantid');
+
+			if(!in_array($merchantId, $visited, true))
+			{
+				$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $store->getConfig('codisto/hostkey'), 'storeid' => $store->getId() );
+				$visited[] = $merchantId;
+			}
+		}
+
+		unset($visited);
+
+		foreach($merchants as $merchant)
+		{
+			try
+			{
+				$client = new Zend_Http_Client('https://api.codisto.com/'.$merchant['merchantid'], array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 2 ));
+				$client->setHeaders('X-HostKey', $merchant['hostkey']);
+
+				$client->setRawData('action=synctax')->request('POST');
+			}
+			catch(Exception $e)
+			{
+
+			}
+		}
+
+		return $this;
+	}
+
 	public function salesOrderShipmentSaveAfter(Varien_Event_Observer $observer)
 	{
 		$shipment = $observer->getEvent()->getShipment();
 		$order = $shipment->getOrder();
 		$orderid = $order->getCodistoOrderid();
+		$storeId = $order->getStoreId();
 
 		if($orderid) {
 
-			$MerchantID = Mage::getStoreConfig('codisto/merchantid');
-			$HostKey = Mage::getStoreConfig('codisto/hostkey');
+			$MerchantID = Mage::getStoreConfig('codisto/merchantid', $storeId);
+			$HostKey = Mage::getStoreConfig('codisto/hostkey', $storeId);
 
 			$remoteUrl = 'https://api.codisto.com/' . $MerchantID . '/';
 
@@ -60,7 +99,38 @@ class Codisto_Sync_Model_Observer
 				$client->setHeaders(array('Content-Type' => 'application/json'));
 				$client->setHeaders(array('X-HostKey' => $HostKey));
 
-				$client->setRawData('{"action" : "setebayfeedback" , "orderid" :' . $orderid .'}', 'application/json')->request('POST');
+				$client->setRawData('{"action" : "syncorder" , "orderid" :' . $orderid .'}', 'application/json')->request('POST');
+			}
+			catch(Exception $e)
+			{
+
+			}
+		}
+
+		return $this;
+	}
+
+	public function salesOrderInvoiceSaveAfter(Varien_Event_Observer $observer)
+	{
+		$invoice = $observer->getEvent()->getInvoice();
+		$order = $invoice->getOrder();
+		$orderid = $order->getCodistoOrderid();
+		$storeId = $order->getStoreId();
+
+		if($orderid) {
+
+			$MerchantID = Mage::getStoreConfig('codisto/merchantid', $storeId);
+			$HostKey = Mage::getStoreConfig('codisto/hostkey', $storeId);
+
+			$remoteUrl = 'https://api.codisto.com/' . $MerchantID . '/';
+
+			try
+			{
+				$client = new Zend_Http_Client($remoteUrl, array( 'keepalive' => true, 'maxredirects' => 0 ));
+				$client->setHeaders(array('Content-Type' => 'application/json'));
+				$client->setHeaders(array('X-HostKey' => $HostKey));
+
+				$client->setRawData('{"action" : "syncorder" , "orderid" :' . $orderid .'}', 'application/json')->request('POST');
 			}
 			catch(Exception $e)
 			{
@@ -170,7 +240,7 @@ class Codisto_Sync_Model_Observer
 
 	public function addScript($observer)
 	{
-		$version = (string)Mage::getConfig()->getModuleConfig("Codisto_Sync")->version;
+		$version = (string)Mage::getConfig()->getModuleConfig('Codisto_Sync')->version;
 
 		$controller = $observer->getAction();
 		$layout = $controller->getLayout();
@@ -196,25 +266,39 @@ class Codisto_Sync_Model_Observer
 	{
 		if(!empty($stockItems))
 		{
-			$syncDb = Mage::getBaseDir("var") . "/codisto-ebay-sync.db";
+			$merchants = array();
+			$visited = array();
+
+			$stores = Mage::getModel('core/store')->getCollection();
+
+			foreach($stores as $store)
+			{
+				$merchantId = $store->getConfig('codisto/merchantid');
+
+				if(!in_array($merchantId, $visited, true))
+				{
+					$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $store->getConfig('codisto/hostkey'), 'storeid' => $store->getId() );
+					$visited[] = $merchantId;
+				}
+			}
+
+			unset($visited);
 
 			$syncObject = Mage::getModel('codistosync/sync');
 
-			foreach ($stockItems as $productid)
+			foreach($merchants as $merchant)
 			{
-				$syncObject->UpdateProducts($syncDb, array($productid));
-			}
+				$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$merchant['storeid'].'.db';
 
-			try
-			{
-				$MerchantID = Mage::getStoreConfig('codisto/merchantid');
-				$HostKey = Mage::getStoreConfig('codisto/hostkey');
-
-				if(isset($MerchantID) &&
-					isset($HostKey))
+				foreach($stockItems as $productId)
 				{
-					$client = new Zend_Http_Client('https://api.codisto.com/'.$MerchantID, array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 2 ));
-					$client->setHeaders('X-HostKey', $HostKey);
+					$syncObject->UpdateProducts($syncDb, array($productId), $merchant['storeid']);
+				}
+
+				try
+				{
+					$client = new Zend_Http_Client('https://api.codisto.com/'.$merchant['merchantid'], array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 2 ));
+					$client->setHeaders('X-HostKey', $merchant['hostkey']);
 
 					if(count($stockItems) == 1)
 						$productids = $stockItems[0];
@@ -223,11 +307,10 @@ class Codisto_Sync_Model_Observer
 
 					$client->setRawData('action=sync&productid='.$productids)->request('POST');
 				}
+				catch(Exception $e)
+				{
 
-			}
-			catch(Exception $e)
-			{
-
+				}
 			}
 		}
 	}

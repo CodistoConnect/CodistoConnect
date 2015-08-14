@@ -12,10 +12,10 @@
  * obtain it through the world-wide-web, please send an email
  * to license@magentocommerce.com so we can send you a copy immediately.
  *
- * @category    Codisto
- * @package     Codisto_Sync
+ * @category	Codisto
+ * @package	 Codisto_Sync
  * @copyright   Copyright (c) 2015 On Technology Pty. Ltd. (http://codisto.com/)
- * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ * @license	 http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
 class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseController
@@ -40,34 +40,34 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$pc = $postalcode{0};
 
 			if ($pc == 2 || $pc == 1) {
-				$regiontext = "NSW";
+				$regiontext = 'NSW';
 			} else if ($pc == 3 || $pc == 8) {
-				$regiontext = "VIC";
+				$regiontext = 'VIC';
 			} else if ($pc == 4) {
-				$regiontext = "QLD";
+				$regiontext = 'QLD';
 			} else if ($pc == 5) {
-				$regiontext = "SA";
+				$regiontext = 'SA';
 			} else if ($pc == 6) {
-				$regiontext = "WA";
+				$regiontext = 'WA';
 			} else if ($pc == 7) {
-				$regiontext = "TAS";
+				$regiontext = 'TAS';
 			}
 
 			$pc3 = $postalcode{0} . $postalcode{1};
-			if ($pc3 == "08" || $pc3 == "09") {
-				$regiontext = "NT";
+			if ($pc3 == '08' || $pc3 == '09') {
+				$regiontext = 'NT';
 			}
 
-			if ($postalcode == "0872") {
-				$regiontext = "SA";
-			} else if ($postalcode == "2611" || $postalcode == "3500" || $postalcode == "3585" || $postalcode == "3586" || $postalcode == "3644" || $postalcode == "3707") {
-				$regiontext = "NSW";
-			} else if ($postalcode == "2620") {
-				$regiontext = "ACT";
+			if ($postalcode == '0872') {
+				$regiontext = 'SA';
+			} else if ($postalcode == '2611' || $postalcode == '3500' || $postalcode == '3585' || $postalcode == '3586' || $postalcode == '3644' || $postalcode == '3707') {
+				$regiontext = 'NSW';
+			} else if ($postalcode == '2620') {
+				$regiontext = 'ACT';
 			}
 
 			if (intval($postalcode) >= 2600 && intval($postalcode) <= 2618) {
-				$regiontext = "ACT";
+				$regiontext = 'ACT';
 			}
 
 			$region = Mage::getModel('directory/region')->loadByCode($regiontext, $countrycode);
@@ -127,51 +127,79 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 	public function indexAction()
 	{
-		if(!$this->getConfig())
-		{
-			if(function_exists('http_response_code'))
-				http_response_code(500);
-			$response->setHttpResponseCode(500);
-			$response->setRawHeader('HTTP/1.0 500 Security Error');
-			$response->setRawHeader('Status: 500 Security Error');
-			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-			$response->setHeader('Pragma', 'no-cache', true);
-			$response->setBody('Config Error');
-			return;
-		}
-
 		$request = $this->getRequest();
 		$method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
-		$content_type = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : "";
+		$contenttype = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : '';
 		$server = $request->getServer();
 
-		if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+		if($method == 'POST')
 		{
-			if($method == 'POST')
+			if($contenttype == 'text/xml')
 			{
-				if($content_type == "text/xml")
-				{
-					$xml = simplexml_load_string(file_get_contents("php://input"));
+				$xml = simplexml_load_string(file_get_contents('php://input'));
 
-					$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
+				$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
+
+				$storeId = @count($ordercontent->storeid) ? (int)$ordercontent->storeid : 0;
+
+				if(!$this->getConfig($storeId))
+				{
+					//@codingStandardsIgnoreStart
+					if(function_exists('http_response_code'))
+						http_response_code(500);
+					//@codingStandardsIgnoreEnd
+					$response->setHttpResponseCode(500);
+					$response->setRawHeader('HTTP/1.0 500 Security Error');
+					$response->setRawHeader('Status: 500 Security Error');
+					$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+					$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+					$response->setHeader('Pragma', 'no-cache', true);
+					$response->setBody('Config Error');
+					return;
+				}
+
+				if($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+				{
+					try
+					{
+						$connection = Mage::getSingleton('core/resource')->getConnection('core_write');
+						$connection->addColumn(
+								Mage::getConfig()->getTablePrefix() . 'sales_flat_order',
+								'codisto_orderid',
+								'varchar(10)'
+							);
+					}
+					catch(Exception $e)
+					{
+
+					}
 
 					$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)->getFirstItem();
 
-					if($order && $order->getId()) {
-
-						$this->ProcessOrderSync($order, $xml);
-
-					} else {
-
-						$this->ProcessOrderCreate($xml);
-
+					if($order && $order->getId())
+					{
+						$this->ProcessOrderSync($order, $xml, $storeId);
+					}
+					else
+					{
+						$this->ProcessOrderCreate($xml, $storeId);
 					}
 				}
 			}
 			else
 			{
-				include_once Mage::getBaseDir() . '/errors/404.php';
+				//@codingStandardsIgnoreStart
+				if(function_exists('http_response_code'))
+					http_response_code(400);
+				//@codingStandardsIgnoreEnd
+				$response->setHttpResponseCode(400);
+				$response->setRawHeader('HTTP/1.0 400 Invalid Content Type');
+				$response->setRawHeader('Status: 400 Invalid Content Type');
+				$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+				$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+				$response->setHeader('Pragma', 'no-cache', true);
+				$response->setBody('Invalid Content Type');
+				return;
 			}
 		}
 		else
@@ -180,7 +208,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		}
 	}
 
-	private function ProcessOrderCreate($xml)
+	private function ProcessOrderCreate($xml, $storeId)
 	{
 
 		$connection = Mage::getSingleton('core/resource')->getConnection('core_write');
@@ -200,8 +228,8 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					if(!$product) {
 						$connection->rollback();
 						$response = $this->getResponse();
-						$response->setHeader("Content-Type", "application/json");
-						$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => 'externalreference not found')));
+						$response->setHeader('Content-Type', 'application/json');
+						$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'message' => 'externalreference not found')));
 						return;
 					}
 				}
@@ -210,8 +238,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$website = Mage::app()->getWebsite();
 			$websiteId = $website->getId();
 
-			$store = Mage::app()->getStore();
-			$storeId = $store->getId();
+			$store = Mage::app()->getStore($storeId);
 
 			$currencyCode = $ordercontent->transactcurrency[0];
 			$ordertotal = floatval($ordercontent->ordertotal[0]);
@@ -227,10 +254,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$ebaysalesrecordnumber = '';
 
 			$billing_address = $ordercontent->orderaddresses->orderaddress[0];
-			$billing_first_name = $billing_last_name = "";
+			$billing_first_name = $billing_last_name = '';
 
-			if(strpos($billing_address->name, " ") !== false) {
-				$billing_name = explode(" ", $billing_address->name, 2);
+			if(strpos($billing_address->name, ' ') !== false) {
+				$billing_name = explode(' ', $billing_address->name, 2);
 				$billing_first_name = $billing_name[0];
 				$billing_last_name = $billing_name[1];
 			} else {
@@ -238,10 +265,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			}
 
 			$shipping_address = $ordercontent->orderaddresses->orderaddress[1];
-			$shipping_first_name = $shipping_last_name = "";
+			$shipping_first_name = $shipping_last_name = '';
 
-			if(strpos($shipping_address->name, " ") !== false) {
-				$shipping_name = explode(" ", $shipping_address->name, 2);
+			if(strpos($shipping_address->name, ' ') !== false) {
+				$shipping_name = explode(' ', $shipping_address->name, 2);
 				$shipping_first_name = $shipping_name[0];
 				$shipping_last_name = $shipping_name[1];
 			} else {
@@ -250,7 +277,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 			$email = (string)$billing_address->email;
 			if(!$email)
-				$email = "mail@example.com";
+				$email = 'mail@example.com';
 
 			$customer = Mage::getModel('customer/customer');
 			$customer->setWebsiteId(Mage::app()->getWebsite()->getId());
@@ -276,7 +303,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				'postcode' => (string)$billing_address->postalcode,
 				'telephone' => (string)$billing_address->phone,
 				'country_id' => (string)$billing_address->countrycode,
-				'region_id' => (string)$regionsel_id, // id from directory_country_region table// id from directory_country_region table
+				'region_id' => (string)$regionsel_id, // id from directory_country_region table
 			);
 
 			$regionsel_id_ship = 0;
@@ -296,7 +323,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				'postcode' => (string)$shipping_address->postalcode,
 				'telephone' => (string)$shipping_address->phone,
 				'country_id' => (string)$shipping_address->countrycode,
-				'region_id' => (string)$regionsel_id_ship, // id from directory_country_region table// id from directory_country_region table
+				'region_id' => (string)$regionsel_id_ship, // id from directory_country_region table
 			);
 
 
@@ -448,8 +475,6 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$shippingAddress->setShippingDescription($freightservice);
 			$shippingAddress->setShippingAmountForDiscount(0);
 
-			//$quote->collectTotals();
-
 			$paypalavailable = Mage::getSingleton('paypal/express')->isAvailable();
 			if($paypalavailable) {
 				$quote->getPayment()->setMethod($this->_PayPalmethodType);
@@ -521,6 +546,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$orderItem->setBaseRowTotalInclTax($subtotalinctax);
 				$orderItem->setRowTotal($subtotal);
 				$orderItem->setRowTotalInclTax($subtotalinctax);
+				$orderItem->setWeeeTaxApplied(serialize(array()));
 
 				$order->addItem($orderItem);
 
@@ -605,34 +631,46 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				->setIsTransactionClosed(1);
 
 			$payment->setMethod($this->_PayPalmethodType);
-			$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, "");
+			$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, '');
 
 			$payment->save();
 
 			$quote->setIsActive(false)->save();
 
+			if($ordercontent->paymentstatus == 'complete' && $order->canInvoice())
+			{
+				$invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
+
+				if($invoice->getTotalQty())
+				{
+					$invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
+					$invoice->register();
+				}
+				$invoice->save();
+			}
+
 			$connection->commit();
 
 			$response = $this->getResponse();
 
-			$response->setHeader("Content-Type", "application/json");
-			$response->setBody(json_encode(array( 'productid' => $productid,  'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+			$response->setHeader('Content-Type', 'application/json');
+			$response->setBody(Zend_Json::encode(array( 'productid' => $productid,  'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 		}
 		catch(Exception $e) {
 			$connection->rollback();
 
 			$response = $this->getResponse();
-			$response->setHeader("Content-Type", "application/json");
-			$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
+			$response->setHeader('Content-Type', 'application/json');
+			$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
 
 		}
 	}
 
-	private function ProcessOrderSync($order, $xml)
+	private function ProcessOrderSync($order, $xml, $storeId)
 	{
 		try
 		{
-			$store = Mage::app()->getStore();
+			$store = Mage::app()->getStore($storeId);
 
 			$connection = Mage::getSingleton('core/resource')->getConnection('core_write');
 			$connection->beginTransaction();
@@ -708,7 +746,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 
 			/* States: cancelled, processing, captured, inprogress, complete */
-			if($ordercontent->orderstate == 'captured' && ($orderstatus!='pending' || $orderstatus!='new')) {
+			if($ordercontent->orderstate == 'captured' && ($orderstatus!='pending' && $orderstatus!='new')) {
 				$order->setState(Mage_Sales_Model_Order::STATE_NEW, true);
 				$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
 			}
@@ -789,18 +827,30 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 			$order->save();
 
+			if($ordercontent->paymentstatus == 'complete' && $order->canInvoice())
+			{
+				$invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
+
+				if($invoice->getTotalQty())
+				{
+					$invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
+					$invoice->register();
+				}
+				$invoice->save();
+			}
+
 			$connection->commit();
 
 			$response = $this->getResponse();
-			$response->setHeader("Content-Type", "application/json");
-			$response->setBody(json_encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+			$response->setHeader('Content-Type', 'application/json');
+			$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 		}
 		catch(Exception $e) {
 			$connection->rollback();
 
 			$response = $this->getResponse();
-			$response->setHeader("Content-Type", "application/json");
-			$response->setBody(json_encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
+			$response->setHeader('Content-Type', 'application/json');
+			$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
 		}
 	}
 

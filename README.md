@@ -12,6 +12,18 @@ Welcome to Codisto Connect Magento to eBay Integration!
 Codisto Connect is revolutionary eBay integration for Magento. Incredibly fast set up and super easy maintenance. Integrate in minutes.
 </p>
 
+
+
+|Contents      |
+|------------- |
+|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/master#new-to-codisto-connect-need-some-help">Help</a>  |
+|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/master#assistance-with-magento-">Magento Assistance</a>  |
+|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/master#step-1-verify-your-prerequisites">Pre-requisites</a>  |
+|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/master#step-2-prepare-to-install">Installation</a>  |
+|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/master#contributing-to-the-codisto-connect-code-base">Contributing</a>  |
+|<a href="https://github.com/CodistoConnect/CodistoConnect/tree/master#copyright-and-license">License</a>  |
+
+
 <h2>New to Codisto Connect? Need some help?</h2>
 If you're not sure about the following, you probably need a little help before you start installing the Codisto Connect plugin:
 
@@ -48,10 +60,15 @@ Use the following table to verify you have the correct prerequisites to install 
 			<td><a href="http://magento.com/products/overview">Magento products overview</a></td>
 		</tr>
 		<tr>
-			<td>PHP, Apache and MySQL versions supported are those specified by the supported Magento versions. (Whilst Magento 1.X requires PHP 5.4 CodistoConnect aims to be compatible with PHP 5.0) </td>
+			<td>PHP, Apache and MySQL versions supported are those specified by the supported Magento versions. (Whilst Magento 1.X requires PHP 5.4 CodistoConnect aims to be compatible with PHP 5.2) </td>
 			<td><a href="http://magento.com/resources/system-requirements">Magento system requirements</a></td>
 			<td><a href="http://help.codisto.com/article/25-verify-your-prerequisites">See our help article</a></td>
 		</tr>
+		<tr>
+			<td>sqlite PDO driver</td>
+			<td><a href="http://php.net/manual/en/function.phpinfo.php">Check enabled PDO drivers using phpinfo</a></td>
+			<td><a href="http://php.net/manual/en/pdo.drivers.php">Read more about PDO drivers</a></td>
+        </tr>
 </tbody>
 </table>
 
@@ -61,36 +78,57 @@ After verifying your prerequisites, perform the following task in order to prepa
 
 <hr>
 
-Download the Codisto Connect plugin from Codisto.com at <a href="https://codisto.com/plugin/getstable">https://codisto.com/plugin/getstable</a>. Substitute getstable with getbeta
-for the latest development branch. (Other feature branches will have to be packaged manually - <a href="http://www.magentocommerce.com/magento-connect/create_your_extension/">Create your extension</a>)
+<h5>Download the Codisto Connect plugin from Codisto</h5>
+
+[ ![Stable] [stable-image] ] [stable] <a href="https://qa.codisto.com/plugin/getstable">https://qa.codisto.com/plugin/getstable</a> <br>
+[ ![Beta] [beta-image] ] [beta] <a href="https://qa.codisto.com/plugin/getstable">https://qa.codisto.com/plugin/getbeta</a> <br>
+[ ![Feature] [feature-image] ] [feature] Make a POST request to https&#58;//qa.codisto.com/plugin/build/manual?branch=$FEATUREBRANCH&download=1 with the header x-codisto-build set to 1
 
 
 OR
 
-Download the plugin from https://github.com/codistoconnect/codistoconnect/releases.
-The latest release is available from https://github.com/codistoconnect/codistoconnect/releases/latest.
+<h5>Download from GitHub</h5>
 
-
+Download the plugin from https://github.com/codistoconnect/codistoconnect/releases <br> <br>
+The latest release is available from https://github.com/codistoconnect/codistoconnect/releases/latest. <br>
 The plugin.tgz file located here is ready to install in Magento.
+
+
 
 <h2>Step 3: Install and verify the installation</h2>
 
-Follow the guide here <a href="https://codisto.zendesk.com/hc/en-us/articles/204681879-Downloading-and-Installing-the-CodistoConnect-Plugin">Installing Codisto Connect</a>.
+<h5>Follow the guide here <a href="https://codisto.com/install.html">here</a></h5>
 
-OR via SSH (Replace paths as appropriate)
+OR
+
+<h5>via SSH (Replace paths as appropriate)</h5>
 
 ``` bash
-cd ~/apps/magento/htdocs/
+cd $PATHTOYOURMAGENTO
 ./mage uninstall community CodistoConnect
 wget -O plugin.tgz https://codisto.com/plugin/getstable
 ./mage install-file plugin.tgz
 rm plugin.tgz
 ```
 
+OR
+
+<h5>via SSH (using the CodistoConnect <a href="https://qa.codisto.com/plugin/install">plugin install helper script</a>)</h5>
+
+``` bash
+ssh $USER@$DOMAIN "wget -O install.sh https://qa.codisto.com/plugin/install && chmod +x ./install.sh && ./install.sh"
+```
+
+You may also pipe to your shell of choice but that is discouraged as things can go wrong
+``` bash
+ssh $USER@DOMAIN "wget -O - https://qa.codisto.com/plugin/install | $SHELL"
+```
+
+
 <h2>Contributing to the Codisto Connect code base</h2>
 Contributions can take the form of new components or features, changes to existing features, tests, documentation (such as developer guides, user guides, examples, or specifications), bug fixes, optimizations, or just good suggestions.
 
-Please contact <a href="https://codisto.com/contact-us.html">support</a> with your ideas and feel free to contribute
+Please contact <a href="https://codisto.com/contact-us.html">support</a> with your ideas or submit a pull request and feel free to contribute.
 
 <h2>Copyright and license</h2>
 Codisto Connect code set is licensed under the Open Software License 3.0 (OSL-3.0)
@@ -99,6 +137,14 @@ Codisto Connect code set is licensed under the Open Software License 3.0 (OSL-3.
 **Codisto Connect - Magento to eBay Integration**
 [Twitter](https://twitter.com/Codisto/) | [Facebook](https://www.facebook.com/Codisto) | [Google](https://plus.google.com/+CodistoConnect/)
 
+[feature]: FeatureBranch
+[feature-image]: https://img.shields.io/badge/-Feature-yellow.svg
+
+[stable]: Stable
+[stable-image]: https://img.shields.io/badge/-Stable-brightgreen.svg
+
+[beta]: Beta
+[beta-image]: https://img.shields.io/badge/-Beta-orange.svg
 
 [license-image]: https://img.shields.io/badge/license-OSL--3.0-blue.svg
 [license]: http://opensource.org/licenses/OSL-3.0

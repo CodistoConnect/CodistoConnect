@@ -23,7 +23,7 @@
 <config>
 	<modules>
 		<Codisto_Sync>
-			<version>1.1.16</version>
+			<version>1.1.22</version>
 			<depends>
 				<Mage_Payment/>
 			</depends>
@@ -87,6 +87,14 @@
 					</codisto>
 				</observers>
 			</sales_order_shipment_save_after>
+			<sales_order_invoice_save_commit_after>
+				<observers>
+					<codisto_save_invoice>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>salesOrderInvoiceSaveAfter</method>
+					</codisto_save_invoice>
+				</observers>
+			</sales_order_invoice_save_commit_after>
 
 			<checkout_submit_all_after>
 				<observers>
@@ -121,6 +129,15 @@
 					</codisto_stockmovements>
 				</observers>
 			</sales_order_item_cancel>
+			<tax_settings_change_after>
+				<observers>
+					<codisto_taxsync>
+						<type>singleton</type>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>taxSettingsChangeAfter</method>
+					</codisto_taxsync>
+				</observers>
+			</tax_settings_change_after>
 
 			<core_block_abstract_prepare_layout_after>
 				<observers>

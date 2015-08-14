@@ -86,7 +86,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 						$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
 						$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
-						
+
 						if(!isset($MerchantID) || !isset($HostKey))
 						{
 							$client = new Zend_Http_Client('https://ui.codisto.com/create', array( 'keepalive' => true, 'maxredirects' => 0 ));
@@ -110,13 +110,13 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 									$storename = Mage::getStoreConfig('general/store_information/name', 0);
 									$email = $user->getEmail();
 
-									$remoteResponse = $client->setRawData(json_encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
+									$remoteResponse = $client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
 									'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey)))->request('POST');
 
 									if(!$remoteResponse->isSuccessful())
 										throw new Exception('Error Creating Account');
 
-									$data = json_decode($remoteResponse->getRawBody(), true);
+									$data = Zend_Json::decode($remoteResponse->getRawBody(), true);
 
 									if(isset($data['merchantid']) && $data['merchantid'] &&
 										isset($data['hostkey']) && $data['hostkey'])
@@ -193,7 +193,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 				$starttime = microtime(true);
 
-				$extensionVersion = (string)Mage::getConfig()->getModuleConfig("Codisto_Sync")->version;
+				$extensionVersion = (string)Mage::getConfig()->getModuleConfig('Codisto_Sync')->version;
 
 				$curlOptions = array(CURLOPT_TIMEOUT => 10, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0);
 				$acceptEncoding = $request->getHeader('Accept-Encoding');
