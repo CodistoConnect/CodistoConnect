@@ -633,14 +633,14 @@ class Codisto_Sync_Model_Sync
 		$attributes = $product->getAttributes();
 		foreach($attributes as $attribute)
 		{
-			$type = $attribute->getBackendType();
-			if($type == 'text')
+			$backendType = $attribute->getBackendType();
+			if($backendType == 'text')
 			{
 				$TextValue = Mage::getResourceModel('catalog/product')->getAttributeRawValue($productData['entity_id'], $attribute->getAttributeCode(), $store->getId());
 
 				$insertHTMLSQL->execute(array($productData['entity_id'], $attribute->getStoreLabel(), $TextValue));
 			}
-			else if($type != 'static')
+			else if($backendType != 'static')
 			{
 				$AttributeID = $attribute->getId();
 				$AttributeLabel = $attribute->getStoreLabel();
@@ -649,7 +649,7 @@ class Codisto_Sync_Model_Sync
 				{
 					$AttributeValue = Mage::getResourceModel('catalog/product')->getAttributeRawValue($productData['entity_id'], $attribute->getAttributeCode(), $store->getId());
 
-					$insertAttributeSQL->execute(array($AttributeID, $attribute->getName(), $AttributeLabel, $type));
+					$insertAttributeSQL->execute(array($AttributeID, $attribute->getName(), $AttributeLabel, $backendType));
 					$insertProductAttributeSQL->execute(array($productData['entity_id'], $AttributeID, $AttributeValue));
 				}
 			}
@@ -726,24 +726,6 @@ class Codisto_Sync_Model_Sync
 				}
 
 				$baseSequence = $maxSequence;
-			}
-		}
-
-		if($type == 'simple')
-		{
-			$options = $product->getOptions();
-
-			foreach ($options as $option) {
-
-				if($option->getType() == 'select')
-				{
-					syslog(1, $option->getName());
-
-					foreach ($option->getValues() as $value)
-					{
-						syslog(1, '    '.$value->getTitle());
-					}
-				}
 			}
 		}
 
