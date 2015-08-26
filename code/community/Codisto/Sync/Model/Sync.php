@@ -750,7 +750,7 @@ class Codisto_Sync_Model_Sync
 		$this->currentEntityId = $orderData['entity_id'];
 	}
 
-	public function SyncChunk($syncDb, $storeId)
+	public function SyncChunk($syncDb, $configurableCount, $simpleCount, $storeId)
 	{
 		$store = Mage::app()->getStore($storeId);
 
@@ -851,7 +851,7 @@ class Codisto_Sync_Model_Sync
 								->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 								->addAttributeToFilter('entity_id', array('gt' => $this->currentEntityId));
 
-			$configurableProducts->getSelect()->order('entity_id')->limit(6);
+			$configurableProducts->getSelect()->order('entity_id')->limit($configurableCount);
 			$configurableProducts->setOrder('entity_id', 'ASC');
 
 			Mage::getSingleton('core/resource_iterator')->walk($configurableProducts->getSelect(), array(array($this, 'SyncConfigurableProductData')), array( 'type' => 'configurable', 'db' => $db, 'preparedStatement' => $insertProduct, 'preparedskuStatement' => $insertSKU, 'preparedskumatrixStatement' => $insertSKUMatrix, 'preparedcategoryproductStatement' => $insertCategoryProduct, 'preparedimageStatement' => $insertImage, 'preparedskuimageStatement' => $insertSKUImage, 'preparedproductoptionStatement' => $insertProductOption,  'preparedproductoptionvalueStatement' => $insertProductOptionValue, 'preparedproducthtmlStatement' => $insertProductHTML, 'preparedattributeStatement' => $insertAttribute, 'preparedproductattributeStatement' => $insertProductAttribute, 'store' => $store ));
@@ -878,7 +878,7 @@ class Codisto_Sync_Model_Sync
 								->addAttributeToFilter('type_id', array('eq' => 'simple'))
 								->addAttributeToFilter('entity_id', array('gt' => $this->currentEntityId));
 
-			$simpleProducts->getSelect()->where('`e`.entity_id NOT IN (SELECT product_id FROM '.$superLinkName.')')->order('entity_id')->limit(250);
+			$simpleProducts->getSelect()->where('`e`.entity_id NOT IN (SELECT product_id FROM '.$superLinkName.')')->order('entity_id')->limit($simpleCount);
 			$simpleProducts->setOrder('entity_id', 'ASC');
 
 			Mage::getSingleton('core/resource_iterator')->walk($simpleProducts->getSelect(), array(array($this, 'SyncSimpleProductData')), array( 'type' => 'simple', 'db' => $db, 'preparedStatement' => $insertProduct, 'preparedcategoryproductStatement' => $insertCategoryProduct, 'preparedimageStatement' => $insertImage, 'preparedproducthtmlStatement' => $insertProductHTML, 'preparedattributeStatement' => $insertAttribute, 'preparedproductattributeStatement' => $insertProductAttribute, 'store' => $store ));
@@ -942,20 +942,6 @@ class Codisto_Sync_Model_Sync
 		{
 			return 'pending';
 		}
-	}
-
-	public function Sync($syncDb, $storeId)
-	{
-		ini_set('max_execution_time', -1);
-
-		$result = $this->SyncChunk($syncDb, $storeId);
-		while($result != 'complete')
-		{
-			$result = $this->SyncChunk($syncDb, $storeId);
-		}
-
-		$this->SyncTax($syncDb, $storeId);
-		$this->SyncStores($syncDb, $storeId);
 	}
 
 	public function SyncTax($syncDb, $storeId)

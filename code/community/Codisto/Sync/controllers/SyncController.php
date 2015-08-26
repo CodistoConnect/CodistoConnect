@@ -23,6 +23,8 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 {
 	private $defaultSyncTimeout = 10;
 	private $defaultSleep = 100000;
+	private $defaultConfigurableCount = 6;
+	private $defaultSimpleCount = 250;
 
 	public function indexAction()
 	{
@@ -165,48 +167,6 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					}
 					die;
 
-				case 'EXECUTE':
-
-					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
-					{
-						$indexer = Mage::getModel('index/process');
-						$indexer->load('codistoebayindex', 'indexer_code')
-									->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
-
-						$syncObject = Mage::getModel('codistosync/sync');
-
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
-						if(file_exists($syncDb))
-							unlink($syncDb);
-
-						$syncObject->Sync($syncDb, $storeId);
-
-						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setBody('done');
-						$response->sendResponse();
-
-						$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
-					}
-					else
-					{
-						//@codingStandardsIgnoreStart
-						if(function_exists('http_response_code'))
-							http_response_code(400);
-						//@codingStandardsIgnoreEnd
-						$response->setHttpResponseCode(400);
-						$response->setRawHeader('HTTP/1.0 400 Security Error');
-						$response->setRawHeader('Status: 400 Security Error');
-						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setBody('Security Error');
-						$response->sendResponse();
-					}
-					die;
-
-
 				case 'EXECUTECHUNK':
 
 					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
@@ -225,11 +185,19 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 								unlink($syncDb);
 						}
 
-						$timeout = $request->getQuery('timeout');
+						$configurableCount = (int)$request->getQuery('configurablecount');
+						if(!$configurableCount || !is_numeric($configurableCount))
+							$configurableCount = $this->defaultConfigurableCount;
+
+						$simpleCount = (int)$request->getQuery('simplecount');
+						if(!$simpleCount || !is_numeric($simpleCount))
+							$simpleCount = $this->defaultSimpleCount;
+
+						$timeout = (int)$request->getQuery('timeout');
 						if(!$timeout || !is_numeric($timeout))
 							$timeout = $this->defaultSyncTimeout;
 
-						$sleep = $request->getQuery('sleep');
+						$sleep = (int)$request->getQuery('sleep');
 						if(!$sleep || !is_numeric($sleep))
 							$sleep = $this->defaultSleep;
 
@@ -237,7 +205,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 						for(;;)
 						{
-							$result = $syncObject->SyncChunk($syncDb, $storeId);
+							$result = $syncObject->SyncChunk($syncDb, $simpleCount, $configurableCount, $storeId);
 
 							if($result == 'complete')
 							{
