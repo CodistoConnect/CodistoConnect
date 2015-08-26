@@ -821,8 +821,6 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 		header('Content-Disposition: attachment; filename=' . basename($syncDb));
 		header('Content-Length: ' . filesize($syncDb));
 
-		if(ob_get_contents())
-			ob_clean();
 		if(ob_get_level() > 0)
 			ob_end_clean();
 
