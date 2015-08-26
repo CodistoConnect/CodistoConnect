@@ -24,6 +24,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 	public function calcAction()
 	{
+		set_time_limit(0);
+		ignore_user_abort(false);
+
 		$request = $this->getRequest();
 		$response = $this->getResponse();
 
@@ -127,6 +130,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 	public function indexAction()
 	{
+		set_time_limit(0);
+		ignore_user_abort(false);
+
 		$request = $this->getRequest();
 		$method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
 		$contenttype = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : '';
