@@ -29,7 +29,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 	public function indexAction()
 	{
 		set_time_limit(0);
-		ignore_user_abort(false);
+		ignore_user_abort(true);
 
 		$response = $this->getResponse();
 		$request = $this->getRequest();
@@ -785,6 +785,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 	private function Send($syncDb)
 	{
+		ignore_user_abort(false);
 		ini_set('output_buffering', 0);
 		ini_set('zlib.output_compression', 0);
 
