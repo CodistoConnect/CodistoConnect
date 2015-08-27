@@ -28,44 +28,44 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 	public function indexAction()
 	{
-		try {
+		set_time_limit(0);
+		ignore_user_abort(true);
 
-			set_time_limit(0);
-			ignore_user_abort(true);
+		$response = $this->getResponse();
+		$request = $this->getRequest();
+		$request->setDispatched(true);
+		$server = $request->getServer();
 
-			$response = $this->getResponse();
-			$request = $this->getRequest();
-			$request->setDispatched(true);
-			$server = $request->getServer();
+		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
 
-			$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
+		if(!$this->getConfig($storeId))
+		{
+			//@codingStandardsIgnoreStart
+			if(function_exists('http_response_code'))
+				http_response_code(500);
+			//@codingStandardsIgnoreEnd
+			$response->setHttpResponseCode(500);
+			$response->setRawHeader('HTTP/1.0 500 Security Error');
+			$response->setRawHeader('Status: 500 Security Error');
+			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+			$response->setHeader('Pragma', 'no-cache', true);
+			$response->setBody('Config Error');
+			return;
+		}
 
-			if(!$this->getConfig($storeId))
-			{
-				//@codingStandardsIgnoreStart
-				if(function_exists('http_response_code'))
-					http_response_code(500);
-				//@codingStandardsIgnoreEnd
-				$response->setHttpResponseCode(500);
-				$response->setRawHeader('HTTP/1.0 500 Security Error');
-				$response->setRawHeader('Status: 500 Security Error');
-				$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-				$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-				$response->setHeader('Pragma', 'no-cache', true);
-				$response->setBody('Config Error');
-				return;
+		if (isset($server['HTTP_X_SYNC'])) {
+			if (!isset($server['HTTP_X_ACTION'])) {
+				$server['HTTP_X_ACTION'] = '';
 			}
 
-			if (isset($server['HTTP_X_SYNC'])) {
-				if (!isset($server['HTTP_X_ACTION'])) {
-					$server['HTTP_X_ACTION'] = '';
-				}
+			switch ($server['HTTP_X_ACTION']) {
 
-				switch ($server['HTTP_X_ACTION']) {
+				case 'GET':
 
-					case 'GET':
-
-						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
+						try
 						{
 							$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
 
@@ -152,26 +152,44 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 								$this->Send($syncDb);
 							}
 						}
-						else
+						catch(Exception $e)
 						{
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
-								http_response_code(400);
+								http_response_code(500);
 							//@codingStandardsIgnoreEnd
-							$response->setHttpResponseCode(400);
-							$response->setRawHeader('HTTP/1.0 400 Security Error');
-							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHttpResponseCode(500);
+							$response->setRawHeader('HTTP/1.0 500 Sync Exception');
+							$response->setRawHeader('Status: 500 Sync Exception');
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Security Error');
+							$response->setBody('Exception: '.$e->getMessage());
 							$response->sendResponse();
 						}
-						die;
+					}
+					else
+					{
+						//@codingStandardsIgnoreStart
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						//@codingStandardsIgnoreEnd
+						$response->setHttpResponseCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setBody('Security Error');
+						$response->sendResponse();
+					}
+					die;
 
-					case 'EXECUTECHUNK':
+				case 'EXECUTECHUNK':
 
-						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
+						try
 						{
 							$indexer = Mage::getModel('index/process');
 							$indexer->load('codistoebayindex', 'indexer_code')
@@ -234,26 +252,44 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 							$response->setBody($result);
 							$response->sendResponse();
 						}
-						else
+						catch(Exception $e)
 						{
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
-								http_response_code(400);
+								http_response_code(500);
 							//@codingStandardsIgnoreEnd
-							$response->setHttpResponseCode(400);
-							$response->setRawHeader('HTTP/1.0 400 Security Error');
-							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHttpResponseCode(500);
+							$response->setRawHeader('HTTP/1.0 500 Sync Exception');
+							$response->setRawHeader('Status: 500 Sync Exception');
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Security Error');
+							$response->setBody('Exception: '.$e->getMessage());
 							$response->sendResponse();
 						}
-						die;
+					}
+					else
+					{
+						//@codingStandardsIgnoreStart
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						//@codingStandardsIgnoreEnd
+						$response->setHttpResponseCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setBody('Security Error');
+						$response->sendResponse();
+					}
+					die;
 
-					case 'PULL':
+				case 'PULL':
 
-						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
+						try
 						{
 							$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
 
@@ -298,26 +334,44 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 							unlink($tmpDb);
 						}
-						else
+						catch(Exception $e)
 						{
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
-								http_response_code(400);
+								http_response_code(500);
 							//@codingStandardsIgnoreEnd
-							$response->setHttpResponseCode(400);
-							$response->setRawHeader('HTTP/1.0 400 Security Error');
-							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHttpResponseCode(500);
+							$response->setRawHeader('HTTP/1.0 500 Sync Exception');
+							$response->setRawHeader('Status: 500 Sync Exception');
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Security Error');
+							$response->setBody('Exception: '.$e->getMessage());
 							$response->sendResponse();
 						}
-						die;
+					}
+					else
+					{
+						//@codingStandardsIgnoreStart
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						//@codingStandardsIgnoreEnd
+						$response->setHttpResponseCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setBody('Security Error');
+						$response->sendResponse();
+					}
+					die;
 
-					case 'TAX':
+				case 'TAX':
 
-						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
+						try
 						{
 							$syncObject = Mage::getModel('codistosync/sync');
 
@@ -352,26 +406,44 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 							unlink($tmpDb);
 						}
-						else
+						catch(Exception $e)
 						{
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
-								http_response_code(400);
+								http_response_code(500);
 							//@codingStandardsIgnoreEnd
-							$response->setHttpResponseCode(400);
-							$response->setRawHeader('HTTP/1.0 400 Security Error');
-							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHttpResponseCode(500);
+							$response->setRawHeader('HTTP/1.0 500 Sync Exception');
+							$response->setRawHeader('Status: 500 Sync Exception');
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Security Error');
+							$response->setBody('Exception: '.$e->getMessage());
 							$response->sendResponse();
 						}
-						die;
+					}
+					else
+					{
+						//@codingStandardsIgnoreStart
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						//@codingStandardsIgnoreEnd
+						$response->setHttpResponseCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setBody('Security Error');
+						$response->sendResponse();
+					}
+					die;
 
-					case 'STOREVIEW':
+				case 'STOREVIEW':
 
-						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
+						try
 						{
 							$syncObject = Mage::getModel('codistosync/sync');
 
@@ -403,26 +475,44 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 							unlink($tmpDb);
 						}
-						else
+						catch(Exception $e)
 						{
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
-								http_response_code(400);
+								http_response_code(500);
 							//@codingStandardsIgnoreEnd
-							$response->setHttpResponseCode(400);
-							$response->setRawHeader('HTTP/1.0 400 Security Error');
-							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHttpResponseCode(500);
+							$response->setRawHeader('HTTP/1.0 500 Sync Exception');
+							$response->setRawHeader('Status: 500 Sync Exception');
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Security Error');
+							$response->setBody('Exception: '.$e->getMessage());
 							$response->sendResponse();
 						}
-						die;
+					}
+					else
+					{
+						//@codingStandardsIgnoreStart
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						//@codingStandardsIgnoreEnd
+						$response->setHttpResponseCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setBody('Security Error');
+						$response->sendResponse();
+					}
+					die;
 
-					case 'ORDERS':
+				case 'ORDERS':
 
-						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
+						try
 						{
 							$syncObject = Mage::getModel('codistosync/sync');
 
@@ -461,26 +551,44 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 							unlink($tmpDb);
 						}
-						else
+						catch(Exception $e)
 						{
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
-								http_response_code(400);
+								http_response_code(500);
 							//@codingStandardsIgnoreEnd
-							$response->setHttpResponseCode(400);
-							$response->setRawHeader('HTTP/1.0 400 Security Error');
-							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHttpResponseCode(500);
+							$response->setRawHeader('HTTP/1.0 500 Sync Exception');
+							$response->setRawHeader('Status: 500 Sync Exception');
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Security Error');
+							$response->setBody('Exception: '.$e->getMessage());
 							$response->sendResponse();
 						}
-						die;
+					}
+					else
+					{
+						//@codingStandardsIgnoreStart
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						//@codingStandardsIgnoreEnd
+						$response->setHttpResponseCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setBody('Security Error');
+						$response->sendResponse();
+					}
+					die;
 
-					case 'TEMPLATE':
+				case 'TEMPLATE':
 
-						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
+						try
 						{
 							if($request->isGet())
 							{
@@ -607,49 +715,50 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 								$response->sendResponse();
 							}
 						}
-						else
+						catch(Exception $e)
 						{
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
-								http_response_code(400);
+								http_response_code(500);
 							//@codingStandardsIgnoreEnd
-							$response->setHttpResponseCode(400);
-							$response->setRawHeader('HTTP/1.0 400 Security Error');
-							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHttpResponseCode(500);
+							$response->setRawHeader('HTTP/1.0 500 Sync Exception');
+							$response->setRawHeader('Status: 500 Sync Exception');
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Security Error');
+							$response->setBody('Exception: '.$e->getMessage());
 							$response->sendResponse();
 						}
-						die;
-
-					default:
-
+					}
+					else
+					{
+						//@codingStandardsIgnoreStart
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						//@codingStandardsIgnoreEnd
+						$response->setHttpResponseCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setBody('No Action');
+						$response->setBody('Security Error');
 						$response->sendResponse();
-				}
+					}
+					die;
+
+				default:
+
+					$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+					$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+					$response->setHeader('Pragma', 'no-cache', true);
+					$response->setBody('No Action');
+					$response->sendResponse();
 			}
-
-		} catch (Exception $e) {
-
-			//@codingStandardsIgnoreStart
-			if(function_exists('http_response_code'))
-				http_response_code(500);
-			//@codingStandardsIgnoreEnd
-			$response->setHttpResponseCode(500);
-			$response->setRawHeader('HTTP/1.0 400 Security Error');
-			$response->setRawHeader('Status: 400 Security Error');
-			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-			$response->setHeader('Pragma', 'no-cache', true);
-			$response->setBody('Exception: '.$e->__toString());
-			$response->sendResponse();
-
 		}
+
+
 	}
 
 	public function testHashAction()

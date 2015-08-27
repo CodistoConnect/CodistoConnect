@@ -1026,7 +1026,7 @@ class Codisto_Sync_Model_Sync
 		$regionName = Mage::getSingleton('core/resource')->getTableName('directory/country_region');
 
 		$taxRates = Mage::getModel('tax/calculation_rate')->getCollection();
-		$taxRates->getSelect()->joinLeft( array('region' => 'directory_country_region'), 'region.region_id = main_table.tax_region_id', array('tax_region_code' => 'region.code', 'tax_region_name' => 'region.default_name'));
+		$taxRates->getSelect()->joinLeft( array('region' => $regionName), 'region.region_id = main_table.tax_region_id', array('tax_region_code' => 'region.code', 'tax_region_name' => 'region.default_name'));
 
 		$insertTaxRate = $db->prepare('INSERT OR IGNORE INTO TaxCalculationRate (ID, Country, RegionID, RegionName, RegionCode, PostCode, Code, Rate, IsRange, ZipFrom, ZipTo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?)');
 
