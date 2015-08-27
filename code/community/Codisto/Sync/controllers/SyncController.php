@@ -28,57 +28,413 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 	public function indexAction()
 	{
-		set_time_limit(0);
-		ignore_user_abort(true);
+		try {
 
-		$response = $this->getResponse();
-		$request = $this->getRequest();
-		$request->setDispatched(true);
-		$server = $request->getServer();
+			set_time_limit(0);
+			ignore_user_abort(true);
 
-		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
+			$response = $this->getResponse();
+			$request = $this->getRequest();
+			$request->setDispatched(true);
+			$server = $request->getServer();
 
-		if(!$this->getConfig($storeId))
-		{
-			//@codingStandardsIgnoreStart
-			if(function_exists('http_response_code'))
-				http_response_code(500);
-			//@codingStandardsIgnoreEnd
-			$response->setHttpResponseCode(500);
-			$response->setRawHeader('HTTP/1.0 500 Security Error');
-			$response->setRawHeader('Status: 500 Security Error');
-			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-			$response->setHeader('Pragma', 'no-cache', true);
-			$response->setBody('Config Error');
-			return;
-		}
+			$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
 
-		if (isset($server['HTTP_X_SYNC'])) {
-			if (!isset($server['HTTP_X_ACTION'])) {
-				$server['HTTP_X_ACTION'] = '';
+			if(!$this->getConfig($storeId))
+			{
+				//@codingStandardsIgnoreStart
+				if(function_exists('http_response_code'))
+					http_response_code(500);
+				//@codingStandardsIgnoreEnd
+				$response->setHttpResponseCode(500);
+				$response->setRawHeader('HTTP/1.0 500 Security Error');
+				$response->setRawHeader('Status: 500 Security Error');
+				$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+				$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+				$response->setHeader('Pragma', 'no-cache', true);
+				$response->setBody('Config Error');
+				return;
 			}
 
-			switch ($server['HTTP_X_ACTION']) {
+			if (isset($server['HTTP_X_SYNC'])) {
+				if (!isset($server['HTTP_X_ACTION'])) {
+					$server['HTTP_X_ACTION'] = '';
+				}
 
-				case 'GET':
+				switch ($server['HTTP_X_ACTION']) {
 
-					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
-					{
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+					case 'GET':
 
-						if($request->getQuery('productid') || $request->getQuery('categoryid') || $request->getQuery('orderid'))
+						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 						{
+							$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+
+							if($request->getQuery('productid') || $request->getQuery('categoryid') || $request->getQuery('orderid'))
+							{
+								if($request->getQuery('orderid'))
+								{
+									$orderIds = Zend_Json::decode($request->getQuery('orderid'));
+									if(!is_array($orderIds))
+										$orderIds = array($orderIds);
+
+									$orderIds = array_map('intval', $orderIds);
+
+									$syncObject = Mage::getModel('codistosync/sync');
+									$syncObject->SyncOrders($syncDb, $orderIds, $storeId);
+								}
+
+								$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
+
+								$db = new PDO('sqlite:' . $tmpDb);
+								$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+								$db->exec('PRAGMA synchronous=0');
+								$db->exec('PRAGMA temp_store=2');
+								$db->exec('PRAGMA page_size=65536');
+								$db->exec('PRAGMA encoding=\'UTF-8\'');
+								$db->exec('PRAGMA cache_size=15000');
+								$db->exec('PRAGMA soft_heap_limit=67108864');
+								$db->exec('PRAGMA journal_mode=MEMORY');
+
+								$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
+
+								$db->exec('BEGIN EXCLUSIVE TRANSACTION');
+
+								if($request->getQuery('categoryid'))
+								{
+									$db->exec('CREATE TABLE Category AS SELECT * FROM SyncDb.Category');
+								}
+
+								if($request->getQuery('productid'))
+								{
+									$productIds = Zend_Json::decode($request->getQuery('productid'));
+									if(!is_array($productIds))
+										$productIds = array($productIds);
+
+									$productIds = array_map('intval', $productIds);
+
+									$db->exec('CREATE TABLE Product AS SELECT * FROM SyncDb.Product WHERE ExternalReference IN ('.implode(',', $productIds).')');
+									$db->exec('CREATE TABLE ProductImage AS SELECT * FROM SyncDb.ProductImage WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+									$db->exec('CREATE TABLE CategoryProduct AS SELECT * FROM SyncDb.CategoryProduct WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+									$db->exec('CREATE TABLE SKU AS SELECT * FROM SyncDb.SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+									$db->exec('CREATE TABLE SKUMatrix AS SELECT * FROM SyncDb.SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product))');
+									$db->exec('CREATE TABLE SKUImage AS SELECT * FROM SyncDb.SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product))');
+									$db->exec('CREATE TABLE ProductOption AS SELECT * FROM SyncDb.ProductOption WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+									$db->exec('CREATE TABLE ProductOptionValue AS SELECT * FROM SyncDb.ProductOptionValue WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+									$db->exec('CREATE TABLE ProductHTML AS SELECT * FROM SyncDb.ProductHTML WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+									$db->exec('CREATE TABLE Attribute AS SELECT * FROM SyncDb.Attribute');
+									$db->exec('CREATE TABLE ProductAttributeValue AS SELECT * FROM SyncDb.ProductAttributeValue WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+
+									if($db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE name = \'ProductDelete\' COLLATE NOCASE AND type = \'table\') THEN 1 ELSE 0 END')->fetchColumn())
+										$db->exec('CREATE TABLE ProductDelete AS SELECT * FROM SyncDb.ProductDelete WHERE ExternalReference IN ('.implode(',', $productIds).')');
+								}
+
+								if($request->getQuery('orderid'))
+								{
+									$orderIds = Zend_Json::decode($request->getQuery('orderid'));
+									if(!is_array($orderIds))
+										$orderIds = array($orderIds);
+
+									$orderIds = array_map('intval', $orderIds);
+
+									$db->exec('CREATE TABLE [Order] AS SELECT * FROM SyncDb.[Order] WHERE ID IN ('.implode(',', $orderIds).')');
+								}
+
+								$db->exec('COMMIT TRANSACTION');
+								$db->exec('VACUUM');
+
+								$this->Send($tmpDb);
+
+								unlink($tmpDb);
+							}
+							else
+							{
+								$this->Send($syncDb);
+							}
+						}
+						else
+						{
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(400);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(400);
+							$response->setRawHeader('HTTP/1.0 400 Security Error');
+							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
+							$response->setBody('Security Error');
+							$response->sendResponse();
+						}
+						die;
+
+					case 'EXECUTECHUNK':
+
+						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+						{
+							$indexer = Mage::getModel('index/process');
+							$indexer->load('codistoebayindex', 'indexer_code')
+										->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
+
+							$syncObject = Mage::getModel('codistosync/sync');
+
+							$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+
+							if($request->getPost('Init') == '1')
+							{
+								if(file_exists($syncDb))
+									unlink($syncDb);
+							}
+
+							$configurableCount = (int)$request->getQuery('configurablecount');
+							if(!$configurableCount || !is_numeric($configurableCount))
+								$configurableCount = $this->defaultConfigurableCount;
+
+							$simpleCount = (int)$request->getQuery('simplecount');
+							if(!$simpleCount || !is_numeric($simpleCount))
+								$simpleCount = $this->defaultSimpleCount;
+
+							$timeout = (int)$request->getQuery('timeout');
+							if(!$timeout || !is_numeric($timeout))
+								$timeout = $this->defaultSyncTimeout;
+
+							$sleep = (int)$request->getQuery('sleep');
+							if(!$sleep || !is_numeric($sleep))
+								$sleep = $this->defaultSleep;
+
+							$startTime = microtime(true);
+
+							for(;;)
+							{
+								$result = $syncObject->SyncChunk($syncDb, $simpleCount, $configurableCount, $storeId);
+
+								if($result == 'complete')
+								{
+									$syncObject->SyncTax($syncDb, $storeId);
+									$syncObject->SyncStores($syncDb, $storeId);
+
+									$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+									break;
+								}
+
+								$now = microtime(true);
+
+								if(($now - $startTime) > $timeout)
+								{
+									break;
+								}
+
+								usleep($sleep);
+							}
+
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
+							$response->setBody($result);
+							$response->sendResponse();
+						}
+						else
+						{
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(400);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(400);
+							$response->setRawHeader('HTTP/1.0 400 Security Error');
+							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
+							$response->setBody('Security Error');
+							$response->sendResponse();
+						}
+						die;
+
+					case 'PULL':
+
+						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+						{
+							$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+
+							$ProductID = (int)$request->getPost('ProductID');
+							$productIds = array($ProductID);
+
+							$syncObject = Mage::getModel('codistosync/sync');
+
+							$syncObject->UpdateProducts($syncDb, $productIds, $storeId);
+
+							$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
+
+							$db = new PDO('sqlite:' . $tmpDb);
+							$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+							$db->exec('PRAGMA synchronous=0');
+							$db->exec('PRAGMA temp_store=2');
+							$db->exec('PRAGMA page_size=65536');
+							$db->exec('PRAGMA encoding=\'UTF-8\'');
+							$db->exec('PRAGMA cache_size=15000');
+							$db->exec('PRAGMA soft_heap_limit=67108864');
+							$db->exec('PRAGMA journal_mode=MEMORY');
+
+							$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
+
+							$db->exec('BEGIN EXCLUSIVE TRANSACTION');
+							$db->exec('CREATE TABLE Product AS SELECT * FROM SyncDb.Product WHERE ExternalReference IN ('.implode(',', $productIds).') OR ExternalReference IN (SELECT ProductExternalReference FROM SKU WHERE ExternalReference IN ('.implode(',', $productIds).'))');
+							$db->exec('CREATE TABLE ProductImage AS SELECT * FROM SyncDb.ProductImage WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+							$db->exec('CREATE TABLE CategoryProduct AS SELECT * FROM SyncDb.CategoryProduct WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+							$db->exec('CREATE TABLE SKU AS SELECT * FROM SyncDb.SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+							$db->exec('CREATE TABLE SKUMatrix AS SELECT * FROM SyncDb.SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product))');
+							$db->exec('CREATE TABLE SKUImage AS SELECT * FROM SyncDb.SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product))');
+							$db->exec('CREATE TABLE ProductOption AS SELECT * FROM SyncDb.ProductOption WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+							$db->exec('CREATE TABLE ProductOptionValue AS SELECT * FROM SyncDb.ProductOptionValue WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+							$db->exec('CREATE TABLE ProductHTML AS SELECT * FROM SyncDb.ProductHTML WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+							$db->exec('CREATE TABLE Attribute AS SELECT * FROM SyncDb.Attribute');
+							$db->exec('CREATE TABLE ProductAttributeValue AS SELECT * FROM SyncDb.ProductAttributeValue WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+							$db->exec('COMMIT TRANSACTION');
+							$db->exec('VACUUM');
+
+							$this->Send($tmpDb);
+
+							unlink($tmpDb);
+						}
+						else
+						{
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(400);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(400);
+							$response->setRawHeader('HTTP/1.0 400 Security Error');
+							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
+							$response->setBody('Security Error');
+							$response->sendResponse();
+						}
+						die;
+
+					case 'TAX':
+
+						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+						{
+							$syncObject = Mage::getModel('codistosync/sync');
+
+							$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+
+							$syncObject->SyncTax($syncDb, $storeId);
+
+							$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
+
+							$db = new PDO('sqlite:' . $tmpDb);
+							$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+							$db->exec('PRAGMA synchronous=0');
+							$db->exec('PRAGMA temp_store=2');
+							$db->exec('PRAGMA page_size=65536');
+							$db->exec('PRAGMA encoding=\'UTF-8\'');
+							$db->exec('PRAGMA cache_size=15000');
+							$db->exec('PRAGMA soft_heap_limit=67108864');
+							$db->exec('PRAGMA journal_mode=MEMORY');
+
+							$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
+
+							$db->exec('BEGIN EXCLUSIVE TRANSACTION');
+							$db->exec('CREATE TABLE TaxClass AS SELECT * FROM SyncDb.TaxClass');
+							$db->exec('CREATE TABLE TaxCalculation AS SELECT * FROM SyncDb.TaxCalculation');
+							$db->exec('CREATE TABLE TaxCalculationRule AS SELECT * FROM SyncDb.TaxCalculationRule');
+							$db->exec('CREATE TABLE TaxCalculationRate AS SELECT * FROM SyncDb.TaxCalculationRate');
+							$db->exec('COMMIT TRANSACTION');
+							$db->exec('VACUUM');
+
+							$this->Send($tmpDb);
+
+							unlink($tmpDb);
+						}
+						else
+						{
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(400);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(400);
+							$response->setRawHeader('HTTP/1.0 400 Security Error');
+							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
+							$response->setBody('Security Error');
+							$response->sendResponse();
+						}
+						die;
+
+					case 'STOREVIEW':
+
+						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+						{
+							$syncObject = Mage::getModel('codistosync/sync');
+
+							$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+
+							$syncObject->SyncStores($syncDb, $storeId);
+
+							$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
+
+							$db = new PDO('sqlite:' . $tmpDb);
+							$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+							$db->exec('PRAGMA synchronous=0');
+							$db->exec('PRAGMA temp_store=2');
+							$db->exec('PRAGMA page_size=65536');
+							$db->exec('PRAGMA encoding=\'UTF-8\'');
+							$db->exec('PRAGMA cache_size=15000');
+							$db->exec('PRAGMA soft_heap_limit=67108864');
+							$db->exec('PRAGMA journal_mode=MEMORY');
+
+							$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
+
+							$db->exec('BEGIN EXCLUSIVE TRANSACTION');
+							$db->exec('CREATE TABLE Store AS SELECT * FROM SyncDb.Store');
+							$db->exec('COMMIT TRANSACTION');
+							$db->exec('VACUUM');
+
+							$this->Send($tmpDb);
+
+							unlink($tmpDb);
+						}
+						else
+						{
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(400);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(400);
+							$response->setRawHeader('HTTP/1.0 400 Security Error');
+							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
+							$response->setBody('Security Error');
+							$response->sendResponse();
+						}
+						die;
+
+					case 'ORDERS':
+
+						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+						{
+							$syncObject = Mage::getModel('codistosync/sync');
+
+							$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+
 							if($request->getQuery('orderid'))
 							{
-								$orderIds = Zend_Json::decode($request->getQuery('orderid'));
-								if(!is_array($orderIds))
-									$orderIds = array($orderIds);
+								$orders = Zend_Json::decode($request->getQuery('orderid'));
+								if(!is_array($orders))
+									$orders = array($orders);
 
-								$orderIds = array_map('intval', $orderIds);
-
-								$syncObject = Mage::getModel('codistosync/sync');
-								$syncObject->SyncOrders($syncDb, $orderIds, $storeId);
+								$syncObject->SyncOrders($syncDb, $orders, $storeId);
 							}
 
 							$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
@@ -97,47 +453,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 							$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
 
 							$db->exec('BEGIN EXCLUSIVE TRANSACTION');
-
-							if($request->getQuery('categoryid'))
-							{
-								$db->exec('CREATE TABLE Category AS SELECT * FROM SyncDb.Category');
-							}
-
-							if($request->getQuery('productid'))
-							{
-								$productIds = Zend_Json::decode($request->getQuery('productid'));
-								if(!is_array($productIds))
-									$productIds = array($productIds);
-
-								$productIds = array_map('intval', $productIds);
-
-								$db->exec('CREATE TABLE Product AS SELECT * FROM SyncDb.Product WHERE ExternalReference IN ('.implode(',', $productIds).')');
-								$db->exec('CREATE TABLE ProductImage AS SELECT * FROM SyncDb.ProductImage WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-								$db->exec('CREATE TABLE CategoryProduct AS SELECT * FROM SyncDb.CategoryProduct WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-								$db->exec('CREATE TABLE SKU AS SELECT * FROM SyncDb.SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-								$db->exec('CREATE TABLE SKUMatrix AS SELECT * FROM SyncDb.SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product))');
-								$db->exec('CREATE TABLE SKUImage AS SELECT * FROM SyncDb.SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product))');
-								$db->exec('CREATE TABLE ProductOption AS SELECT * FROM SyncDb.ProductOption WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-								$db->exec('CREATE TABLE ProductOptionValue AS SELECT * FROM SyncDb.ProductOptionValue WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-								$db->exec('CREATE TABLE ProductHTML AS SELECT * FROM SyncDb.ProductHTML WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-								$db->exec('CREATE TABLE Attribute AS SELECT * FROM SyncDb.Attribute');
-								$db->exec('CREATE TABLE ProductAttributeValue AS SELECT * FROM SyncDb.ProductAttributeValue WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-
-								if($db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE name = \'ProductDelete\' COLLATE NOCASE AND type = \'table\') THEN 1 ELSE 0 END')->fetchColumn())
-									$db->exec('CREATE TABLE ProductDelete AS SELECT * FROM SyncDb.ProductDelete WHERE ExternalReference IN ('.implode(',', $productIds).')');
-							}
-
-							if($request->getQuery('orderid'))
-							{
-								$orderIds = Zend_Json::decode($request->getQuery('orderid'));
-								if(!is_array($orderIds))
-									$orderIds = array($orderIds);
-
-								$orderIds = array_map('intval', $orderIds);
-
-								$db->exec('CREATE TABLE [Order] AS SELECT * FROM SyncDb.[Order] WHERE ID IN ('.implode(',', $orderIds).')');
-							}
-
+							$db->exec('CREATE TABLE [Order] AS SELECT * FROM SyncDb.[Order]');
 							$db->exec('COMMIT TRANSACTION');
 							$db->exec('VACUUM');
 
@@ -147,489 +463,192 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 						}
 						else
 						{
-							$this->Send($syncDb);
-						}
-					}
-					else
-					{
-						//@codingStandardsIgnoreStart
-						if(function_exists('http_response_code'))
-							http_response_code(400);
-						//@codingStandardsIgnoreEnd
-						$response->setHttpResponseCode(400);
-						$response->setRawHeader('HTTP/1.0 400 Security Error');
-						$response->setRawHeader('Status: 400 Security Error');
-						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setBody('Security Error');
-						$response->sendResponse();
-					}
-					die;
-
-				case 'EXECUTECHUNK':
-
-					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
-					{
-						$indexer = Mage::getModel('index/process');
-						$indexer->load('codistoebayindex', 'indexer_code')
-									->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
-
-						$syncObject = Mage::getModel('codistosync/sync');
-
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
-
-						if($request->getPost('Init') == '1')
-						{
-							if(file_exists($syncDb))
-								unlink($syncDb);
-						}
-
-						$configurableCount = (int)$request->getQuery('configurablecount');
-						if(!$configurableCount || !is_numeric($configurableCount))
-							$configurableCount = $this->defaultConfigurableCount;
-
-						$simpleCount = (int)$request->getQuery('simplecount');
-						if(!$simpleCount || !is_numeric($simpleCount))
-							$simpleCount = $this->defaultSimpleCount;
-
-						$timeout = (int)$request->getQuery('timeout');
-						if(!$timeout || !is_numeric($timeout))
-							$timeout = $this->defaultSyncTimeout;
-
-						$sleep = (int)$request->getQuery('sleep');
-						if(!$sleep || !is_numeric($sleep))
-							$sleep = $this->defaultSleep;
-
-						$startTime = microtime(true);
-
-						for(;;)
-						{
-							$result = $syncObject->SyncChunk($syncDb, $simpleCount, $configurableCount, $storeId);
-
-							if($result == 'complete')
-							{
-								$syncObject->SyncTax($syncDb, $storeId);
-								$syncObject->SyncStores($syncDb, $storeId);
-
-								$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
-								break;
-							}
-
-							$now = microtime(true);
-
-							if(($now - $startTime) > $timeout)
-							{
-								break;
-							}
-
-							usleep($sleep);
-						}
-
-						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setBody($result);
-						$response->sendResponse();
-					}
-					else
-					{
-						//@codingStandardsIgnoreStart
-						if(function_exists('http_response_code'))
-							http_response_code(400);
-						//@codingStandardsIgnoreEnd
-						$response->setHttpResponseCode(400);
-						$response->setRawHeader('HTTP/1.0 400 Security Error');
-						$response->setRawHeader('Status: 400 Security Error');
-						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setBody('Security Error');
-						$response->sendResponse();
-					}
-					die;
-
-				case 'PULL':
-
-					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
-					{
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
-
-						$ProductID = (int)$request->getPost('ProductID');
-						$productIds = array($ProductID);
-
-						$syncObject = Mage::getModel('codistosync/sync');
-
-						$syncObject->UpdateProducts($syncDb, $productIds, $storeId);
-
-						$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
-
-						$db = new PDO('sqlite:' . $tmpDb);
-						$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-						$db->exec('PRAGMA synchronous=0');
-						$db->exec('PRAGMA temp_store=2');
-						$db->exec('PRAGMA page_size=65536');
-						$db->exec('PRAGMA encoding=\'UTF-8\'');
-						$db->exec('PRAGMA cache_size=15000');
-						$db->exec('PRAGMA soft_heap_limit=67108864');
-						$db->exec('PRAGMA journal_mode=MEMORY');
-
-						$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
-
-						$db->exec('BEGIN EXCLUSIVE TRANSACTION');
-						$db->exec('CREATE TABLE Product AS SELECT * FROM SyncDb.Product WHERE ExternalReference IN ('.implode(',', $productIds).') OR ExternalReference IN (SELECT ProductExternalReference FROM SKU WHERE ExternalReference IN ('.implode(',', $productIds).'))');
-						$db->exec('CREATE TABLE ProductImage AS SELECT * FROM SyncDb.ProductImage WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-						$db->exec('CREATE TABLE CategoryProduct AS SELECT * FROM SyncDb.CategoryProduct WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-						$db->exec('CREATE TABLE SKU AS SELECT * FROM SyncDb.SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-						$db->exec('CREATE TABLE SKUMatrix AS SELECT * FROM SyncDb.SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product))');
-						$db->exec('CREATE TABLE SKUImage AS SELECT * FROM SyncDb.SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product))');
-						$db->exec('CREATE TABLE ProductOption AS SELECT * FROM SyncDb.ProductOption WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-						$db->exec('CREATE TABLE ProductOptionValue AS SELECT * FROM SyncDb.ProductOptionValue WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-						$db->exec('CREATE TABLE ProductHTML AS SELECT * FROM SyncDb.ProductHTML WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-						$db->exec('CREATE TABLE Attribute AS SELECT * FROM SyncDb.Attribute');
-						$db->exec('CREATE TABLE ProductAttributeValue AS SELECT * FROM SyncDb.ProductAttributeValue WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-						$db->exec('COMMIT TRANSACTION');
-						$db->exec('VACUUM');
-
-						$this->Send($tmpDb);
-
-						unlink($tmpDb);
-					}
-					else
-					{
-						//@codingStandardsIgnoreStart
-						if(function_exists('http_response_code'))
-							http_response_code(400);
-						//@codingStandardsIgnoreEnd
-						$response->setHttpResponseCode(400);
-						$response->setRawHeader('HTTP/1.0 400 Security Error');
-						$response->setRawHeader('Status: 400 Security Error');
-						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setBody('Security Error');
-						$response->sendResponse();
-					}
-					die;
-
-				case 'TAX':
-
-					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
-					{
-						$syncObject = Mage::getModel('codistosync/sync');
-
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
-
-						$syncObject->SyncTax($syncDb, $storeId);
-
-						$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
-
-						$db = new PDO('sqlite:' . $tmpDb);
-						$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-						$db->exec('PRAGMA synchronous=0');
-						$db->exec('PRAGMA temp_store=2');
-						$db->exec('PRAGMA page_size=65536');
-						$db->exec('PRAGMA encoding=\'UTF-8\'');
-						$db->exec('PRAGMA cache_size=15000');
-						$db->exec('PRAGMA soft_heap_limit=67108864');
-						$db->exec('PRAGMA journal_mode=MEMORY');
-
-						$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
-
-						$db->exec('BEGIN EXCLUSIVE TRANSACTION');
-						$db->exec('CREATE TABLE TaxClass AS SELECT * FROM SyncDb.TaxClass');
-						$db->exec('CREATE TABLE TaxCalculation AS SELECT * FROM SyncDb.TaxCalculation');
-						$db->exec('CREATE TABLE TaxCalculationRule AS SELECT * FROM SyncDb.TaxCalculationRule');
-						$db->exec('CREATE TABLE TaxCalculationRate AS SELECT * FROM SyncDb.TaxCalculationRate');
-						$db->exec('COMMIT TRANSACTION');
-						$db->exec('VACUUM');
-
-						$this->Send($tmpDb);
-
-						unlink($tmpDb);
-					}
-					else
-					{
-						//@codingStandardsIgnoreStart
-						if(function_exists('http_response_code'))
-							http_response_code(400);
-						//@codingStandardsIgnoreEnd
-						$response->setHttpResponseCode(400);
-						$response->setRawHeader('HTTP/1.0 400 Security Error');
-						$response->setRawHeader('Status: 400 Security Error');
-						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setBody('Security Error');
-						$response->sendResponse();
-					}
-					die;
-
-				case 'STOREVIEW':
-
-					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
-					{
-						$syncObject = Mage::getModel('codistosync/sync');
-
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
-
-						$syncObject->SyncStores($syncDb, $storeId);
-
-						$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
-
-						$db = new PDO('sqlite:' . $tmpDb);
-						$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-						$db->exec('PRAGMA synchronous=0');
-						$db->exec('PRAGMA temp_store=2');
-						$db->exec('PRAGMA page_size=65536');
-						$db->exec('PRAGMA encoding=\'UTF-8\'');
-						$db->exec('PRAGMA cache_size=15000');
-						$db->exec('PRAGMA soft_heap_limit=67108864');
-						$db->exec('PRAGMA journal_mode=MEMORY');
-
-						$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
-
-						$db->exec('BEGIN EXCLUSIVE TRANSACTION');
-						$db->exec('CREATE TABLE Store AS SELECT * FROM SyncDb.Store');
-						$db->exec('COMMIT TRANSACTION');
-						$db->exec('VACUUM');
-
-						$this->Send($tmpDb);
-
-						unlink($tmpDb);
-					}
-					else
-					{
-						//@codingStandardsIgnoreStart
-						if(function_exists('http_response_code'))
-							http_response_code(400);
-						//@codingStandardsIgnoreEnd
-						$response->setHttpResponseCode(400);
-						$response->setRawHeader('HTTP/1.0 400 Security Error');
-						$response->setRawHeader('Status: 400 Security Error');
-						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setBody('Security Error');
-						$response->sendResponse();
-					}
-					die;
-
-				case 'ORDERS':
-
-					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
-					{
-						$syncObject = Mage::getModel('codistosync/sync');
-
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
-
-						if($request->getQuery('orderid'))
-						{
-							$orders = Zend_Json::decode($request->getQuery('orderid'));
-							if(!is_array($orders))
-								$orders = array($orders);
-
-							$syncObject->SyncOrders($syncDb, $orders, $storeId);
-						}
-
-						$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-sync-');
-
-						$db = new PDO('sqlite:' . $tmpDb);
-						$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-						$db->exec('PRAGMA synchronous=0');
-						$db->exec('PRAGMA temp_store=2');
-						$db->exec('PRAGMA page_size=65536');
-						$db->exec('PRAGMA encoding=\'UTF-8\'');
-						$db->exec('PRAGMA cache_size=15000');
-						$db->exec('PRAGMA soft_heap_limit=67108864');
-						$db->exec('PRAGMA journal_mode=MEMORY');
-
-						$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
-
-						$db->exec('BEGIN EXCLUSIVE TRANSACTION');
-						$db->exec('CREATE TABLE [Order] AS SELECT * FROM SyncDb.[Order]');
-						$db->exec('COMMIT TRANSACTION');
-						$db->exec('VACUUM');
-
-						$this->Send($tmpDb);
-
-						unlink($tmpDb);
-					}
-					else
-					{
-						//@codingStandardsIgnoreStart
-						if(function_exists('http_response_code'))
-							http_response_code(400);
-						//@codingStandardsIgnoreEnd
-						$response->setHttpResponseCode(400);
-						$response->setRawHeader('HTTP/1.0 400 Security Error');
-						$response->setRawHeader('Status: 400 Security Error');
-						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setBody('Security Error');
-						$response->sendResponse();
-					}
-					die;
-
-				case 'TEMPLATE':
-
-					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
-					{
-						if($request->isGet())
-						{
-							$templateDb = Mage::getBaseDir('var') . '/codisto-ebay-template.db';
-
-							if($request->getQuery('markreceived'))
-							{
-								try
-								{
-									$db = new PDO('sqlite:' . $templateDb);
-									$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-									$update = $db->prepare('UPDATE File SET LastModified = ? WHERE Name = ?');
-
-									$files = $db->query('SELECT Name FROM File WHERE Changed != 0');
-									$files->execute();
-
-									$db->exec('BEGIN EXCLUSIVE TRANSACTION');
-
-									while($row = $files->fetch())
-									{
-										$stat = stat(Mage::getBaseDir('design').'/ebay/'.$row['Name']);
-
-										$lastModified = strftime('%Y-%m-%d %H:%M:%S', $stat['mtime']);
-
-										$update->bindParam(1, $lastModified);
-										$update->bindParam(2, $row['Name']);
-										$update->execute();
-									}
-
-									$db->exec('UPDATE File SET Changed = 0');
-									$db->exec('COMMIT TRANSACTION');
-									$db = null;
-
-									$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-									$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-									$response->setHeader('Pragma', 'no-cache', true);
-									$response->setBody(Zend_Json::encode(array( 'ack' => 'ok' )));
-									$response->sendResponse();
-								}
-								catch(Exception $e)
-								{
-									//@codingStandardsIgnoreStart
-									if(function_exists('http_response_code'))
-										http_response_code(500);
-									//@codingStandardsIgnoreEnd
-									$response->setHttpResponseCode(500);
-									$response->setRawHeader('HTTP/1.0 500 Internal Server Error');
-									$response->setRawHeader('Status: 500 Internal Server Error');
-									$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-									$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-									$response->setHeader('Pragma', 'no-cache', true);
-									$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'message' => $e->getMessage() )));
-									$response->sendResponse();
-								}
-							}
-							else
-							{
-								$syncObject = Mage::getModel('codistosync/sync');
-
-								$syncObject->TemplateRead($templateDb);
-
-								$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-template-');
-
-								$db = new PDO('sqlite:' . $tmpDb);
-								$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-								$db->exec('PRAGMA synchronous=0');
-								$db->exec('PRAGMA temp_store=2');
-								$db->exec('PRAGMA page_size=512');
-								$db->exec('PRAGMA encoding=\'UTF-8\'');
-								$db->exec('PRAGMA cache_size=15000');
-								$db->exec('PRAGMA soft_heap_limit=67108864');
-								$db->exec('PRAGMA journal_mode=OFF');
-								$db->exec('ATTACH DATABASE \''.$templateDb.'\' AS Source');
-								$db->exec('CREATE TABLE File AS SELECT * FROM Source.File WHERE Changed != 0');
-								$db->exec('DETACH DATABASE Source');
-								$db->exec('VACUUM');
-
-								$fileCountStmt = $db->query('SELECT COUNT(*) AS fileCount FROM File');
-								$fileCountStmt->execute();
-								$fileCountRow = $fileCountStmt->fetch();
-								$fileCount = $fileCountRow['fileCount'];
-								$db = null;
-
-								if($fileCount == 0)
-								{
-									//@codingStandardsIgnoreStart
-									if(function_exists('http_response_code'))
-										http_response_code(204);
-									//@codingStandardsIgnoreEnd
-									$response->setHttpResponseCode(204);
-									$response->setRawHeader('HTTP/1.0 204 No Content');
-									$response->setRawHeader('Status: 204 No Content');
-									$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-									$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-									$response->setHeader('Pragma', 'no-cache', true);
-									$response->setBody('');
-									$response->sendResponse();
-								}
-								else
-								{
-									$this->Send($tmpDb);
-								}
-
-								unlink($tmpDb);
-							}
-						}
-						else if($request->isPost() || $request->isPut())
-						{
-							$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-template-');
-
-							file_put_contents($tmpDb, $request->getRawBody());
-
-							$syncObject = Mage::getModel('codistosync/sync');
-
-							$syncObject->TemplateWrite($tmpDb);
-
-							unlink($tmpDb);
-
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(400);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(400);
+							$response->setRawHeader('HTTP/1.0 400 Security Error');
+							$response->setRawHeader('Status: 400 Security Error');
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody(Zend_Json::encode(array( 'ack' => 'ok' )));
+							$response->setBody('Security Error');
 							$response->sendResponse();
 						}
-					}
-					else
-					{
-						//@codingStandardsIgnoreStart
-						if(function_exists('http_response_code'))
-							http_response_code(400);
-						//@codingStandardsIgnoreEnd
-						$response->setHttpResponseCode(400);
-						$response->setRawHeader('HTTP/1.0 400 Security Error');
-						$response->setRawHeader('Status: 400 Security Error');
+						die;
+
+					case 'TEMPLATE':
+
+						if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+						{
+							if($request->isGet())
+							{
+								$templateDb = Mage::getBaseDir('var') . '/codisto-ebay-template.db';
+
+								if($request->getQuery('markreceived'))
+								{
+									try
+									{
+										$db = new PDO('sqlite:' . $templateDb);
+										$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+										$update = $db->prepare('UPDATE File SET LastModified = ? WHERE Name = ?');
+
+										$files = $db->query('SELECT Name FROM File WHERE Changed != 0');
+										$files->execute();
+
+										$db->exec('BEGIN EXCLUSIVE TRANSACTION');
+
+										while($row = $files->fetch())
+										{
+											$stat = stat(Mage::getBaseDir('design').'/ebay/'.$row['Name']);
+
+											$lastModified = strftime('%Y-%m-%d %H:%M:%S', $stat['mtime']);
+
+											$update->bindParam(1, $lastModified);
+											$update->bindParam(2, $row['Name']);
+											$update->execute();
+										}
+
+										$db->exec('UPDATE File SET Changed = 0');
+										$db->exec('COMMIT TRANSACTION');
+										$db = null;
+
+										$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+										$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+										$response->setHeader('Pragma', 'no-cache', true);
+										$response->setBody(Zend_Json::encode(array( 'ack' => 'ok' )));
+										$response->sendResponse();
+									}
+									catch(Exception $e)
+									{
+										//@codingStandardsIgnoreStart
+										if(function_exists('http_response_code'))
+											http_response_code(500);
+										//@codingStandardsIgnoreEnd
+										$response->setHttpResponseCode(500);
+										$response->setRawHeader('HTTP/1.0 500 Internal Server Error');
+										$response->setRawHeader('Status: 500 Internal Server Error');
+										$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+										$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+										$response->setHeader('Pragma', 'no-cache', true);
+										$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'message' => $e->getMessage() )));
+										$response->sendResponse();
+									}
+								}
+								else
+								{
+									$syncObject = Mage::getModel('codistosync/sync');
+
+									$syncObject->TemplateRead($templateDb);
+
+									$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-template-');
+
+									$db = new PDO('sqlite:' . $tmpDb);
+									$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+									$db->exec('PRAGMA synchronous=0');
+									$db->exec('PRAGMA temp_store=2');
+									$db->exec('PRAGMA page_size=512');
+									$db->exec('PRAGMA encoding=\'UTF-8\'');
+									$db->exec('PRAGMA cache_size=15000');
+									$db->exec('PRAGMA soft_heap_limit=67108864');
+									$db->exec('PRAGMA journal_mode=OFF');
+									$db->exec('ATTACH DATABASE \''.$templateDb.'\' AS Source');
+									$db->exec('CREATE TABLE File AS SELECT * FROM Source.File WHERE Changed != 0');
+									$db->exec('DETACH DATABASE Source');
+									$db->exec('VACUUM');
+
+									$fileCountStmt = $db->query('SELECT COUNT(*) AS fileCount FROM File');
+									$fileCountStmt->execute();
+									$fileCountRow = $fileCountStmt->fetch();
+									$fileCount = $fileCountRow['fileCount'];
+									$db = null;
+
+									if($fileCount == 0)
+									{
+										//@codingStandardsIgnoreStart
+										if(function_exists('http_response_code'))
+											http_response_code(204);
+										//@codingStandardsIgnoreEnd
+										$response->setHttpResponseCode(204);
+										$response->setRawHeader('HTTP/1.0 204 No Content');
+										$response->setRawHeader('Status: 204 No Content');
+										$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+										$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+										$response->setHeader('Pragma', 'no-cache', true);
+										$response->setBody('');
+										$response->sendResponse();
+									}
+									else
+									{
+										$this->Send($tmpDb);
+									}
+
+									unlink($tmpDb);
+								}
+							}
+							else if($request->isPost() || $request->isPut())
+							{
+								$tmpDb = tempnam(Mage::getBaseDir('var'), 'codisto-ebay-template-');
+
+								file_put_contents($tmpDb, $request->getRawBody());
+
+								$syncObject = Mage::getModel('codistosync/sync');
+
+								$syncObject->TemplateWrite($tmpDb);
+
+								unlink($tmpDb);
+
+								$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+								$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+								$response->setHeader('Pragma', 'no-cache', true);
+								$response->setBody(Zend_Json::encode(array( 'ack' => 'ok' )));
+								$response->sendResponse();
+							}
+						}
+						else
+						{
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(400);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(400);
+							$response->setRawHeader('HTTP/1.0 400 Security Error');
+							$response->setRawHeader('Status: 400 Security Error');
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
+							$response->setBody('Security Error');
+							$response->sendResponse();
+						}
+						die;
+
+					default:
+
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setBody('Security Error');
+						$response->setBody('No Action');
 						$response->sendResponse();
-					}
-					die;
-
-				default:
-
-					$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-					$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-					$response->setHeader('Pragma', 'no-cache', true);
-					$response->setBody('No Action');
-					$response->sendResponse();
+				}
 			}
+
+		} catch (Exception $e) {
+
+			//@codingStandardsIgnoreStart
+			if(function_exists('http_response_code'))
+				http_response_code(500);
+			//@codingStandardsIgnoreEnd
+			$response->setHttpResponseCode(500);
+			$response->setRawHeader('HTTP/1.0 400 Security Error');
+			$response->setRawHeader('Status: 400 Security Error');
+			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+			$response->setHeader('Pragma', 'no-cache', true);
+			$response->setBody('Exception: '.$e->__toString());
+			$response->sendResponse();
+
 		}
 	}
 
