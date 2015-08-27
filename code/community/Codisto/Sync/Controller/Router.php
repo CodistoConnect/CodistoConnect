@@ -26,6 +26,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 		if(preg_match('/^\/codisto\//', $path))
 		{
+			set_time_limit(0);
+
 			$request->setDispatched(true);
 
 			$front = $this->getFront();
