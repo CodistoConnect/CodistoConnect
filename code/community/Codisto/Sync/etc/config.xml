@@ -234,4 +234,12 @@
 		</payment>
 	</default>
 
+	<phpunit>
+		<suite>
+			<modules>
+				<Codisto_Sync />
+			</modules>
+		</suite>
+	</phpunit>
+
 </config>
