@@ -633,14 +633,14 @@ class Codisto_Sync_Model_Sync
 		$attributes = $product->getAttributes();
 		foreach($attributes as $attribute)
 		{
-			$type = $attribute->getBackendType();
-			if($type == 'text')
+			$backendType = $attribute->getBackendType();
+			if($backendType == 'text')
 			{
 				$TextValue = Mage::getResourceModel('catalog/product')->getAttributeRawValue($productData['entity_id'], $attribute->getAttributeCode(), $store->getId());
 
 				$insertHTMLSQL->execute(array($productData['entity_id'], $attribute->getStoreLabel(), $TextValue));
 			}
-			else if($type != 'static')
+			else if($backendType != 'static')
 			{
 				$AttributeID = $attribute->getId();
 				$AttributeLabel = $attribute->getStoreLabel();
@@ -649,7 +649,7 @@ class Codisto_Sync_Model_Sync
 				{
 					$AttributeValue = Mage::getResourceModel('catalog/product')->getAttributeRawValue($productData['entity_id'], $attribute->getAttributeCode(), $store->getId());
 
-					$insertAttributeSQL->execute(array($AttributeID, $attribute->getName(), $AttributeLabel, $type));
+					$insertAttributeSQL->execute(array($AttributeID, $attribute->getName(), $AttributeLabel, $backendType));
 					$insertProductAttributeSQL->execute(array($productData['entity_id'], $AttributeID, $AttributeValue));
 				}
 			}
@@ -731,24 +731,6 @@ class Codisto_Sync_Model_Sync
 
 		if($type == 'simple')
 		{
-			$options = $product->getOptions();
-
-			foreach ($options as $option) {
-
-				if($option->getType() == 'select')
-				{
-					syslog(1, $option->getName());
-
-					foreach ($option->getValues() as $value)
-					{
-						syslog(1, '    '.$value->getTitle());
-					}
-				}
-			}
-		}
-
-		if($type == 'simple')
-		{
 			$this->productsProcessed[] = $productData['entity_id'];
 
 			if($productData['entity_id'] > $this->currentEntityId)
@@ -768,7 +750,7 @@ class Codisto_Sync_Model_Sync
 		$this->currentEntityId = $orderData['entity_id'];
 	}
 
-	public function SyncChunk($syncDb, $storeId)
+	public function SyncChunk($syncDb, $configurableCount, $simpleCount, $storeId)
 	{
 		$store = Mage::app()->getStore($storeId);
 
@@ -869,7 +851,7 @@ class Codisto_Sync_Model_Sync
 								->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 								->addAttributeToFilter('entity_id', array('gt' => $this->currentEntityId));
 
-			$configurableProducts->getSelect()->order('entity_id')->limit(6);
+			$configurableProducts->getSelect()->order('entity_id')->limit($configurableCount);
 			$configurableProducts->setOrder('entity_id', 'ASC');
 
 			Mage::getSingleton('core/resource_iterator')->walk($configurableProducts->getSelect(), array(array($this, 'SyncConfigurableProductData')), array( 'type' => 'configurable', 'db' => $db, 'preparedStatement' => $insertProduct, 'preparedskuStatement' => $insertSKU, 'preparedskumatrixStatement' => $insertSKUMatrix, 'preparedcategoryproductStatement' => $insertCategoryProduct, 'preparedimageStatement' => $insertImage, 'preparedskuimageStatement' => $insertSKUImage, 'preparedproductoptionStatement' => $insertProductOption,  'preparedproductoptionvalueStatement' => $insertProductOptionValue, 'preparedproducthtmlStatement' => $insertProductHTML, 'preparedattributeStatement' => $insertAttribute, 'preparedproductattributeStatement' => $insertProductAttribute, 'store' => $store ));
@@ -896,7 +878,7 @@ class Codisto_Sync_Model_Sync
 								->addAttributeToFilter('type_id', array('eq' => 'simple'))
 								->addAttributeToFilter('entity_id', array('gt' => $this->currentEntityId));
 
-			$simpleProducts->getSelect()->where('`e`.entity_id NOT IN (SELECT product_id FROM '.$superLinkName.')')->order('entity_id')->limit(250);
+			$simpleProducts->getSelect()->where('`e`.entity_id NOT IN (SELECT product_id FROM '.$superLinkName.')')->order('entity_id')->limit($simpleCount);
 			$simpleProducts->setOrder('entity_id', 'ASC');
 
 			Mage::getSingleton('core/resource_iterator')->walk($simpleProducts->getSelect(), array(array($this, 'SyncSimpleProductData')), array( 'type' => 'simple', 'db' => $db, 'preparedStatement' => $insertProduct, 'preparedcategoryproductStatement' => $insertCategoryProduct, 'preparedimageStatement' => $insertImage, 'preparedproducthtmlStatement' => $insertProductHTML, 'preparedattributeStatement' => $insertAttribute, 'preparedproductattributeStatement' => $insertProductAttribute, 'store' => $store ));
@@ -960,20 +942,6 @@ class Codisto_Sync_Model_Sync
 		{
 			return 'pending';
 		}
-	}
-
-	public function Sync($syncDb, $storeId)
-	{
-		ini_set('max_execution_time', -1);
-
-		$result = $this->SyncChunk($syncDb, $storeId);
-		while($result != 'complete')
-		{
-			$result = $this->SyncChunk($syncDb, $storeId);
-		}
-
-		$this->SyncTax($syncDb, $storeId);
-		$this->SyncStores($syncDb, $storeId);
 	}
 
 	public function SyncTax($syncDb, $storeId)
@@ -1058,7 +1026,7 @@ class Codisto_Sync_Model_Sync
 		$regionName = Mage::getSingleton('core/resource')->getTableName('directory/country_region');
 
 		$taxRates = Mage::getModel('tax/calculation_rate')->getCollection();
-		$taxRates->getSelect()->joinLeft( array('region' => 'directory_country_region'), 'region.region_id = main_table.tax_region_id', array('tax_region_code' => 'region.code', 'tax_region_name' => 'region.default_name'));
+		$taxRates->getSelect()->joinLeft( array('region' => $regionName), 'region.region_id = main_table.tax_region_id', array('tax_region_code' => 'region.code', 'tax_region_name' => 'region.default_name'));
 
 		$insertTaxRate = $db->prepare('INSERT OR IGNORE INTO TaxCalculationRate (ID, Country, RegionID, RegionName, RegionCode, PostCode, Code, Rate, IsRange, ZipFrom, ZipTo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?)');
 
