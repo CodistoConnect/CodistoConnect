@@ -60,16 +60,29 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 			$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
 
-
-			// get logged in state
 			Mage::getSingleton('core/session', array('name'=>'adminhtml'));
-			$loggedIn = Mage::getSingleton('admin/session')->isLoggedIn();
 
 			// unlock session
 			if(class_exists('Zend_Session', false) && Zend_Session::isStarted())
 				Zend_Session::writeClose();
 			if(isset($_SESSION))
 				session_write_close();
+
+			// determine logged in state
+			session_id($request->getCookie('adminhtml'));
+			session_start('admin');
+			if(isset($_SESSION['admin']) &&
+				isset($_SESSION['admin']['user']) &&
+				is_object($_SESSION['admin']['user']))
+			{
+					$loggedIn = true;
+			}
+			else
+			{
+					$loggedIn = false;
+			}
+			session_write_close();
+			unset($_SESSION);
 
 			if($loggedIn)
 			{

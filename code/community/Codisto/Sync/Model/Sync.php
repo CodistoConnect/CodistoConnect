@@ -657,11 +657,14 @@ class Codisto_Sync_Model_Sync
 
 		$hasImage = false;
 		$product->load('media_gallery');
+
+		$primaryImage = isset($productData['image']) ? $productData['image'] : '';
+
 		foreach ($product->getMediaGallery('images') as $image) {
 
 			$imgURL = $product->getMediaConfig()->getMediaUrl($image['file']);
 
-			if($image['file'] == $productData['image'])
+			if($image['file'] == $primaryImage)
 			{
 				$tag = '';
 				$sequence = 0;
