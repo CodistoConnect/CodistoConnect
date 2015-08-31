@@ -1,0 +1,24 @@
+{
+  "name": "CodistoConnect/CodistoConnect",
+  "license": "OSL-3.0",
+  "type": "magento-module",
+  "description": "Magento to eBay Integration",
+  "keywords": [
+    "installer", "Magento", "Codisto" , "Connect", "eBay"
+  ],
+  "authors": [
+    {
+      "name": "Brad McCormack"
+    }
+  ],
+  "homepage": "https://codisto.com/",
+  "require": {
+    "magento-hackathon/magento-composer-installer": "*"
+  },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/CodistoConnect/CodistoConnect.git"
+    }
+  ]
+}
