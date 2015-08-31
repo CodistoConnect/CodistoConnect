@@ -8,6 +8,9 @@ class Codisto_Sync_Model_SyncTest extends EcomDev_PHPUnit_Test_Case
 
 	public function setUp()
 	{
+		@session_start();
+		#Suppress errors for Cannot send session cookie - headers already sent PHPUnit
+		#parent::setUp();
 
 		$app = Mage::app('default');
 		$this->_syncObject = Mage::getModel('codistosync/sync');
@@ -28,3 +31,6 @@ class Codisto_Sync_Model_SyncTest extends EcomDev_PHPUnit_Test_Case
 
 
 }
+
+#Your test case class should be named in such a way:
+#[Your Module]_Test_[Group Directory]_[Related Entity Name]

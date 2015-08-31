@@ -243,3 +243,6 @@
 	</phpunit>
 
 </config>
+
+
+		[Your Module]_Test_[Group Directory]_[Related Entity Name]
