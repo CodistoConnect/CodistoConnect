@@ -13,7 +13,8 @@
   ],
   "homepage": "https://codisto.com/",
   "require": {
-    "magento-hackathon/magento-composer-installer": "*"
+    "magento-hackathon/magento-composer-installer": "*",
+    "php": ">=5.2.0"
   },
   "repositories": [
     {
