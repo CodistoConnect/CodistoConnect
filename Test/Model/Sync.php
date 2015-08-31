@@ -1,7 +1,6 @@
 <?php
 
-
-class Codisto_Sync_Model_SyncTest extends EcomDev_PHPUnit_Test_Case
+class Codisto_Sync_Test_Model_Sync extends EcomDev_PHPUnit_Test_Case
 {
 
 	protected $_syncObject;
