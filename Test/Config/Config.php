@@ -45,22 +45,23 @@ class Codisto_Sync_Test_Config_Config extends EcomDev_PHPUnit_Test_Case_Config
 	 *
 	 * @test
 	 */
-	public function testAliases()
+	public function testModels()
 	{
 
 		//Model Aliases
 		$this->assertModelAlias("codistosync/codisto_sync_model", "Codisto_Sync_Model_Codisto_Sync_Model");
 		$this->assertModelAlias("ebaypayment/codisto_sync_ebaypayment_model", "Codisto_Sync_Ebaypayment_Model_Codisto_Sync_Ebaypayment_Model");
 
-		//Helper Aliases
-		$this->assertHelperAlias("codisto-sync/codisto_sync_helper", "Codisto_Sync_Helper_Codisto_Sync_Helper");
-
-
-		//Resource Model Aliases
-		//$this->assertResourceModelAlias("codisto_setup/codisto_sync_model_resource_mysql4_setup", "Codisto_Sync_Model_Resource_Mysql4_Codisto_Sync_Model_Resource_Mysql4_Setup");
-
 	}
 
+	/**
+	 * Test Resource nodes contain correct values
+	 *
+	 * @test
+	 */
+	public function testResources() {
+		$this->assertResourceModelAlias("codisto_setup/setup", "Codisto_Sync_Model_Resource_Mysql4_Setup");
+	}
 
 
 	/**
@@ -69,7 +70,8 @@ class Codisto_Sync_Test_Config_Config extends EcomDev_PHPUnit_Test_Case_Config
 	 * @test
 	 */
 	public function testHelpers() {
-		
+
+		$this->assertHelperAlias("codisto-sync/codisto_sync_helper", "Codisto_Sync_Helper_Codisto_Sync_Helper");
 		$this->assertHelperAlias("codisto-sync", "Codisto_Sync_Helper_Data");
 
 	}
