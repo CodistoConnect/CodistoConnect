@@ -71,15 +71,37 @@ class Codisto_Sync_Test_Config_Config extends EcomDev_PHPUnit_Test_Case_Config
 
 		$events = array(
 			"payment_info_block_prepare_specific_information" => array("type" => "singleton",
-																				"class" => "Codisto_Sync_Model_Observer",
 																				"method" => "paymentInfoBlockPrepareSpecificInformation"),
+
 			"sales_order_shipment_save_after" => array("type" => "singleton",
-															"class" => "Codisto_Sync_Model_Observer",
 															"method" => "salesOrderShipmentSaveAfter"),
+
 			"sales_order_invoice_save_commit_after" => array("namespace" => "codisto_save_invoice",
-				"class" => "Codisto_Sync_Model_Observer",
-				"method" => "salesOrderInvoiceSaveAfter"),
+																	"method" => "salesOrderInvoiceSaveAfter"),
+
+			"checkout_submit_all_after" => array("namespace" => "codisto_stockmovements",
+														"method" => "checkoutAllSubmitAfter"),
+
+			"cataloginventory_stock_revert_products_sale" => array("namespace" => "codisto_stockmovements",
+														"method" => "stockRevertProductsSale"),
+
+			"catalog_product_import_finish_before" => array("namespace" => "codisto_stockmovements",
+														"method" => "catalogProductImportFinishBefore"),
+
+			"sales_order_item_cancel" => array("namespace" => "codisto_stockmovements",
+														"method" => "cancelOrderItem",
+														"extra" => array ( array("path" => "inventory/type", "value" => "disabled"))),
+
+			"tax_settings_change_after" => array("namespace" => "codisto_taxsync",
+														"type" => "singleton",
+														"method" => "taxSettingsChangeAfter"),
+
+			"core_block_abstract_prepare_layout_after" => array("namespace" => "codisto_admin",
+																		"type" => "singleton",
+																		"method" => "addProductTab"),
+
 		);
+
 
 		//Assert type, class and method values are expected
 		foreach ($events as $key => $value) {
@@ -94,15 +116,34 @@ class Codisto_Sync_Test_Config_Config extends EcomDev_PHPUnit_Test_Case_Config
 					$value["type"]);
 			}
 
+			//default class
+			$class = "Codisto_Sync_Model_Observer";
+			if(array_key_exists("class", $value)) {
+				$class = $value["class"];
+			}
 			$this->assertConfigNodeValue("global/events/". $key . "/observers/". $namespace . "/class",
-				$value["class"]);
+				$class);
 
 
 			$this->assertConfigNodeValue("global/events/". $key . "/observers/". $namespace . "/method",
 				$value["method"]);
 
+			//Any extra meta data to check in the nodes relative to observers child node
+			if(array_key_exists("extra", $value)) {
+
+				for($i = 0; $i < count($value["extra"]); $i ++) {
+
+					$path = $value["extra"][$i]["path"];
+					$val = $value["extra"][$i]["value"];
+
+					$this->assertConfigNodeValue("global/events/". $key . "/observers/" . $path,
+						$val);
+				}
+			}
 
 		}
+
+
 
 	}
 
