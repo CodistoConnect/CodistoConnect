@@ -25,6 +25,6 @@ class Codisto_Sync_Test_Model_Paymentmethod extends EcomDev_PHPUnit_Test_Case
 		$payments = Mage::getSingleton('payment/config')->getActiveMethods();
 		$this->assertEquals(true, array_key_exists("ebaypayment", $payments));
 	}
-	
+
 }
 

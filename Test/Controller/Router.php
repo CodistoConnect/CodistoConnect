@@ -10,18 +10,15 @@ class Codisto_Sync_Test_Controller_Router extends EcomDev_PHPUnit_Test_Case_Cont
 
 	}
 
+	/**
+	 * Test getAllHeaders returns list of headers sanitized accordingly
+	 *
+	 * @test
+	 */
 
-	public function testMagestore()
+	public function testgetAllHeaders()
 	{
-		$this->assertEquals(0, Mage::app()->getStore()->getId());
+
 	}
-
-	public function testFirstTest()
-	{
-
-		$this->assertEquals(0, 2 - 2);
-	}
-
-
 
 }
