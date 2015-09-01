@@ -11,13 +11,35 @@ class Codisto_Sync_Test_Config_AdminHtml extends EcomDev_PHPUnit_Test_Case_Confi
 	}
 
 	/**
-	 * Test that CodistoConnect menu has been added and contains correct entries
+	 * Test that adminhtml.xml layout file is present
 	 *
 	 * @test
 	 */
 
-	public function testCodistoMenuExists()
+	public function testLayoutPresent()
 	{
+		//$this->assertLayoutFileDefined("adminhtml", "adminhtml.xml");
+
+		/*
+	assertLayoutFileDefined() asserts that configuration has definition of the layout file
+◦ string $area the area of layout file. Possible values are frontend and adminhtml
+◦ string $expectedFileName expected layout file name, for instance catalog.xml
+◦ string $layoutUpdate if layout update name is specified, then it will restrict
+assertion by it. [optional]
+
+	*/
+	}
+
+
+	/**
+	 * Test that CodistoConnect menu has been added and contains correct entries
+	 *
+	 * @test
+	 */
+	public function testCodistoConnectMenu()
+	{
+
+
 		/*
 		<menu>
 		<codisto translate="title">
