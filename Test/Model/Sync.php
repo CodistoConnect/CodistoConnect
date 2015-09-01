@@ -18,7 +18,7 @@ class Codisto_Sync_Test_Model_Sync extends EcomDev_PHPUnit_Test_Case
 
 	public function testMagestore()
 	{
-		$this->assertEquals(1, Mage::app()->getStore()->getId());
+		$this->assertEquals(0, Mage::app()->getStore()->getId());
 	}
 
 	public function testFirstTest()
