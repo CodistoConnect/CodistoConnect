@@ -69,7 +69,8 @@ class Codisto_Sync_Test_Config_Config extends EcomDev_PHPUnit_Test_Case_Config
 	 * @test
 	 */
 	public function testHelpers() {
-		$this->assertConfigNodeValue("global/helpers/codisto-sync/class", "Codisto_Sync_Helper");
+		
+		$this->assertHelperAlias("codisto-sync", "Codisto_Sync_Helper_Data");
 
 	}
 
