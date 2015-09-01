@@ -61,6 +61,31 @@ class Codisto_Sync_Test_Config_Config extends EcomDev_PHPUnit_Test_Case_Config
 
 	}
 
+
+
+	/**
+	 * Test Helper functions are wired up correctly
+	 *
+	 * @test
+	 */
+	public function testHelpers() {
+		$this->assertConfigNodeValue("global/helpers/codisto-sync/class", "Codisto_Sync_Helper");
+
+	}
+
+
+	/**
+	 * Test fieldsets contain correct values
+	 *
+	 * @test
+	 */
+	public function testFieldSets() {
+
+		$this->assertConfigNodeValue("global/fieldsets/sales_convert_quote/codisto_orderid/to_order", "*");
+		$this->assertConfigNodeValue("global/fieldsets/sales_convert_order/codisto_orderid/to_quote", "*");
+
+	}
+
 	/**
 	 * Test events are wired up correctly
 	 *
