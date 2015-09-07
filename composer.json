@@ -1,0 +1,25 @@
+{
+  "name": "CodistoConnect/CodistoConnect",
+  "license": "OSL-3.0",
+  "type": "magento-module",
+  "description": "Magento to eBay Integration",
+  "keywords": [
+    "installer", "Magento", "Codisto" , "Connect", "eBay"
+  ],
+  "authors": [
+    {
+      "name": "Codisto"
+    }
+  ],
+  "homepage": "https://codisto.com/",
+  "require": {
+    "magento-hackathon/magento-composer-installer": "*",
+    "php": ">=5.2.0"
+  },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/CodistoConnect/CodistoConnect.git"
+    }
+  ]
+}
