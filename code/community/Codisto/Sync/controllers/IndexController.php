@@ -467,6 +467,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				}
 			}
 
+			$ordersubtotal -= $freighttotalextax;
+			$ordersubtotalinctax -= $freighttotal;
+			$ordertax -= $freighttax;
+
 			$rate = Mage::getModel('sales/quote_address_rate');
 			$rate->setCode('flatrate');
 			$rate->setCarrier($freightcarrier);
@@ -482,12 +486,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$shippingAddress->setShippingAmountForDiscount(0);
 
 			$paypalavailable = Mage::getSingleton('paypal/express')->isAvailable();
-			if($paypalavailable) {
-				$quote->getPayment()->setMethod($this->_PayPalmethodType);
-			} else {
-				$ebaypaymentmethod = 'ebaypayment';
-				$quote->getPayment()->setMethod($ebaypaymentmethod);
-			}
+			$quote->getPayment()->setMethod(‘ebaypayment’);
+
+
 
 			$quote->save();
 
@@ -636,7 +637,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$payment->setParentTransactionId(null)
 				->setIsTransactionClosed(1);
 
-			$payment->setMethod($this->_PayPalmethodType);
+			$payment->setMethod('ebaypayment');
 			$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, '');
 
 			$payment->save();
@@ -716,6 +717,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					$freightservice = $orderline->productname[0];
 				}
 			}
+
+			$ordersubtotal -= $freighttotalextax;
+			$ordersubtotalinctax -= $freighttotal;
+			$ordertaxtotal -= $freighttax;
 
 			$order->setShippingMethod('flatrate_flatrate');
 			$order->setShippingDescription($freightservice);
@@ -825,9 +830,16 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$order->setDue(0.0);
 
 				$payment = $order->getPayment();
+				$payment->setMethod('ebaypayment');
 				$payment->setParentTransactionId(null)
 					->setIsTransactionClosed(1);
 
+				$payment->save();
+			}
+			else
+			{
+				$payment = $order->getPayment();
+				$payment->setMethod('ebaypayment');
 				$payment->save();
 			}
 
