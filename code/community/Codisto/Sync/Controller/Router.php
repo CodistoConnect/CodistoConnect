@@ -35,6 +35,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 			$response->clearAllHeaders();
 
+			// redirect to product page
 			if(preg_match('/^\/codisto\/ebaytab(?:\/|$)/', $path) && $request->getQuery('productid'))
 			{
 				$productUrl = Mage::helper('adminhtml')->getUrl('adminhtml/catalog_product/edit', array('id' => $request->getQuery('productid')));
@@ -45,6 +46,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				return true;
 			}
 
+			// external link handling - e.g. redirect to eBay listing
 			if(preg_match('/^\/codisto\/link(?:\/|$)/', $path))
 			{
 				$section =  $request->getQuery('section');
@@ -86,6 +88,22 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 			if($loggedIn)
 			{
+				// get store context from request
+				$storeId = $request->getQuery('storeid');
+				if($storeId)
+				{
+					$storeId = (int)$storeId;
+				}
+				else
+				{
+					$storeId = (int)$request->getCookie('storeid', '0');
+				}
+
+				// look up merchantid/hostkey from store
+				$MerchantID = Mage::getStoreConfig('codisto/merchantid', $storeId);
+				$HostKey = Mage::getStoreConfig('codisto/hostkey', $storeId);
+
+				// register merchant on default admin store if config isn't present
 				if(!isset($MerchantID) || !isset($HostKey))
 				{
 					try
@@ -104,6 +122,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 						if(!isset($MerchantID) || !isset($HostKey))
 						{
+							$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
+
 							$client = new Zend_Http_Client('https://ui.codisto.com/create', array( 'keepalive' => true, 'maxredirects' => 0 ));
 							$client->setHeaders('Content-Type', 'application/json');
 
@@ -170,9 +190,30 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					}
 				}
 
+				// get actual merchant id value from request context
+				$MerchantID = Zend_Json::decode($MerchantID);
+				if(is_array($MerchantID))
+				{
+					if($request->getQuery('merchantid'))
+					{
+						$requestedMerchantID = (int)$request->getQuery('merchantid');
+						if(in_array($requestedMerchantID, $MerchantID))
+						{
+							$MerchantID = $requestedMerchantID;
+						}
+						else
+						{
+							$MerchantID = $MerchantID[0];
+						}
+					}
+					else
+					{
+						$MerchantID = $MerchantID[0];
+					}
+				}
 
-
-				if(preg_match('/product\/\d+\/iframe\/\d+\//', $path))
+				// product page iframe
+				if(preg_match('/^\/codisto\/ebaytab\/product\/\d+\/iframe\/\d+\//', $path))
 				{
 					$tabPort = $request->getServer('SERVER_PORT');
 					$tabPort = $tabPort = '' || $tabPort == '80' || $tabPort == '443' ? '' : ':'.$tabPort;
@@ -290,7 +331,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					$response->setHeader('Pragma', '', true);
 					$response->setHeader('Cache-Control', '', true);
 
-					$filterHeaders = array('server', 'content-length', 'transfer-encoding', 'date', 'connection');
+					$filterHeaders = array('server', 'content-length', 'transfer-encoding', 'date', 'connection', 'x-storeviewmap');
 					if(!$acceptEncoding)
 						$filterHeaders[] = 'content-encoding';
 
@@ -310,6 +351,38 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 							else
 							{
 								$response->setHeader($k, $v, true);
+							}
+						}
+						else
+						{
+							if(strtolower($k) == 'x-storeviewmap')
+							{
+								$config = Mage::getConfig();
+
+								$storeViewMapping = Zend_Json::decode($v);
+
+								foreach($storeViewMapping as $mapping)
+								{
+									$storeId = $mapping['storeid'];
+									$merchantList = $mapping['merchants'];
+
+									if($storeId == 0)
+									{
+										$config->saveConfig('codisto/merchantid', $merchantList);
+									}
+									else
+									{
+										$store = Mage::app()->getStore($storeId);
+
+										$config->saveConfig('stores/'.$store->getCode().'/codisto/merchantid', $merchantList);
+									}
+								}
+
+								$config->cleanCache();
+
+								Mage::app()->removeCache('config_store_data');
+								Mage::app()->getCacheInstance()->cleanType('config');
+								Mage::app()->reinitStores();
 							}
 						}
 					}

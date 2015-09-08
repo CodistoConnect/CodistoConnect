@@ -30,6 +30,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$request = $this->getRequest();
 		$response = $this->getResponse();
 
+		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
+		$store = Mage::app()->getStore($storeId);
+
 		$model = Mage::getModel('catalog/product');
 
 		$cart = Mage::getSingleton('checkout/cart');
@@ -105,9 +108,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		}
 
 		$address = $cart->getQuote()
-		->getShippingAddress()
-		->setCountryId((string) $countrycode)
-		->setPostcode((string) $postalcode);
+			->setStore($store)
+			->getShippingAddress()
+			->setCountryId((string) $countrycode)
+			->setPostcode((string) $postalcode);
 
 		if($regionid)
 			$address->setRegionId((string) $regionid);
@@ -125,6 +129,20 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$outputidx++;
 		}
 
+		try
+		{
+			$cart->getQuote()
+				->setIsActive(false)
+				->delete();
+		}
+		catch(Exception $e)
+		{
+
+		}
+
+		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+		$response->setHeader('Pragma', 'no-cache', true);
 		$response->setBody($output);
 	}
 
