@@ -181,31 +181,46 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 					}
 
-					$connection->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
-					$connection->beginTransaction();
-
-					try
+					for($Retry = 0; ; $Retry++)
 					{
-						$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)->getFirstItem();
+						$connection->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
+						$connection->beginTransaction();
 
-						if($order && $order->getId())
+						try
 						{
-							$this->ProcessOrderSync($order, $xml, $storeId);
+							$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)->getFirstItem();
+
+							if($order && $order->getId())
+							{
+								$this->ProcessOrderSync($order, $xml, $storeId);
+							}
+							else
+							{
+								$this->ProcessOrderCreate($xml, $storeId);
+							}
+
+							$connection->commit();
+							break;
 						}
-						else
+						catch(Exception $e)
 						{
-							$this->ProcessOrderCreate($xml, $storeId);
+							if($Retry < 5)
+							{
+								if($e->getCode() == 40001)
+								{
+									$connection->rollback();
+									sleep($Retry * 10);
+									continue;
+								}
+							}
+
+							$response = $this->getResponse();
+							$response->setHeader('Content-Type', 'application/json');
+							$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage())));
+
+							$connection->rollback();
+							break;
 						}
-
-						$connection->commit();
-					}
-					catch(Exception $e)
-					{
-						$response = $this->getResponse();
-						$response->setHeader('Content-Type', 'application/json');
-						$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'message' => $e->getMessage())));
-
-						$connection->rollback();
 					}
 				}
 			}
