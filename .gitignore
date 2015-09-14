@@ -137,3 +137,11 @@ Mage.php
 !etc/modules/Codisto*
 
 .remote-sync.json
+
+#MageTestStand
+bin
+htdocs
+vendor
+composer.lock
+.modman/Aoe_Scheduler/
+.modman/ecomdev_phpunit/
