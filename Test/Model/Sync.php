@@ -16,5 +16,13 @@ class Codisto_Sync_Test_Model_Sync extends EcomDev_PHPUnit_Test_Case
 
 	}
 
+	/*
+		Placeholder test to silence warnings about no tests in this file
+	*/
+	public function testSyncStub()
+	{
+		$this->assertEquals(true, true);
+	}
+
 }
 
