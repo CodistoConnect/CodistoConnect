@@ -23,9 +23,6 @@ class Codisto_Sync_Test_Controllers_CodistoController extends EcomDev_PHPUnit_Te
 	{
 		$this->dispatch('adminhtml/codisto/settings');
 		$this->assertRequestRoute('adminhtml/codisto/settings');
-
-		#$this->assertLayoutHandleLoaded('somelayouthandle');
-
 		$this->assertResponseBodyContains('eBay Account');
 	}
 
@@ -37,6 +34,5 @@ class Codisto_Sync_Test_Controllers_CodistoController extends EcomDev_PHPUnit_Te
 		//Make sure there is an endpoint
 		$this->assertRequestRoute('adminhtml/codisto/index');
 
-		//TODO do some other tests here
 	}
 }

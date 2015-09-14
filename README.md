@@ -148,4 +148,3 @@ Codisto Connect code set is licensed under the Open Software License 3.0 (OSL-3.
 
 [license-image]: https://img.shields.io/badge/license-OSL--3.0-blue.svg
 [license]: http://opensource.org/licenses/OSL-3.0
-Y
