@@ -91,12 +91,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				$storematch = array();
 
 				// get store context from request
-				$storeId = $request->getQuery('storeid');
-				if($storeId)
-				{
-					$storeId = (int)$storeId;
-				}
-				else if(preg_match('/^\/codisto\/ebaytab\/(\d+)/', $path, $storematch))
+				if(preg_match('/^\/codisto\/ebaytab\/(\d+)\/\d+/', $path, $storematch))
 				{
 					$storeId = (int)$storematch[1];
 
@@ -204,9 +199,10 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				{
 					$merchantmatch = array();
 
-					if($request->getQuery('merchantid'))
+					if(preg_match('/^\/codisto\/ebaytab\/(\d+)/', $path, $merchantmatch))
 					{
-						$requestedMerchantID = (int)$request->getQuery('merchantid');
+						$requestedMerchantID = (int)$merchantmatch[1];
+
 						if(in_array($requestedMerchantID, $MerchantID))
 						{
 							$MerchantID = $requestedMerchantID;
@@ -215,10 +211,6 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						{
 							$MerchantID = $MerchantID[0];
 						}
-					}
-					else if(preg_match('/^\/codisto\/ebaytab\/(\d+)/', $path, $merchantmatch))
-					{
-						$MerchantID = (int)$merchantmatch[1];
 
 						$path = preg_replace('/(^\/codisto\/ebaytab\/)(\d+\/?)/', '$1', $path);
 					}
@@ -261,12 +253,10 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				$querystring = '?';
 				foreach($request->getQuery() as $k=>$v) {
 
-					if(!in_array($k, array('storeid', 'merchantid')))
-					{
-						$querystring .= urlencode($k);
-						if($v)
-							$querystring .'='.urlencode($v).'&';
-					}
+					$querystring .= urlencode($k);
+					if($v)
+						$querystring .'='.urlencode($v).'&';
+
 				}
 				$querystring = rtrim(rtrim($querystring, '&'), '?');
 
