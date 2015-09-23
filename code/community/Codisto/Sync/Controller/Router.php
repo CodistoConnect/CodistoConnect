@@ -240,18 +240,20 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 				$querystring = '?';
 				foreach($request->getQuery() as $k=>$v) {
-					$querystring .= urlencode($k).'='.urlencode($v).'&';
-				}
 
-				if($querystring != '?') {
-					$remoteUrl.=$querystring;
+					if(!in_array($k, array('storeid', 'merchantid')))
+						$querystring .= urlencode($k).'='.urlencode($v).'&';
+
 				}
+				$querystring = rtrim(rtrim($querystring, '&'), '?');
+
+				$remoteUrl.=$querystring;
 
 				$starttime = microtime(true);
 
 				$extensionVersion = (string)Mage::getConfig()->getModuleConfig('Codisto_Sync')->version;
 
-				$curlOptions = array(CURLOPT_TIMEOUT => 10, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0);
+				$curlOptions = array(CURLOPT_TIMEOUT => 60, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0);
 				$acceptEncoding = $request->getHeader('Accept-Encoding');
 				if(!$acceptEncoding)
 					$curlOptions[CURLOPT_ENCODING] = '';
@@ -372,9 +374,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 									}
 									else
 									{
-										$store = Mage::app()->getStore($storeId);
-
-										$config->saveConfig('stores/'.$store->getCode().'/codisto/merchantid', $merchantList);
+										$config->saveConfig('codisto/merchantid', $merchantList, 'stores', $storeId);
 									}
 								}
 

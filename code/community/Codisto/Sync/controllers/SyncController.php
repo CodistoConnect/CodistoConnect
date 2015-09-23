@@ -874,15 +874,13 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 			if($storeId == 0)
 			{
-				$config->saveConfig('codisto/merchantid', null);
-				$config->saveConfig('codisto/hostkey', null);
+				$config->deleteConfig('codisto/merchantid');
+				$config->deleteConfig('codisto/hostkey');
 			}
 			else
 			{
-				$store = Mage::app()->getStore($storeId);
-
-				$config->saveConfig('stores/'.$store->getCode().'/codisto/merchantid', null);
-				$config->saveConfig('stores/'.$store->getCode().'/codisto/hostkey', null);
+				$config->deleteConfig('codisto/merchantid', 'stores', $storeId);
+				$config->deleteConfig('codisto/hostkey', 'stores', $storeId);
 			}
 
 			$config->cleanCache();
@@ -968,9 +966,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 			}
 			else
 			{
-				$store = Mage::app()->getStore($storeId);
-
-				$config->saveConfig('stores/'.$store->getCode().'/codisto/merchantid', Zend_Json::encode($MerchantID));
+				$config->saveConfig('codisto/merchantid', Zend_Json::encode($MerchantID), 'stores', $storeId);				
 			}
 
 			$config->cleanCache();
