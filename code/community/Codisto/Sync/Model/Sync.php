@@ -1071,18 +1071,31 @@ class Codisto_Sync_Model_Sync
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 		$db->exec('DELETE FROM Store');
+		$db->exec('DELETE FROM StoreMerchant');
 
 		$stores = Mage::getModel('core/store')->getCollection();
 
-		$defaultMerchantId = Mage::getStoreConfig('codisto/merchantid', 0);
-
-		$insertStore = $db->prepare('INSERT OR REPLACE INTO Store (ID, Code, Name, MerchantID) VALUES (?, ?, ?, ?)');
+		$insertStore = $db->prepare('INSERT OR REPLACE INTO Store (ID, Code, Name) VALUES (?, ?, ?)');
+		$insertStoreMerchant = $db->prepare('INSERT OR REPLACE INTO StoreMerchant (StoreID, MerchantID) VALUES (?, ?)');
 
 		$StoreID = 0;
 		$StoreCode = 'admin';
 		$StoreName = '';
 
-		$insertStore->execute(array($StoreID, $StoreCode, $StoreName, $defaultMerchantId));
+		$insertStore->execute(array($StoreID, $StoreCode, $StoreName));
+
+		$defaultMerchantList = Mage::getStoreConfig('codisto/merchantid', 0);
+		if($defaultMerchantList)
+		{
+			$merchantlist = Zend_Json::decode($defaultMerchantList);
+			if(!is_array($merchantlist))
+				$merchantlist = array($merchantlist);
+
+			foreach($merchantlist as $MerchantID)
+			{
+				$insertStoreMerchant->execute(array($StoreID, $MerchantID));
+			}
+		}
 
 		foreach($stores as $store)
 		{
@@ -1094,11 +1107,20 @@ class Codisto_Sync_Model_Sync
 			$StoreCode = $store->getCode();
 			$StoreName = $store->getName();
 
-			$storeMerchantId = $store->getConfig('codisto/merchantid');
-			if($storeMerchantId == $defaultMerchantId)
-				$storeMerchantId = 0;
+			$insertStore->execute(array($StoreID, $StoreCode, $StoreName));
 
-			$insertStore->execute(array($StoreID, $StoreCode, $StoreName, $storeMerchantId));
+			$storeMerchantList = $store->getConfig('codisto/merchantid');
+			if($storeMerchantList && $storeMerchantList != $defaultMerchantList)
+			{
+				$merchantlist = Zend_Json::decode($storeMerchantList);
+				if(!is_array($merchantlist))
+					$merchantlist = array($merchantlist);
+
+				foreach($merchantlist as $MerchantID)
+				{
+					$insertStoreMerchant->execute(array($StoreID, $MerchantID));
+				}
+			}
 		}
 
 		$db->exec('COMMIT TRANSACTION');
@@ -1186,7 +1208,8 @@ class Codisto_Sync_Model_Sync
 		$db->exec('CREATE TABLE IF NOT EXISTS TaxCalculationRate(ID integer NOT NULL PRIMARY KEY, Country text NOT NULL, RegionID integer NOT NULL, RegionName text NULL, RegionCode text NULL, PostCode text NOT NULL, Code text NOT NULL, Rate real NOT NULL, IsRange bit NULL, ZipFrom text NULL, ZipTo text NULL)');
 
 
-		$db->exec('CREATE TABLE IF NOT EXISTS Store(ID integer NOT NULL PRIMARY KEY, Code text NOT NULL, Name text NOT NULL, MerchantID integer NOT NULL)');
+		$db->exec('CREATE TABLE IF NOT EXISTS Store(ID integer NOT NULL PRIMARY KEY, Code text NOT NULL, Name text NOT NULL)');
+		$db->exec('CREATE TABLE IF NOT EXISTS StoreMerchant(StoreID integer NOT NULL, MerchantID integer NOT NULL, PRIMARY KEY (StoreID, MerchantID))');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS [Order](ID integer NOT NULL PRIMARY KEY, Status text NOT NULL, PaymentDate datetime NULL, ShipmentDate datetime NULL, Carrier text NOT NULL, TrackingNumber text NOT NULL)');
 
@@ -1215,6 +1238,20 @@ class Codisto_Sync_Model_Sync
 			$db->exec('INSERT INTO NewProductAttributeValue SELECT ProductID, AttributeID, Value FROM ProductAttributeValue');
 			$db->exec('DROP TABLE ProductAttributeValue');
 			$db->exec('ALTER TABLE NewProductAttributeValue RENAME TO ProductAttributeValue');
+		}
+
+		try
+		{
+			$db->exec('SELECT 1 FROM Store WHERE MerchantID IS NULL LIMIT 1');
+
+			$db->exec('CREATE TABLE NewStore(ID integer NOT NULL PRIMARY KEY, Code text NOT NULL, Name text NOT NULL)');
+			$db->exec('INSERT INTO NewStore SELECT ID, Code, Name FROM Store');
+			$db->exec('DROP TABLE Store');
+			$db->exec('ALTER TABLE NewStore RENAME TO Store');
+		}
+		catch(Exception $e)
+		{
+
 		}
 
 		$db->exec('COMMIT TRANSACTION');

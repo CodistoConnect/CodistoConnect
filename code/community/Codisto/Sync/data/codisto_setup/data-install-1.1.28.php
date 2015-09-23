@@ -20,7 +20,6 @@
 
 $MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
 $HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
-$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
 
 $reindexRequired = true;
 
@@ -95,6 +94,12 @@ if(!isset($MerchantID) || !isset($HostKey))
 
 			if(!isset($MerchantID) || !isset($HostKey))
 			{
+				$url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
+				$version = Mage::getVersion();
+				$storename = Mage::getStoreConfig('general/store_information/name', 0);
+				$email = $user->getEmail();
+				$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
+
 				$client = new Zend_Http_Client("https://ui.codisto.com/create", array( 'keepalive' => true, 'maxredirects' => 0 ));
 				$client->setHeaders('Content-Type', 'application/json');
 
@@ -102,11 +107,6 @@ if(!isset($MerchantID) || !isset($HostKey))
 				{
 					try
 					{
-						$url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
-						$version = Mage::getVersion();
-						$storename = Mage::getStoreConfig('general/store_information/name', 0);
-						$email = $user->getEmail();
-
 						$remoteResponse = $client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
 							'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey)))->request('POST');
 
