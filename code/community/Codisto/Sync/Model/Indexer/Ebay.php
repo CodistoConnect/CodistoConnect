@@ -143,6 +143,10 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 				$categoryId = $event->getDataObject()->getId();
 
+				$client = new Zend_Http_Client();
+				$client->setConfig(array( 'keepalive' => true, 'maxredirects' => 0 ));
+				$client->setStream();
+
 				foreach($syncStores as $storeId)
 				{
 					$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
@@ -157,11 +161,16 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 						$merchantid = Mage::getStoreConfig('codisto/merchantid', $storeId);
 						$hostkey = Mage::getStoreConfig('codisto/hostkey', $storeId);
 
-						$client = new Zend_Http_Client('https://api.codisto.com/'.$merchantid, array( 'keepalive' => true, 'maxredirects' => 0 ));
-						$client->setStream();
-						$client->setHeaders('X-HostKey', $hostkey);
+						$merchantlist = Zend_Json::decode($merchantid);
+						if(!is_array($merchantlist))
+							$merchantlist = array($merchantlist);
 
-						$client->setRawData('action=sync&categoryid='.$categoryid)->request('POST');
+						foreach($merchantlist as $merchantid)
+						{
+							$client->setUri('https://api.codisto.com/'.$merchantid);
+							$client->setHeaders('X-HostKey', $hostkey);
+							$client->setRawData('action=sync&categoryid='.$categoryid)->request('POST');
+						}
 					}
 					catch (Exception $e)
 					{
@@ -208,6 +217,10 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 				else
 					$productIds = '['.implode(',', $syncIds).']';
 
+				$client = new Zend_Http_Client();
+				$client->setConfig(array( 'keepalive' => true, 'maxredirects' => 0 ));
+				$client->setStream();
+
 				foreach($syncStores as $storeId)
 				{
 					$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
@@ -228,11 +241,16 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 						$merchantid = Mage::getStoreConfig('codisto/merchantid', $storeId);
 						$hostkey = Mage::getStoreConfig('codisto/hostkey', $storeId);
 
-						$client = new Zend_Http_Client('https://api.codisto.com/'.$merchantid, array( 'keepalive' => true, 'maxredirects' => 0 ));
-						$client->setStream();
-						$client->setHeaders('X-HostKey', $hostkey);
+						$merchantlist = Zend_Json::decode($merchantid);
+						if(!is_array($merchantlist))
+							$merchantlist = array($merchantlist);
 
-						$client->setRawData('action=sync&productid='.$productIds)->request('POST');
+						foreach($merchantlist as $merchantid)
+						{
+							$client->setUri('https://api.codisto.com/'.$merchantid);
+							$client->setHeaders('X-HostKey', $hostkey);
+							$client->setRawData('action=sync&productid='.$productIds)->request('POST');
+						}
 					}
 					catch (Exception $e)
 					{
@@ -251,24 +269,36 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 			foreach($stores as $store)
 			{
-				$merchantId = $store->getConfig('codisto/merchantid');
-
-				if(!in_array($merchantId, $visited, true))
+				$merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
+				if($merchantlist)
 				{
-					$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $store->getConfig('codisto/hostkey'), 'storeid' => $store->getId() );
-					$visited[] = $merchantId;
+					if(!is_array($merchantlist))
+						$merchantlist = array($merchantlist);
+
+					foreach($merchantlist as $merchantId)
+					{
+						if(!in_array($merchantId, $visited, true))
+						{
+							$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $store->getConfig('codisto/hostkey'), 'storeid' => $store->getId() );
+							$visited[] = $merchantId;
+						}
+					}
 				}
 			}
 
 			unset($visited);
 
+
+			$client = new Zend_Http_Client();
+			$client->setConfig(array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 2 ));
+			$client->setStream();
+
 			foreach($merchants as $merchant)
 			{
 				try
 				{
-					$client = new Zend_Http_Client('https://api.codisto.com/'.$merchant['merchantid'], array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 2 ));
+					$client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
 					$client->setHeaders('X-HostKey', $merchant['hostkey']);
-
 					$client->setRawData('action=syncstores')->request('POST');
 				}
 				catch(Exception $e)
@@ -293,25 +323,35 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 		foreach($stores as $store)
 		{
-			$merchantid = $store->getConfig('codisto/merchantid');
-
-			if(!in_array($merchantid, $visited, true))
+			$merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
+			if($merchantlist)
 			{
-				$merchants[] = array( 'merchantid' => $merchantid, 'hostkey' => $store->getConfig('codisto/hostkey') );
-				$visited[] = $merchantid;
+				if(!is_array($merchantlist))
+					$merchantlist = array($merchantlist);
+
+				foreach($merchantlist as $merchantId)
+				{
+					if(!in_array($merchantId, $visited, true))
+					{
+						$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $store->getConfig('codisto/hostkey'), 'storeid' => $store->getId() );
+						$visited[] = $merchantId;
+					}
+				}
 			}
 		}
 
 		unset($visited);
 
+		$client = new Zend_Http_Client();
+		$client->setConfig(array( 'keepalive' => true, 'maxredirects' => 0 ));
+
 		foreach($merchants as $merchant)
 		{
 			try
 			{
-				$client = new Zend_Http_Client('https://api.codisto.com/'.$merchant['merchantid'], array( 'keepalive' => true, 'maxredirects' => 0 ));
+				$client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
 				$client->setHeaders('X-HostKey', $merchant['hostkey']);
-
-				$remoteResponse = $client->setRawData('action=sync')->request('POST');
+				$client->setRawData('action=sync')->request('POST');
 			}
 			catch(Exception $e)
 			{

@@ -42,11 +42,11 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 		{
 			//@codingStandardsIgnoreStart
 			if(function_exists('http_response_code'))
-				http_response_code(500);
+				http_response_code(400);
 			//@codingStandardsIgnoreEnd
-			$response->setHttpResponseCode(500);
-			$response->setRawHeader('HTTP/1.0 500 Security Error');
-			$response->setRawHeader('Status: 500 Security Error');
+			$response->setHttpResponseCode(400);
+			$response->setRawHeader('HTTP/1.0 400 Security Error');
+			$response->setRawHeader('Status: 400 Security Error');
 			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 			$response->setHeader('Pragma', 'no-cache', true);
@@ -810,7 +810,6 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 			$response->setHeader('Pragma', 'no-cache', true);
 			$response->setBody('Security Error');
 		}
-
 	}
 
 	public function checkPluginAction()
@@ -838,6 +837,8 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 			return;
 		}
 
+		// TODO: read store view state and post to api.codisto.com
+
 		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 		$response->setHeader('Pragma', 'no-cache', true);
@@ -857,35 +858,29 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 		if(!$this->getConfig($storeId))
 		{
-			//@codingStandardsIgnoreStart
-			if(function_exists('http_response_code'))
-				http_response_code(500);
-			//@codingStandardsIgnoreEnd
-			$response->setHttpResponseCode(500);
-			$response->setRawHeader('HTTP/1.0 500 Security Error');
-			$response->setRawHeader('Status: 500 Security Error');
 			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 			$response->setHeader('Pragma', 'no-cache', true);
-			$response->setBody('Config Error');
+
+			$response->setBody('ALREADYRESET');
 			return;
 		}
 
-		if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+		if($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 		{
 			$config = Mage::getConfig();
 
+			// TODO: if token is sent - post it back to api.codisto.com - grab merchantid/hostkey values and use those
+
 			if($storeId == 0)
 			{
-				$config->saveConfig('codisto/merchantid', null);
-				$config->saveConfig('codisto/hostkey', null);
+				$config->deleteConfig('codisto/merchantid');
+				$config->deleteConfig('codisto/hostkey');
 			}
 			else
 			{
-				$store = Mage::app()->getStore($storeId);
-
-				$config->saveConfig('stores/'.$store->getCode().'/codisto/merchantid', null);
-				$config->saveConfig('stores/'.$store->getCode().'/codisto/hostkey', null);
+				$config->deleteConfig('codisto/merchantid', 'stores', $storeId);
+				$config->deleteConfig('codisto/hostkey', 'stores', $storeId);
 			}
 
 			$config->cleanCache();
@@ -902,12 +897,89 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 		}
 		else
 		{
-
 			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 			$response->setHeader('Pragma', 'no-cache', true);
 
 			$response->setBody('Invalid Request');
+		}
+	}
+
+	public function addMerchantToStoreAction()
+	{
+		$request = $this->getRequest();
+		$response = $this->getResponse();
+		$server = $request->getServer();
+
+		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
+
+		if(!$this->getConfig($storeId))
+		{
+			//@codingStandardsIgnoreStart
+			if(function_exists('http_response_code'))
+				http_response_code(500);
+			//@codingStandardsIgnoreEnd
+			$response->setHttpResponseCode(500);
+			$response->setRawHeader('HTTP/1.0 500 Config Error');
+			$response->setRawHeader('Status: 500 Config Error');
+			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+			$response->setHeader('Pragma', 'no-cache', true);
+			$response->setBody('Config Error');
+			return;
+		}
+
+		if($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+		{
+			$MerchantID = Zend_Json::decode($this->config['MerchantID']);
+			if(!is_array($MerchantID))
+				$MerchantID = array($MerchantID);
+
+			$NewMerchantID = (int)$request->getParam('merchantid');
+			if(!$NewMerchantID)
+			{
+				//@codingStandardsIgnoreStart
+				if(function_exists('http_response_code'))
+					http_response_code(400);
+				//@codingStandardsIgnoreEnd
+				$response->setHttpResponseCode(400);
+				$response->setRawHeader('HTTP/1.0 400 Bad Request');
+				$response->setRawHeader('Status: 400 Bad Request');
+				$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+				$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+				$response->setHeader('Pragma', 'no-cache', true);
+				$response->setBody('Invalid MerchantID');
+				return;
+			}
+
+			if(!in_array($NewMerchantID, $MerchantID))
+				$MerchantID[] = $NewMerchantID;
+
+			if(count($MerchantID) == 1)
+				$MerchantID = $MerchantID[0];
+
+			$config = Mage::getConfig();
+
+			if($storeId == 0)
+			{
+				$config->saveConfig('codisto/merchantid', Zend_Json::encode($MerchantID));
+			}
+			else
+			{
+				$config->saveConfig('codisto/merchantid', Zend_Json::encode($MerchantID), 'stores', $storeId);				
+			}
+
+			$config->cleanCache();
+
+			Mage::app()->removeCache('config_store_data');
+			Mage::app()->getCacheInstance()->cleanType('config');
+			Mage::app()->reinitStores();
+
+			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+			$response->setHeader('Pragma', 'no-cache', true);
+
+			$response->setBody('SUCCESS');
 		}
 	}
 
