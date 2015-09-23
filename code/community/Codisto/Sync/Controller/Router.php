@@ -88,11 +88,19 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 			if($loggedIn)
 			{
+				$storematch = array();
+
 				// get store context from request
 				$storeId = $request->getQuery('storeid');
 				if($storeId)
 				{
 					$storeId = (int)$storeId;
+				}
+				else if(preg_match('/^\/codisto\/ebaytab\/(\d+)/', $path, $storematch))
+				{
+					$storeId = (int)$storematch[1];
+
+					$path = preg_replace('/(^\/codisto\/ebaytab\/)(\d+\/?)/', '$1', $path);
 				}
 				else
 				{
@@ -194,6 +202,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				$MerchantID = Zend_Json::decode($MerchantID);
 				if(is_array($MerchantID))
 				{
+					$merchantmatch = array();
+
 					if($request->getQuery('merchantid'))
 					{
 						$requestedMerchantID = (int)$request->getQuery('merchantid');
@@ -206,10 +216,20 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 							$MerchantID = $MerchantID[0];
 						}
 					}
+					else if(preg_match('/^\/codisto\/ebaytab\/(\d+)/', $path, $merchantmatch))
+					{
+						$MerchantID = (int)$merchantmatch[1];
+
+						$path = preg_replace('/(^\/codisto\/ebaytab\/)(\d+\/?)/', '$1', $path);
+					}
 					else
 					{
 						$MerchantID = $MerchantID[0];
 					}
+				}
+				else
+				{
+					$path = preg_replace('/(^\/codisto\/ebaytab\/)(\d+\/?)/', '$1', $path);
 				}
 
 				// product page iframe
@@ -242,8 +262,11 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				foreach($request->getQuery() as $k=>$v) {
 
 					if(!in_array($k, array('storeid', 'merchantid')))
-						$querystring .= urlencode($k).'='.urlencode($v).'&';
-
+					{
+						$querystring .= urlencode($k);
+						if($v)
+							$querystring .'='.urlencode($v).'&';
+					}
 				}
 				$querystring = rtrim(rtrim($querystring, '&'), '?');
 
@@ -273,7 +296,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				$adminBasePort = $adminBasePort = '' || $adminBasePort == '80' || $adminBasePort == '443' ? '' : ':'.$adminBasePort;
 				$adminBasePath = $request->getServer('REQUEST_URI');
 				$adminBasePath = substr($adminBasePath, 0, strpos($adminBasePath, '/codisto/'));
-				$adminBaseURL = $request->getScheme() . '://' . $request->getHttpHost() . $adminBasePort . $adminBasePath . '/codisto/ebaytab/';
+				$adminBaseURL = $request->getScheme() . '://' . $request->getHttpHost() . $adminBasePort . $adminBasePath . '/codisto/ebaytab/'.$storeId.'/'.$MerchantID.'/';
 
 				$client->setHeaders('X-Admin-Base-Url', $adminBaseURL);
 				$client->setHeaders('X-Codisto-Version', $extensionVersion);
