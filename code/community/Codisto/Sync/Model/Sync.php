@@ -753,7 +753,7 @@ class Codisto_Sync_Model_Sync
 		$this->currentEntityId = $orderData['entity_id'];
 	}
 
-	public function SyncChunk($syncDb, $configurableCount, $simpleCount, $storeId)
+	public function SyncChunk($syncDb, $simpleCount, $configurableCount, $storeId)
 	{
 		$store = Mage::app()->getStore($storeId);
 
