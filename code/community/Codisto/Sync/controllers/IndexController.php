@@ -288,6 +288,8 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 		$store = Mage::app()->getStore($storeId);
 
+		Mage::app()->setCurrentStore($store);
+
 		$currencyCode = $ordercontent->transactcurrency[0];
 		$ordertotal = floatval($ordercontent->ordertotal[0]);
 		$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);

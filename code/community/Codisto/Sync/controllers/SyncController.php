@@ -54,6 +54,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 			return;
 		}
 
+		$store = Mage::app()->getStore($storeId);
+
+		Mage::app()->setCurrentStore($store);
+
 		if (isset($server['HTTP_X_SYNC'])) {
 			if (!isset($server['HTTP_X_ACTION'])) {
 				$server['HTTP_X_ACTION'] = '';
@@ -966,7 +970,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 			}
 			else
 			{
-				$config->saveConfig('codisto/merchantid', Zend_Json::encode($MerchantID), 'stores', $storeId);				
+				$config->saveConfig('codisto/merchantid', Zend_Json::encode($MerchantID), 'stores', $storeId);
 			}
 
 			$config->cleanCache();
