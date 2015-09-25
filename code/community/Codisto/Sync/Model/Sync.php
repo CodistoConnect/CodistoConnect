@@ -388,11 +388,15 @@ class Codisto_Sync_Model_Sync
 
 		$price = $this->getExTaxPrice($product, $totalPrice, $store);
 
+		$skuName = $skuData['name'];
+		if(!$skuName)
+			$skuName = '';
+
 		$data = array();
 		$data[] = $skuData['entity_id'];
 		$data[] = $skuData['sku'];
 		$data[] = $args['parent_id'];
-		$data[] = $skuData['name'];
+		$data[] = $skuName;
 		$data[] = !isset($stockData['use_config_manage_stock']) || $stockData['use_config_manage_stock'] == 0 ?
 					(isset($stockData['manage_stock']) && $stockData['manage_stock'] ? -1 : 0) :
 					(Mage::getStoreConfig('cataloginventory/item_options/manage_stock', $store) ? -1 : 0);
@@ -595,11 +599,15 @@ class Codisto_Sync_Model_Sync
 				$description = '';
 		}
 
+		$productName = $productData['name'];
+		if(!$productName)
+			$productName = '';
+
 		$data = array();
 
 		$data[] = $productData['entity_id'];
 		$data[] = $productData['sku'];
-		$data[] = $productData['name'];
+		$data[] = $productName;
 		$data[] = $price;
 		$data[] = $listPrice;
 		$data[] = isset($productData['tax_class_id']) && $productData['tax_class_id'] ? $productData['tax_class_id'] : '';
