@@ -828,10 +828,6 @@ class Codisto_Sync_Model_Sync
 
 		$insertConfiguration = $db->prepare('INSERT INTO Configuration(configuration_key, configuration_value) VALUES(?,?)');
 
-		foreach ($config as $key => $value) {
-			$insertConfiguration->execute(array($key, $value));
-		}
-
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
 		$this->currentEntityId = $db->query('SELECT entity_id FROM Progress')->fetchColumn();
@@ -842,6 +838,13 @@ class Codisto_Sync_Model_Sync
 
 		if(!$state)
 		{
+			// build configuration table
+			foreach ($config as $key => $value) {
+				$insertConfiguration->execute(array($key, $value));
+			}
+
+			$insertConfiguration->execute(array('currency', $store->getBaseCurrencyCode()));
+
 			// Categories
 			$categories = Mage::getModel('catalog/category')->getCollection()
 								->addAttributeToSelect(array('name', 'image', 'is_active', 'updated_at', 'parent_id', 'position'), 'left');
