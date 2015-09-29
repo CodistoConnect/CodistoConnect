@@ -1,13 +1,10 @@
 <?php
-
+@session_start();
 class Codisto_Sync_Test_Controller_Router extends EcomDev_PHPUnit_Test_Case_Controller
 {
 	public function setUp()
 	{
-		@session_start();
-
 		$app = Mage::app('default');
-
 	}
 
 	/**
@@ -18,7 +15,7 @@ class Codisto_Sync_Test_Controller_Router extends EcomDev_PHPUnit_Test_Case_Cont
 
 	public function testgetAllHeaders()
 	{
-
+		
 	}
 
 }

@@ -1,6 +1,12 @@
 [![GitHub release](https://img.shields.io/github/release/CodistoConnect/CodistoConnect.svg?style=plastic)](https://github.com/CodistoConnect/CodistoConnect/releases)
 [ ![License] [license-image] ] [license]
 
+<h5> travis-ci </h5>
+ [![Build Status - Master](https://travis-ci.org/CodistoConnect/CodistoConnect.svg?branch=master)](https://travis-ci.org/CodistoConnect/CodistoConnect) master
+
+[![Build Status - Development](https://travis-ci.org/CodistoConnect/CodistoConnect.svg?branch=development)](https://travis-ci.org/CodistoConnect/CodistoConnect) development <br>
+
+
 ![CodistoConnect eBay better logo](https://s3-ap-southeast-2.amazonaws.com/codisto/CodistoHeaderLogo.jpg)
 
 <h2>Welcome</h2>

@@ -31,4 +31,4 @@ branches:
   only:
     - master
     - development
-
+    - bm_travis_ci
