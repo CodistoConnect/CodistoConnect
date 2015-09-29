@@ -1,10 +1,10 @@
 <?php
-
+@session_start();
 class Codisto_Sync_Test_Config_AdminHtml extends EcomDev_PHPUnit_Test_Case_Config
 {
 	public function setUp()
 	{
-		@session_start();
+
 
 		$app = Mage::app('default');
 
@@ -30,7 +30,6 @@ class Codisto_Sync_Test_Config_AdminHtml extends EcomDev_PHPUnit_Test_Case_Confi
 		*/
 	}
 
-
 	/**
 	 * Test that CodistoConnect menu has been added and contains correct entries
 	 *
@@ -38,8 +37,6 @@ class Codisto_Sync_Test_Config_AdminHtml extends EcomDev_PHPUnit_Test_Case_Confi
 	 */
 	public function testCodistoConnectMenu()
 	{
-
-
 		/*
 		<menu>
 		<codisto translate="title">
@@ -66,8 +63,4 @@ class Codisto_Sync_Test_Config_AdminHtml extends EcomDev_PHPUnit_Test_Case_Confi
 		</menu>
 		*/
 	}
-
-
-
-
 }

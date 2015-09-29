@@ -1,13 +1,11 @@
 <?php
+@session_start();
 
 class Codisto_Sync_Test_Config_Config extends EcomDev_PHPUnit_Test_Case_Config
 {
 	public function setUp()
 	{
-		@session_start();
-
 		$app = Mage::app('default');
-
 	}
 
 	/**
@@ -47,11 +45,9 @@ class Codisto_Sync_Test_Config_Config extends EcomDev_PHPUnit_Test_Case_Config
 	 */
 	public function testModels()
 	{
-
 		//Model Aliases
 		$this->assertModelAlias("codistosync/codisto_sync_model", "Codisto_Sync_Model_Codisto_Sync_Model");
 		$this->assertModelAlias("ebaypayment/codisto_sync_ebaypayment_model", "Codisto_Sync_Ebaypayment_Model_Codisto_Sync_Ebaypayment_Model");
-
 	}
 
 	/**
@@ -63,17 +59,14 @@ class Codisto_Sync_Test_Config_Config extends EcomDev_PHPUnit_Test_Case_Config
 		//$this->assertResourceModelAlias("codisto_setup/setup", "Codisto_Sync_Model_Resource_Mysql4_Setup");
 	}
 
-
 	/**
 	 * Test Helper functions are wired up correctly
 	 *
 	 * @test
 	 */
 	public function testHelpers() {
-
 		$this->assertHelperAlias("codisto-sync/codisto_sync_helper", "Codisto_Sync_Helper_Codisto_Sync_Helper");
 		$this->assertHelperAlias("codisto-sync", "Codisto_Sync_Helper_Data");
-
 	}
 
 
@@ -83,10 +76,8 @@ class Codisto_Sync_Test_Config_Config extends EcomDev_PHPUnit_Test_Case_Config
 	 * @test
 	 */
 	public function testFieldSets() {
-
 		$this->assertConfigNodeValue("global/fieldsets/sales_convert_quote/codisto_orderid/to_order", "*");
 		$this->assertConfigNodeValue("global/fieldsets/sales_convert_order/codisto_orderid/to_quote", "*");
-
 	}
 
 	/**
@@ -96,7 +87,6 @@ class Codisto_Sync_Test_Config_Config extends EcomDev_PHPUnit_Test_Case_Config
 	 */
 	public function testEventNodes()
 	{
-
 		$events = array(
 			"payment_info_block_prepare_specific_information" => array("type" => "singleton",
 																				"method" => "paymentInfoBlockPrepareSpecificInformation"),
@@ -127,9 +117,7 @@ class Codisto_Sync_Test_Config_Config extends EcomDev_PHPUnit_Test_Case_Config
 			"core_block_abstract_prepare_layout_after" => array("namespace" => "codisto_admin",
 																		"type" => "singleton",
 																		"method" => "addProductTab"),
-
 		);
-
 
 		//Assert type, class and method values are expected
 		foreach ($events as $key => $value) {
@@ -170,10 +158,5 @@ class Codisto_Sync_Test_Config_Config extends EcomDev_PHPUnit_Test_Case_Config
 			}
 
 		}
-
-
-
 	}
-
-
 }
