@@ -1086,14 +1086,15 @@ class Codisto_Sync_Model_Sync
 
 		$stores = Mage::getModel('core/store')->getCollection();
 
-		$insertStore = $db->prepare('INSERT OR REPLACE INTO Store (ID, Code, Name) VALUES (?, ?, ?)');
+		$insertStore = $db->prepare('INSERT OR REPLACE INTO Store (ID, Code, Name, Currency) VALUES (?, ?, ?, ?)');
 		$insertStoreMerchant = $db->prepare('INSERT OR REPLACE INTO StoreMerchant (StoreID, MerchantID) VALUES (?, ?)');
 
 		$StoreID = 0;
 		$StoreCode = 'admin';
 		$StoreName = '';
+		$StoreCurrency = Mage::app()->getStore($StoreID)->getCurrentCurrencyCode();
 
-		$insertStore->execute(array($StoreID, $StoreCode, $StoreName));
+		$insertStore->execute(array($StoreID, $StoreCode, $StoreName, $StoreCurrency));
 
 		$defaultMerchantList = Mage::getStoreConfig('codisto/merchantid', 0);
 		if($defaultMerchantList)
@@ -1117,8 +1118,9 @@ class Codisto_Sync_Model_Sync
 
 			$StoreCode = $store->getCode();
 			$StoreName = $store->getName();
+			$StoreCurrency = $store->getCurrentCurrencyCode();
 
-			$insertStore->execute(array($StoreID, $StoreCode, $StoreName));
+			$insertStore->execute(array($StoreID, $StoreCode, $StoreName, $StoreCurrency));
 
 			$storeMerchantList = $store->getConfig('codisto/merchantid');
 			if($storeMerchantList && $storeMerchantList != $defaultMerchantList)
@@ -1219,7 +1221,7 @@ class Codisto_Sync_Model_Sync
 		$db->exec('CREATE TABLE IF NOT EXISTS TaxCalculationRate(ID integer NOT NULL PRIMARY KEY, Country text NOT NULL, RegionID integer NOT NULL, RegionName text NULL, RegionCode text NULL, PostCode text NOT NULL, Code text NOT NULL, Rate real NOT NULL, IsRange bit NULL, ZipFrom text NULL, ZipTo text NULL)');
 
 
-		$db->exec('CREATE TABLE IF NOT EXISTS Store(ID integer NOT NULL PRIMARY KEY, Code text NOT NULL, Name text NOT NULL)');
+		$db->exec('CREATE TABLE IF NOT EXISTS Store(ID integer NOT NULL PRIMARY KEY, Code text NOT NULL, Name text NOT NULL, Currency text NOT NULL)');
 		$db->exec('CREATE TABLE IF NOT EXISTS StoreMerchant(StoreID integer NOT NULL, MerchantID integer NOT NULL, PRIMARY KEY (StoreID, MerchantID))');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS [Order](ID integer NOT NULL PRIMARY KEY, Status text NOT NULL, PaymentDate datetime NULL, ShipmentDate datetime NULL, Carrier text NOT NULL, TrackingNumber text NOT NULL)');
