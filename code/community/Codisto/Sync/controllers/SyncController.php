@@ -168,7 +168,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Exception: '.$e->getMessage());
+							$response->setBody('Exception: '.$e->getMessage().' on line: '.$e->getLine().' in file: '.$e->getFile());
 							$response->sendResponse();
 						}
 					}
@@ -268,7 +268,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Exception: '.$e->getMessage());
+							$response->setBody('Exception: '.$e->getMessage().' on line: '.$e->getLine().' in file: '.$e->getFile());
 							$response->sendResponse();
 						}
 					}
@@ -350,7 +350,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Exception: '.$e->getMessage());
+							$response->setBody('Exception: '.$e->getMessage().' on line: '.$e->getLine().' in file: '.$e->getFile());
 							$response->sendResponse();
 						}
 					}
@@ -422,7 +422,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Exception: '.$e->getMessage());
+							$response->setBody('Exception: '.$e->getMessage().' on line: '.$e->getLine().' in file: '.$e->getFile());
 							$response->sendResponse();
 						}
 					}
@@ -491,7 +491,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Exception: '.$e->getMessage());
+							$response->setBody('Exception: '.$e->getMessage().' on line: '.$e->getLine().' in file: '.$e->getFile());
 							$response->sendResponse();
 						}
 					}
@@ -567,7 +567,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Exception: '.$e->getMessage());
+							$response->setBody('Exception: '.$e->getMessage().' on line: '.$e->getLine().' in file: '.$e->getFile());
 							$response->sendResponse();
 						}
 					}
@@ -731,7 +731,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
-							$response->setBody('Exception: '.$e->getMessage());
+							$response->setBody('Exception: '.$e->getMessage().' on line: '.$e->getLine().' in file: '.$e->getFile());
 							$response->sendResponse();
 						}
 					}
