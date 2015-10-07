@@ -29,6 +29,17 @@ if(!isset($MerchantID) || !isset($HostKey))
 
 	try
 	{
+
+		if(!extension_loaded('pdo'))
+		{
+			throw new PDOException('(PHP Data Objects) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>');
+		}
+
+		if(!in_array("sqlite",PDO::getAvailableDrivers(), TRUE))
+		{
+			throw new PDOException('(sqlite PDO Driver) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>');
+		}
+
 		$lockFile = Mage::getBaseDir('var') . '/codisto-lock';
 
 		$lockDb = new PDO('sqlite:' . $lockFile);
@@ -53,6 +64,12 @@ if(!isset($MerchantID) || !isset($HostKey))
 		$lockDb->exec('COMMIT TRANSACTION');
 		$lockDb = null;
 	}
+
+	catch(PDOException $e)
+	{
+		Mage::logException($e);
+	}
+
 	catch (Exception $e)
 	{
 
@@ -99,6 +116,7 @@ if(!isset($MerchantID) || !isset($HostKey))
 				$storename = Mage::getStoreConfig('general/store_information/name', 0);
 				$email = $user->getEmail();
 				$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
+				$codistoversion = Codisto_Sync_Helper_Data::getCodistoVersion();
 
 				$client = new Zend_Http_Client("https://ui.codisto.com/create", array( 'keepalive' => true, 'maxredirects' => 0 ));
 				$client->setHeaders('Content-Type', 'application/json');
@@ -108,7 +126,7 @@ if(!isset($MerchantID) || !isset($HostKey))
 					try
 					{
 						$remoteResponse = $client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
-							'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey)))->request('POST');
+							'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)))->request('POST');
 
 						if(!$remoteResponse->isSuccessful())
 							throw new Exception('Error Creating Account');

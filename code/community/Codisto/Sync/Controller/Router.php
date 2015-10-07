@@ -111,6 +111,16 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				{
 					try
 					{
+						if(!extension_loaded('pdo'))
+						{
+							throw new PDOException('(PHP Data Objects) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>');
+						}
+
+						if(!in_array("sqlite",PDO::getAvailableDrivers(), TRUE))
+						{
+							throw new PDOException('(sqlite PDO Driver) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>');
+						}
+
 						$createLockFile = Mage::getBaseDir('var') . '/codisto-create-lock';
 
 						$createLockDb = new PDO('sqlite:' . $createLockFile);
@@ -147,9 +157,10 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 									$version = Mage::getVersion();
 									$storename = Mage::getStoreConfig('general/store_information/name', 0);
 									$email = $user->getEmail();
+									$codistoversion = Codisto_Sync_Helper_Data::getCodistoVersion();
 
 									$remoteResponse = $client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
-									'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey)))->request('POST');
+									'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)))->request('POST');
 
 									if(!$remoteResponse->isSuccessful())
 										throw new Exception('Error Creating Account');
@@ -184,6 +195,16 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						$createLockDb->exec('COMMIT TRANSACTION');
 						$createLockDb = null;
 					}
+
+					catch(PDOException $e)
+					{
+						$response->setBody('<!DOCTYPE html><html><head></head><body><h1>Unable to Register</h1><p>Sorry, we were unable to register your Codisto account,
+						your Magento installation is missing a required Pre-requisite' . $e->getMessage() .
+						' or contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p></body></html>');
+
+						return true;
+					}
+
 					catch(Exception $e)
 					{
 						$response->setBody('<!DOCTYPE html><html><head></head><body><h1>Unable to Register</h1><p>Sorry, we were unable to register your Codisto account,

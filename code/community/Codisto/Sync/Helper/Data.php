@@ -20,4 +20,9 @@
 
 class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 {
+  public static function getCodistoVersion()
+  {
+    return (string) Mage::getConfig()->getNode()->modules->Codisto_Sync->version;
+  }
+
 }
