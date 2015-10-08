@@ -111,6 +111,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				{
 					try
 					{
+						
 						if(!extension_loaded('pdo'))
 						{
 							throw new PDOException('(PHP Data Objects) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>');
@@ -135,6 +136,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 						if(!isset($MerchantID) || !isset($HostKey))
 						{
+
 							$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
 
 							$client = new Zend_Http_Client('https://ui.codisto.com/create', array( 'keepalive' => true, 'maxredirects' => 0 ));
@@ -156,11 +158,12 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 									$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . substr($path, 0, strpos($path, 'codisto'));
 									$version = Mage::getVersion();
 									$storename = Mage::getStoreConfig('general/store_information/name', 0);
+									$storecurrency = Mage::app()->getStore(0)->getBaseCurrencyCode();
 									$email = $user->getEmail();
 									$codistoversion = Codisto_Sync_Helper_Data::getCodistoVersion();
 
 									$remoteResponse = $client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
-									'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)))->request('POST');
+									'url' => $url, 'email' => $email, 'storename' => $storename, 'storecurrency' => $storecurrency, 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)))->request('POST');
 
 									if(!$remoteResponse->isSuccessful())
 										throw new Exception('Error Creating Account');
