@@ -2,4 +2,3 @@
 code/community/Codisto					app/code/community/Codisto/
 design/ebay/README			app/design/ebay/README
 etc/modules/Codisto_Sync.xml          app/etc/modules/Codisto_Sync.xml
-Test	app/code/community/Codisto/Sync/Test/
