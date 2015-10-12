@@ -565,6 +565,8 @@ class Codisto_Sync_Model_Sync
 
 		$price = $this->getExTaxPrice($product, $product->getFinalPrice(), $store);
 		$listPrice = $this->getExTaxPrice($product, $product->getPrice(), $store);
+		if($listPrice == null)
+			$listPrice = $price;
 
 		// work around for description not appearing via collection
 		if(!isset($productData['description']))
