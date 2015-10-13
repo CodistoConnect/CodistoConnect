@@ -115,8 +115,17 @@ if(!isset($MerchantID) || !isset($HostKey))
 				$version = Mage::getVersion();
 				$storename = Mage::getStoreConfig('general/store_information/name', 0);
 				$email = $user->getEmail();
-				$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
 				$codistoversion = Codisto_Sync_Helper_Data::getCodistoVersion();
+
+				$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
+				if($ResellerKey)
+				{
+					$ResellerKey = intval(trim((string)$ResellerKey));
+				}
+				else
+				{
+					$ResellerKey = '0';
+				}
 
 				$client = new Zend_Http_Client("https://ui.codisto.com/create", array( 'keepalive' => true, 'maxredirects' => 0 ));
 				$client->setHeaders('Content-Type', 'application/json');
