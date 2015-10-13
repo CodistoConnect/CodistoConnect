@@ -29,6 +29,11 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 	public function indexAction()
 	{
 		set_time_limit(0);
+
+		@ini_set('zlib.output_compression', 'Off');
+		@ini_set('output_buffering', 'Off');
+		@ini_set('output_handler', '');
+
 		ignore_user_abort(true);
 
 		$response = $this->getResponse();
@@ -990,8 +995,6 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 	private function Send($syncDb)
 	{
 		ignore_user_abort(false);
-		ini_set('output_buffering', 0);
-		ini_set('zlib.output_compression', 0);
 
 		header('Cache-Control: no-cache, must-revalidate'); //HTTP 1.1
 		header('Pragma: no-cache'); //HTTP 1.0
@@ -1001,7 +1004,10 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 		header('Content-Length: ' . filesize($syncDb));
 
 		while(ob_get_level() > 0)
-			ob_end_clean();
+		{
+			if(!@ob_end_clean())
+				break;
+		}
 
 		flush();
 

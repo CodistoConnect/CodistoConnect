@@ -586,7 +586,7 @@ class Codisto_Sync_Model_Sync
 		{
 			$parentIds = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($productData['entity_id']);
 
-			if($parentIds)
+			if($parentIds && is_object($parentIds))
 			{
 				$groupedParentId = $parentIds->getFirstItem();
 				if($groupedParentId)
