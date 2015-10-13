@@ -31,7 +31,6 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			@ini_set('zlib.output_compression', 'Off');
 			@ini_set('output_buffering', 'Off');
 			@ini_set('output_handler', '');
-			@apache_setenv('no-gzip', 1);
 
 			$request->setDispatched(true);
 

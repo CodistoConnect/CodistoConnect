@@ -33,7 +33,6 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 		@ini_set('zlib.output_compression', 'Off');
 		@ini_set('output_buffering', 'Off');
 		@ini_set('output_handler', '');
-		@apache_setenv('no-gzip', 1);
 
 		ignore_user_abort(true);
 
