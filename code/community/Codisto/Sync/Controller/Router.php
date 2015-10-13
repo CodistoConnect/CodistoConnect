@@ -60,7 +60,6 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 			$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
 			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
-			$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
 
 			Mage::getSingleton('core/session', array('name'=>'adminhtml'));
 
@@ -111,7 +110,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				{
 					try
 					{
-						
+
 						if(!extension_loaded('pdo'))
 						{
 							throw new PDOException('(PHP Data Objects) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>');
@@ -138,6 +137,14 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						{
 
 							$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
+							if($ResellerKey)
+							{
+								$ResellerKey = intval(trim((string)$ResellerKey));
+							}
+							else
+							{
+								$ResellerKey = '0';
+							}
 
 							$client = new Zend_Http_Client('https://ui.codisto.com/create', array( 'keepalive' => true, 'maxredirects' => 0 ));
 							$client->setHeaders('Content-Type', 'application/json');
