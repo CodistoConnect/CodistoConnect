@@ -87,7 +87,6 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					$loggedIn = false;
 			}
 			session_write_close();
-			unset($_SESSION);
 
 			if($loggedIn)
 			{
