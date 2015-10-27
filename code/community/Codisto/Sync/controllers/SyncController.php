@@ -25,7 +25,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 	private $defaultSleep = 100000;
 	private $defaultConfigurableCount = 6;
 	private $defaultSimpleCount = 250;
-
+	
 	public function indexAction()
 	{
 		set_time_limit(0);
@@ -76,8 +76,11 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					{
 						try
 						{
-							$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
-
+							if($request->getQuery('first'))
+								$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-first-'.$storeId.'.db';
+							else
+								$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+							
 							if($request->getQuery('productid') || $request->getQuery('categoryid') || $request->getQuery('orderid'))
 							{
 								if($request->getQuery('orderid'))
@@ -234,7 +237,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 							for(;;)
 							{
-								$result = $syncObject->SyncChunk($syncDb, $simpleCount, $configurableCount, $storeId);
+								$result = $syncObject->SyncChunk($syncDb, $simpleCount, $configurableCount, $storeId, false);
 
 								if($result == 'complete')
 								{
@@ -253,6 +256,125 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 								}
 
 								usleep($sleep);
+							}
+
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
+							$response->setBody($result);
+							$response->sendResponse();
+						}
+						catch(Exception $e)
+						{
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(500);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(500);
+							$response->setRawHeader('HTTP/1.0 500 Sync Exception');
+							$response->setRawHeader('Status: 500 Sync Exception');
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
+							$response->setBody('Exception: '.$e->getMessage().' on line: '.$e->getLine().' in file: '.$e->getFile());
+							$response->sendResponse();
+						}
+					}
+					else
+					{
+						//@codingStandardsIgnoreStart
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						//@codingStandardsIgnoreEnd
+						$response->setHttpResponseCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setBody('Security Error');
+						$response->sendResponse();
+					}
+					die;
+
+				case 'PRODUCTCOUNT':
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
+						$syncObject = Mage::getModel('codistosync/sync');
+						$totals = $syncObject->ProductTotals($storeId);
+						
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setBody(Zend_Json::encode($totals));
+						$response->sendResponse();
+					} 
+					else
+					{
+						//@codingStandardsIgnoreStart
+						if(function_exists('http_response_code'))
+							http_response_code(400);
+						//@codingStandardsIgnoreEnd
+						$response->setHttpResponseCode(400);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
+						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+						$response->setHeader('Pragma', 'no-cache', true);
+						$response->setBody('Security Error');
+						$response->sendResponse();
+					}
+					die;
+					
+				case 'EXECUTEFIRST':
+
+					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					{
+						try
+						{
+							$indexer = Mage::getModel('index/process');
+							$indexer->load('codistoebayindex', 'indexer_code')
+										->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
+
+							$syncObject = Mage::getModel('codistosync/sync');
+
+							$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-first-'.$storeId.'.db';
+
+							if(file_exists($syncDb))
+								unlink($syncDb);
+
+							$configurableCount = (int)$request->getQuery('configurablecount');
+							if(!$configurableCount || !is_numeric($configurableCount))
+								$configurableCount = $this->defaultConfigurableCount;
+
+							
+							$simpleCount = (int)$request->getQuery('simplecount');
+							if(!$simpleCount || !is_numeric($simpleCount))
+								$simpleCount = $this->defaultSimpleCount;
+
+							$timeout = (int)$request->getQuery('timeout');
+							if(!$timeout || !is_numeric($timeout))
+								$timeout = $this->defaultSyncTimeout;
+
+							$sleep = (int)$request->getQuery('sleep');
+							if(!$sleep || !is_numeric($sleep))
+								$sleep = $this->defaultSleep;
+
+							$startTime = microtime(true);
+
+							$result = $syncObject->SyncChunk($syncDb, 0, $configurableCount, $storeId, true);
+							$result = $syncObject->SyncChunk($syncDb, $simpleCount, 0, $storeId, true);
+								
+							if($result == 'complete')
+							{
+								$syncObject->SyncTax($syncDb, $storeId);
+								$syncObject->SyncStores($syncDb, $storeId);
+								$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+							
+							} else {
+								
+								throw new Exception('First page execution failed');
+								
 							}
 
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
