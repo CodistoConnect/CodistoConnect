@@ -60,7 +60,7 @@ Use the following table to verify you have the correct prerequisites to install 
 			<th>For more information</th>
 		</tr>
 		<tr>
-			<td>Magento Community Edition (versions 1.6.0.0 - 1.9.1.1) <br>
+			<td>Magento Community Edition (versions 1.6.0.0 - 1.9.2.1) <br>
 			Magento Enterprise Edition (versions 1.11 - 1.14)</td>
 			<td>To check your version consult Magento documentation or use a site such as <a href="http://magentoversion.com/">http://magentoversion.com/</a></td>
 			<td><a href="http://magento.com/products/overview">Magento products overview</a></td>
@@ -93,6 +93,11 @@ After verifying your prerequisites, perform the following task in order to prepa
 
 OR
 
+
+<h5>Download from Magento Connect</h5>
+<a href="http://www.magentocommerce.com/magento-connect/codisto-connect-magento-ebay-integration.html">Codisto Connect on Magento Connect</a>
+
+
 <h5>Download from GitHub</h5>
 
 Download the plugin from https://github.com/codistoconnect/codistoconnect/releases <br> <br>
@@ -103,7 +108,7 @@ The plugin.tgz file located here is ready to install in Magento.
 
 <h2>Step 3: Install and verify the installation</h2>
 
-<h5>Follow the guide here <a href="https://codisto.com/install.html">here</a></h5>
+<h5>Follow the guide <a href="https://codisto.com/install.html">here</a></h5>
 
 OR
 
@@ -130,6 +135,9 @@ You may also pipe to your shell of choice but that is discouraged as things can 
 ssh $USER@DOMAIN "wget -O - https://qa.codisto.com/plugin/install | $SHELL"
 ```
 
+<h2>Problems with your install? </h2>
+We continually update our support pages with documentation to assist with any pre or post installation problems. Please check out our installation related
+<a href="http://help.codisto.com/category/4-category">support pages</a>, particularly the <a href="http://help.codisto.com/article/95-problems-with-codisto-connect-magento">FAQ</a>.
 
 <h2>Contributing to the Codisto Connect code base</h2>
 Contributions can take the form of new components or features, changes to existing features, tests, documentation (such as developer guides, user guides, examples, or specifications), bug fixes, optimizations, or just good suggestions.
