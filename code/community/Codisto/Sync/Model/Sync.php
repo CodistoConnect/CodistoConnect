@@ -763,7 +763,7 @@ class Codisto_Sync_Model_Sync
 		$this->currentEntityId = $orderData['entity_id'];
 	}
 
-	public function SyncChunk($syncDb, $simpleCount, $configurableCount, $storeId)
+	public function SyncChunk($syncDb, $simpleCount, $configurableCount, $storeId, $first)
 	{
 		$store = Mage::app()->getStore($storeId);
 
@@ -950,7 +950,7 @@ class Codisto_Sync_Model_Sync
 
 		$db->exec('COMMIT TRANSACTION');
 
-		if(empty($this->productsProcessed) && empty($this->ordersProcessed))
+		if((empty($this->productsProcessed) && empty($this->ordersProcessed)) || $first)
 		{
 			return 'complete';
 		}
@@ -960,6 +960,25 @@ class Codisto_Sync_Model_Sync
 		}
 	}
 
+	public function ProductTotals($storeId) {
+		
+		$store = Mage::app()->getStore($storeId);
+
+		$configurableProducts = Mage::getModel('catalog/product')->getCollection()
+							->addAttributeToSelect(array('entity_id'), 'left')
+							->addAttributeToFilter('type_id', array('eq' => 'configurable'));
+
+		$configurablecount = $configurableProducts->getSize();
+		
+		$simpleProducts = Mage::getModel('catalog/product')->getCollection()
+							->addAttributeToSelect(array('entity_id'), 'left')
+							->addAttributeToFilter('type_id', array('eq' => 'simple'));
+		
+		$simplecount = $simpleProducts->getSize();
+		
+		return array('simplecount' => $simplecount, 'configurablecount' => $configurablecount);
+	}
+	
 	public function SyncTax($syncDb, $storeId)
 	{
 		$db = $this->GetSyncDb($syncDb);
