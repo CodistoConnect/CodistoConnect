@@ -259,14 +259,22 @@ class Codisto_Sync_Model_Sync
 
 		$this->productsProcessed = array();
 
-		$superLinkName = Mage::getSingleton('core/resource')->getTableName('catalog/product_super_link');
+		$coreResource = Mage::getSingleton('core/resource');
+
+		$superLinkName = $coreResource->getTableName('catalog/product_super_link');
+		$catalogEntityName = $coreResource->getTableName('catalog/product');
+		$catalogWebsiteName = $coreResource->getTableName('catalog/product_website');
+		$storeName = $coreResource->getTableName('core/store');
 
 		// Configurable products
 		$configurableProducts = Mage::getModel('catalog/product')->getCollection()
 							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
 							->addAttributeToFilter('type_id', array('eq' => 'configurable'));
 
-		$configurableProducts->getSelect()->where('`e`.entity_id IN ('.implode(',', $ids).') OR `e`.entity_id IN (SELECT parent_id FROM '.$superLinkName.' WHERE product_id IN ('.implode(',', $ids).'))');
+		$sqlCheckStore = '(`e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))';
+		$sqlCheckModified = '(`e`.entity_id IN ('.implode(',', $ids).') OR `e`.entity_id IN (SELECT parent_id FROM `'.$superLinkName.'` WHERE product_id IN ('.implode(',', $ids).')))';
+
+		$configurableProducts->getSelect()->where($sqlCheckStore . ' AND ' . $sqlCheckModified);
 
 		// Simple Products not participating as configurable skus
 		$simpleProducts = Mage::getModel('catalog/product')->getCollection()
@@ -274,7 +282,10 @@ class Codisto_Sync_Model_Sync
 							->addAttributeToFilter('type_id', array('eq' => 'simple'))
 							->addAttributeToFilter('entity_id', array('in' => $ids));
 
-		$simpleProducts->getSelect()->where('`e`.entity_id NOT IN (SELECT product_id FROM '.$superLinkName.')');
+		$sqlCheckStore = '(`e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))';
+		$sqlCheckModified = '(`e`.entity_id NOT IN (SELECT product_id FROM `'.$superLinkName.'` WHERE parent_id IN (SELECT entity_id FROM `'.$catalogEntityName.'` WHERE type_id = \'configurable\' AND entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))))';
+
+		$simpleProducts->getSelect()->where($sqlCheckStore . ' AND ' . $sqlCheckModified);
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
@@ -571,7 +582,7 @@ class Codisto_Sync_Model_Sync
 		// work around for description not appearing via collection
 		if(!isset($productData['description']))
 		{
-			$tmpProduct = Mage::getModel('catalog/product')->load($productData['entity_id']);
+			$tmpProduct = Mage::getModel('catalog/product')->setStoreId($store->getId())->load($productData['entity_id']);
 			$description = $tmpProduct->getDescription();
 			unset($tmpProduct);
 		}
@@ -859,15 +870,22 @@ class Codisto_Sync_Model_Sync
 		$this->productsProcessed = array();
 		$this->ordersProcessed = array();
 
+		$coreResource = Mage::getSingleton('core/resource');
+
 		if($state == 'configurable')
 		{
+			$catalogWebsiteName = $coreResource->getTableName('catalog/product_website');
+			$storeName = $coreResource->getTableName('core/store');
+
 			// Configurable products
 			$configurableProducts = Mage::getModel('catalog/product')->getCollection()
 								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 								->addAttributeToFilter('entity_id', array('gt' => $this->currentEntityId));
 
-			$configurableProducts->getSelect()->order('entity_id')->limit($configurableCount);
+			$sqlCheckStore = '(`e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))';
+
+			$configurableProducts->getSelect()->where($sqlCheckStore)->order('entity_id')->limit($configurableCount);
 			$configurableProducts->setOrder('entity_id', 'ASC');
 
 			Mage::getSingleton('core/resource_iterator')->walk($configurableProducts->getSelect(), array(array($this, 'SyncConfigurableProductData')), array( 'type' => 'configurable', 'db' => $db, 'preparedStatement' => $insertProduct, 'preparedskuStatement' => $insertSKU, 'preparedskumatrixStatement' => $insertSKUMatrix, 'preparedcategoryproductStatement' => $insertCategoryProduct, 'preparedimageStatement' => $insertImage, 'preparedskuimageStatement' => $insertSKUImage, 'preparedproductoptionStatement' => $insertProductOption,  'preparedproductoptionvalueStatement' => $insertProductOptionValue, 'preparedproducthtmlStatement' => $insertProductHTML, 'preparedattributeStatement' => $insertAttribute, 'preparedproductattributeStatement' => $insertProductAttribute, 'store' => $store ));
@@ -886,15 +904,21 @@ class Codisto_Sync_Model_Sync
 
 		if($state == 'simple')
 		{
-			// Simple Products not participating as configurable skus
-			$superLinkName = Mage::getSingleton('core/resource')->getTableName('catalog/product_super_link');
+			$superLinkName = $coreResource->getTableName('catalog/product_super_link');
+			$catalogEntityName = $coreResource->getTableName('catalog/product');
+			$catalogWebsiteName = $coreResource->getTableName('catalog/product_website');
+			$storeName = $coreResource->getTableName('core/store');
 
+			// Simple Products not participating as configurable skus
 			$simpleProducts = Mage::getModel('catalog/product')->getCollection()
 								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'simple'))
 								->addAttributeToFilter('entity_id', array('gt' => $this->currentEntityId));
 
-			$simpleProducts->getSelect()->where('`e`.entity_id NOT IN (SELECT product_id FROM '.$superLinkName.')')->order('entity_id')->limit($simpleCount);
+			$sqlCheckStore = '(`e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))';
+			$sqlCheckSimple = '(`e`.entity_id NOT IN (SELECT product_id FROM `'.$superLinkName.'` WHERE parent_id IN (SELECT entity_id FROM `'.$catalogEntityName.'` WHERE type_id = \'configurable\' AND entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))))';
+
+			$simpleProducts->getSelect()->where($sqlCheckStore . ' AND ' . $sqlCheckSimple)->order('entity_id')->limit($simpleCount);
 			$simpleProducts->setOrder('entity_id', 'ASC');
 
 			Mage::getSingleton('core/resource_iterator')->walk($simpleProducts->getSelect(), array(array($this, 'SyncSimpleProductData')), array( 'type' => 'simple', 'db' => $db, 'preparedStatement' => $insertProduct, 'preparedcategoryproductStatement' => $insertCategoryProduct, 'preparedimageStatement' => $insertImage, 'preparedproducthtmlStatement' => $insertProductHTML, 'preparedattributeStatement' => $insertAttribute, 'preparedproductattributeStatement' => $insertProductAttribute, 'store' => $store ));
