@@ -25,7 +25,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 	private $defaultSleep = 100000;
 	private $defaultConfigurableCount = 6;
 	private $defaultSimpleCount = 250;
-	
+
 	public function indexAction()
 	{
 		set_time_limit(0);
@@ -80,7 +80,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 								$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-first-'.$storeId.'.db';
 							else
 								$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
-							
+
 							if($request->getQuery('productid') || $request->getQuery('categoryid') || $request->getQuery('orderid'))
 							{
 								if($request->getQuery('orderid'))
@@ -137,7 +137,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 									$db->exec('CREATE TABLE Attribute AS SELECT * FROM SyncDb.Attribute');
 									$db->exec('CREATE TABLE ProductAttributeValue AS SELECT * FROM SyncDb.ProductAttributeValue WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 
-									if($db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE name = \'ProductDelete\' COLLATE NOCASE AND type = \'table\') THEN 1 ELSE 0 END')->fetchColumn())
+									if($db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE lower(name) = \'productdelete\' AND type = \'table\') THEN 1 ELSE 0 END')->fetchColumn())
 										$db->exec('CREATE TABLE ProductDelete AS SELECT * FROM SyncDb.ProductDelete WHERE ExternalReference IN ('.implode(',', $productIds).')');
 								}
 
@@ -302,13 +302,13 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 					{
 						$syncObject = Mage::getModel('codistosync/sync');
 						$totals = $syncObject->ProductTotals($storeId);
-						
+
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 						$response->setHeader('Pragma', 'no-cache', true);
 						$response->setBody(Zend_Json::encode($totals));
 						$response->sendResponse();
-					} 
+					}
 					else
 					{
 						//@codingStandardsIgnoreStart
@@ -325,7 +325,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 						$response->sendResponse();
 					}
 					die;
-					
+
 				case 'EXECUTEFIRST':
 
 					if ($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
@@ -347,7 +347,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 							if(!$configurableCount || !is_numeric($configurableCount))
 								$configurableCount = $this->defaultConfigurableCount;
 
-							
+
 							$simpleCount = (int)$request->getQuery('simplecount');
 							if(!$simpleCount || !is_numeric($simpleCount))
 								$simpleCount = $this->defaultSimpleCount;
@@ -364,17 +364,17 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 
 							$result = $syncObject->SyncChunk($syncDb, 0, $configurableCount, $storeId, true);
 							$result = $syncObject->SyncChunk($syncDb, $simpleCount, 0, $storeId, true);
-								
+
 							if($result == 'complete')
 							{
 								$syncObject->SyncTax($syncDb, $storeId);
 								$syncObject->SyncStores($syncDb, $storeId);
 								$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
-							
+
 							} else {
-								
+
 								throw new Exception('First page execution failed');
-								
+
 							}
 
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
