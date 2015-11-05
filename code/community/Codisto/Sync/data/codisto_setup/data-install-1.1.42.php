@@ -32,12 +32,12 @@ if(!isset($MerchantID) || !isset($HostKey))
 
 		if(!extension_loaded('pdo'))
 		{
-			throw new PDOException('(PHP Data Objects) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>');
+			throw new Exception('(PHP Data Objects) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>', 999);
 		}
 
 		if(!in_array("sqlite",PDO::getAvailableDrivers(), TRUE))
 		{
-			throw new PDOException('(sqlite PDO Driver) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>');
+			throw new PDOException('(sqlite PDO Driver) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>', 999);
 		}
 
 		$lockFile = Mage::getBaseDir('var') . '/codisto-lock';
@@ -65,14 +65,9 @@ if(!isset($MerchantID) || !isset($HostKey))
 		$lockDb = null;
 	}
 
-	catch(PDOException $e)
+	catch(Exception $e)
 	{
 		Mage::logException($e);
-	}
-
-	catch (Exception $e)
-	{
-
 	}
 
 	$reindexRequired = false;
