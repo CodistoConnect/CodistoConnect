@@ -69,24 +69,30 @@ if(!isset($MerchantID) || !isset($HostKey))
 	{
 		try
 		{
-			$request = Mage::app()->getRequest();
-
 			$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . $request->getServer('REQUEST_URI');
+			$magentoversion = Mage::getVersion();
+			$codistoversion = Codisto_Sync_Helper_Data::getCodistoVersion();
 
-			$client = new Zend_Http_Client("https://ui.codisto.com/installed", array( 'keepalive' => true, 'maxredirects' => 0 ));
+			$logEntry = Zend_Json::encode(array(
+					'url' => $url,
+					'magento_version' => $magentoversion,
+					'codisto_version' => $codistoversion,
+					'message' => $e->getMessage(),
+					'code' => $e->getCode(),
+					'file' => $e->getFile(),
+					'line' => $e->getLine()));
+
+			Mage::log('CodistoConnect '.$logEntry);
+
+			$client = new Zend_Http_Client("https://ui.codisto.com/installed", array( 'adapter' => 'Zend_Http_Client_Adapter_Curl', 'curloptions' => array(CURLOPT_SSL_VERIFYPEER => false), 'keepalive' => false, 'maxredirects' => 0 ));
 			$client->setHeaders('Content-Type', 'application/json');
-
-			$logEntry = array( 'url' => $url, 'message' => $e->getMessage(), 'code' => $e->getCode(), 'file' => $e->getFile(), 'line' => $e->getLine());
-
-			$client->setRawData(Zend_Json::encode($logEntry));
+			$client->setRawData($logEntry);
 			$client->request('POST');
 		}
 		catch(Exception $e2)
 		{
 
 		}
-
-		Mage::logException($e);
 	}
 
 	$reindexRequired = false;
