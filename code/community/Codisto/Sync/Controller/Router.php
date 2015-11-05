@@ -215,7 +215,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						{
 							$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . $request->getServer('REQUEST_URI');
 
-							$client = new Zend_Http_Client("https://ui.codisto.com/installed", array( 'keepalive' => true, 'maxredirects' => 0 ));
+							$client = new Zend_Http_Client("https://ui.codisto.com/installed", array( 'adapter' => 'Zend_Http_Client_Adapter_Curl', 'curloptions' => array(CURLOPT_SSL_VERIFYPEER => false), 'keepalive' => false, 'maxredirects' => 0 ));
 							$client->setHeaders('Content-Type', 'application/json');
 
 							$logEntry = array( 'url' => $url, 'message' => $e->getMessage(), 'code' => $e->getCode(), 'file' => $e->getFile(), 'line' => $e->getLine());
