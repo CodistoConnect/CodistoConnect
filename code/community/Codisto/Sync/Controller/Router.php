@@ -211,6 +211,23 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 					catch(Exception $e)
 					{
+						try
+						{
+							$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . $request->getServer('REQUEST_URI');
+
+							$client = new Zend_Http_Client("https://ui.codisto.com/installed", array( 'keepalive' => true, 'maxredirects' => 0 ));
+							$client->setHeaders('Content-Type', 'application/json');
+
+							$logEntry = array( 'url' => $url, 'message' => $e->getMessage(), 'code' => $e->getCode(), 'file' => $e->getFile(), 'line' => $e->getLine());
+
+							$client->setRawData(Zend_Json::encode($logEntry));
+							$client->request('POST');
+						}
+						catch(Exception $e2)
+						{
+
+						}
+
 						$response->setHttpResponseCode(500);
 						$response->setHeader('Pragma', 'no-cache', true);
 						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
