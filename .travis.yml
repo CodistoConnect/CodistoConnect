@@ -2,24 +2,38 @@ language: php
 php:
   #- 5.2
   - 5.3
-  - 5.4
-  - 5.5
-  - 5.6
+#  - 5.4
+#  - 5.5
+#  - 5.6
   #- hhvm
+
+before_install:
+   - composer self-update
+   - composer install --prefer-source --no-interaction --dev
+   - php composer.phar self-update
+	- phpenv rehash
 matrix:
   allow_failures:
   - php: 5.6
   - php: hhvm
 env:
-  global:
-    - SKIP_CLEANUP=1
+
   matrix:
-  - MAGENTO_VERSION=magento-ce-1.9.0.1
-  - MAGENTO_VERSION=magento-ce-1.8.1.0
-  - MAGENTO_VERSION=magento-ce-1.8.0.0
-  - MAGENTO_VERSION=magento-ce-1.7.0.2
+  - MAGENTO_VERSION=magento-mirror-1.9.2.2
+  #- MAGENTO_VERSION=magento-mirror-1.9.2.1
+  #- MAGENTO_VERSION=magento-mirror-1.9.2.0
+  #- MAGENTO_VERSION=magento-mirror-1.9.1.1
+  #- MAGENTO_VERSION=magento-mirror-1.9.1.0
+  #- MAGENTO_VERSION=magento-mirror-1.9.0.1
+  #- MAGENTO_VERSION=magento-mirror-1.9.0.0
+  #- MAGENTO_VERSION=magento-mirror-1.8.1.0
+  #- MAGENTO_VERSION=magento-mirror-1.8.0.0
+  #- MAGENTO_VERSION=magento-mirror-1.7.0.2
+  #- MAGENTO_VERSION=magento-mirror-1.6.2.0
+  #- MAGENTO_VERSION=magento-mirror-1.5.1.0
+  #- MAGENTO_VERSION=magento-mirror-1.4.2.0
 script:
-  - curl -sSL https://raw.githubusercontent.com/AOEpeople/MageTestStand/master/setup.sh | bash
+  - curl -sSL https://raw.githubusercontent.com/CodistoConnect/MageTestStand/master/setup.sh > setup.sh && chmod +x setup.sh && ./setup.sh
 notifications:
   email:
     recipients:
@@ -29,6 +43,4 @@ notifications:
 
 branches:
   only:
-    - master
-    - development
     - bm_travis_ci
