@@ -336,8 +336,8 @@ class Codisto_Sync_Model_Sync
 				'preparedimageStatement' => $insertImage,
 				'preparedproducthtmlStatement' => $insertProductHTML,
 				'preparedattributeStatement' => $insertAttribute,
-				'preparedattributegroupStatement' => $insertProductAttributeGroup,
-				'preparedattributegroupmapStatement' => $insertProductAttributeGroupMap,
+				'preparedattributegroupStatement' => $insertAttributeGroup,
+				'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 				'preparedproductattributeStatement' => $insertProductAttribute,
 				'store' => $store )
 		);
