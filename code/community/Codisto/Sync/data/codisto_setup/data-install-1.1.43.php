@@ -23,9 +23,6 @@ $HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 
 $reindexRequired = true;
 
-$request = Mage::app()->getRequest();
-Mage::log('running data install '.$request->getPathInfo().'  '.$request->getServer('REMOTE_ADDR'));
-
 if(!isset($MerchantID) || !isset($HostKey))
 {
 	$request = Mage::app()->getRequest();
@@ -173,8 +170,6 @@ if(!isset($MerchantID) || !isset($HostKey))
 							if(isset($data['merchantid']) && $data['merchantid'] &&
 								isset($data['hostkey']) && $data['hostkey'])
 							{
-								sleep(60);
-
 								Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['merchantid']);
 								Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['hostkey']);
 
