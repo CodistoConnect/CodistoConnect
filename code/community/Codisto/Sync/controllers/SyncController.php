@@ -242,6 +242,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 								if($result == 'complete')
 								{
 									$syncObject->SyncTax($syncDb, $storeId);
+									$syncObject->SyncStaticBlocks($syncDb, $storeId);
 									$syncObject->SyncStores($syncDb, $storeId);
 
 									$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);

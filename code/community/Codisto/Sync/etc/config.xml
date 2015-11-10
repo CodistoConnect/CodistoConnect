@@ -148,6 +148,16 @@
 					</codisto_admin>
 				</observers>
 			</core_block_abstract_prepare_layout_after>
+
+			<core_abstract_save_commit_after>
+				<observers>
+					<codisto_staticblocksync>
+						<type>singleton</type>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>cmsStaticBlockSaveAfter</method>
+					</codisto_staticblocksync>
+				</observers>
+			</core_abstract_save_commit_after>
 		</events>
 
 		<fieldsets>
