@@ -283,10 +283,8 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			}
 		}
 
-		$website = Mage::app()->getWebsite();
-		$websiteId = $website->getId();
-
 		$store = Mage::app()->getStore($storeId);
+		$websiteId = $store->getWebsiteId();
 
 		Mage::app()->setCurrentStore($store);
 
@@ -330,7 +328,8 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$email = 'mail@example.com';
 
 		$customer = Mage::getModel('customer/customer');
-		$customer->setWebsiteId(Mage::app()->getWebsite()->getId());
+		$customer->setWebsiteId($websiteId);
+		$customer->setStoreId($storeId);
 		$customer->loadByEmail($email);
 
 		$regionCollection = $this->getRegionCollection($billing_address->countrycode);
@@ -375,7 +374,6 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			'country_id' => (string)$shipping_address->countrycode,
 			'region_id' => (string)$regionsel_id_ship, // id from directory_country_region table
 		);
-
 
 		if(!$customer->getId())
 		{
@@ -530,7 +528,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$shippingAddress->setShippingAmountForDiscount(0);
 
 		$paypalavailable = Mage::getSingleton('paypal/express')->isAvailable();
-		$quote->getPayment()->setMethod('ebaypayment');
+		$quote->getPayment()->setMethod('ebay');
 		$quote->save();
 
 		$convertquote = Mage::getSingleton('sales/convert_quote');
@@ -678,7 +676,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$payment->setParentTransactionId(null)
 			->setIsTransactionClosed(1);
 
-		$payment->setMethod('ebaypayment');
+		$payment->setMethod('ebay');
 		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, '');
 
 		$payment->save();
@@ -854,7 +852,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$order->setDue(0.0);
 
 			$payment = $order->getPayment();
-			$payment->setMethod('ebaypayment');
+			$payment->setMethod('ebay');
 			$payment->setParentTransactionId(null)
 				->setIsTransactionClosed(1);
 
@@ -863,7 +861,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		else
 		{
 			$payment = $order->getPayment();
-			$payment->setMethod('ebaypayment');
+			$payment->setMethod('ebay');
 			$payment->save();
 		}
 
