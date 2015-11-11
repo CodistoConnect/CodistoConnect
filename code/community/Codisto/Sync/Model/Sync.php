@@ -1199,10 +1199,14 @@ class Codisto_Sync_Model_Sync
 
 		$ebayGroup = Mage::getModel('customer/group');
 		$ebayGroup->load('eBay', 'customer_group_code');
+		if(!$ebayGroup->getId())
+			$ebayGroup->load(1);
 
+		$customerTaxClassId = $ebayGroup->getTaxClassId();
 
-		$taxCalcs = Mage::getModel('tax/calculation')->getCollection()
-				->addFieldToFilter('customer_tax_class_id', array('eq' => $ebayGroup->getTaxClassId()));
+		$taxCalcs = Mage::getModel('tax/calculation')->getCollection();
+		if($customerTaxClassId)
+			$taxCalcs->addFieldToFilter('customer_tax_class_id', array('eq' => $customerTaxClassId));
 
 		$insertTaxCalc = $db->prepare('INSERT OR IGNORE INTO TaxCalculation (ID, TaxRateID, TaxRuleID, ProductTaxClassID, CustomerTaxClassID) VALUES (?, ?, ?, ?, ?)');
 
