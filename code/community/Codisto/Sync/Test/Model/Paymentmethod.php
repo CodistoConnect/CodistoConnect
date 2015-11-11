@@ -23,8 +23,7 @@ class Codisto_Sync_Test_Model_Paymentmethod extends EcomDev_PHPUnit_Test_Case
 	{
 		//Get a list of payment methods ... confirm that eBay payment method is registered
 		$payments = Mage::getSingleton('payment/config')->getActiveMethods();
-		$this->assertEquals(true, array_key_exists("ebaypayment", $payments));
+		$this->assertEquals(true, array_key_exists('ebay', $payments));
 	}
 
 }
-
