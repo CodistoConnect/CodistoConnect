@@ -328,7 +328,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$email = 'mail@example.com';
 
 		$customer = Mage::getModel('customer/customer');
-		$customer->setWebsiteId($store->getWebsiteId());
+		$customer->setWebsiteId($websiteId);
 		$customer->setStoreId($storeId);
 		$customer->loadByEmail($email);
 
