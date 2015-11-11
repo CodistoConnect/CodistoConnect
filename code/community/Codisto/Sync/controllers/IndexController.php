@@ -199,6 +199,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 					}
 
+					$store = Mage::app()->getStore($storeId);
+
+					Mage::app()->setCurrentStore($store);
+
 					for($Retry = 0; ; $Retry++)
 					{
 						$connection->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
@@ -418,6 +422,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		}
 
 		$quote = Mage::getModel('sales/quote');
+		$quote->setStoreId($storeId);
 		$quote->assignCustomer($customer);
 
 		$quote->getBillingAddress()->addData($addressData_billing);
@@ -440,6 +445,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$totalquantity += $qty;
 
 				$item = Mage::getModel('sales/quote_item');
+				$item->setStoreId($storeId);
 				$item->setProduct($product);
 				$item->setSku($productcode);
 				$item->setName($orderline->productname[0]);
