@@ -189,6 +189,19 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 										$MerchantID = $data['merchantid'];
 										$HostKey = $data['hostkey'];
 									}
+									
+									if(isset($data['ack']) && $data['ack'] == "FAILED") {
+										
+										//Endpoint Unreachable - Turn on cron fallback 
+										$file = new Varien_Io_File();
+										$file->open(array('path' => Mage::getBaseDir('var')));
+										$file->write('codisto-external-sync-failed', '0');
+										$file->close();
+										
+										$result = Mage::getModel('codistosync/observer')->cronSync($this);
+		
+									}
+									
 								}
 								catch(Exception $e)
 								{
@@ -287,6 +300,19 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				else
 				{
 					$path = preg_replace('/(^\/codisto\/ebaytab\/)(\d+\/?)/', '$1', $path);
+				}
+				
+				if(preg_match('/^\/codisto\/localsync\//', $path))
+				{
+					
+					if($request->getQuery('pushonly'))
+						$result = Mage::getModel('codistosync/observer')->cronSync("pushonly");
+					else
+						$result = Mage::getModel('codistosync/observer')->cronSync($this);
+					
+					echo $result;
+					die();
+					
 				}
 
 				// product page iframe
