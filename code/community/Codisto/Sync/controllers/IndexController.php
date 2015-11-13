@@ -433,10 +433,30 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		{
 			if($orderline->productcode[0] != 'FREIGHT')
 			{
-				$productid = (int)$orderline->externalreference[0];
+				$product = null;
+				$productcode = $orderline->productcode[0];
+				if($productcode == null)
+					$productcode = '';
+				$productname = $orderline->productname[0];
+				if($productname == null)
+					$productname = '';
 
-				$product = Mage::getModel('catalog/product')->load($productid);
-				$productcode = $product->getSku();
+				$productid = $orderline->externalreference[0];
+				if($productid != null)
+				{
+					$productid = intval($productid);
+
+					$product = Mage::getModel('catalog/product')->load($productid);
+					if($product->getId())
+					{
+						$productcode = $product->getSku();
+						$productname = $product->getName();
+					}
+					else
+					{
+						$product = null;
+					}
+				}
 
 				$qty = (int)$orderline->quantity[0];
 				$subtotalinctax = floatval($orderline->linetotalinctax[0]);
@@ -446,21 +466,39 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 				$item = Mage::getModel('sales/quote_item');
 				$item->setStoreId($storeId);
-				$item->setProduct($product);
+
+				if($product)
+				{
+					$item->setProduct($product);
+					$item->setProductId($productid);
+				}
+
+				$price = floatval($orderline->price[0]);
+				$priceinctax = floatval($orderline->priceinctax[0]);
+				$taxamount = $priceinctax - $price;
+				$taxpercent = round($priceinctax / $price - 1.0, 2) * 100;
+				$weight = floatval($orderline->weight[0]);
+
 				$item->setSku($productcode);
 				$item->setName($orderline->productname[0]);
+				$item->setIsQtyDecimal(false);
+				$item->setNoDiscount(true);
 				$item->setQty($qty);
-				$item->setPrice(floatval($orderline->price[0]));
-				$item->setPriceInclTax(floatval($orderline->priceinctax[0]));
-					$item->setBasePrice(floatval($orderline->price[0]));
-				$item->setBasePriceInclTax(floatval($orderline->priceinctax[0]));
-				$item->setOriginalPrice(floatval($orderline->priceinctax[0]));
+				$item->setPrice($price);
+				$item->setPriceInclTax($priceinctax);
+				$item->setOriginalPrice($priceinctax);
+				$item->setBasePrice($price);
+				$item->setBasePriceInclTax($priceinctax);
+				$item->setBaseOriginalPrice($priceinctax);
+				$item->setTaxPercent($taxpercent);
+				$item->setTaxAmount($taxamount);
 				$item->setDiscountAmount(0);
-				$item->setWeight($orderline->weight[0]);
+				$item->setWeight($weight);
 				$item->setBaseRowTotal($subtotal);
 				$item->setBaseRowTotalInclTax($subtotalinctax);
 				$item->setRowTotal($subtotal);
 				$item->setRowTotalInclTax($subtotalinctax);
+				$item->setWeeeTaxApplied(serialize(array()));
 
 				$quote->addItem($item);
 
@@ -486,8 +524,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 								$stockcontrol = $stockData['manage_stock'];
 							}
 
-							if($stockcontrol !=0) {
-								$stockItem->subtractQty(intval($qty));
+							if($stockcontrol !=0)
+							{
+								$stockItem->subtractQty($qty);
 								$stockItem->save();
 							}
 						}
@@ -584,9 +623,12 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$orderItem->setTaxPercent(round(floatval($orderline->priceinctax[0]) / floatval($orderline->price[0]) - 1.0, 2) * 100);
 
 			$orderItem->setProduct($product);
+			$orderItem->setProductType('simple');
 			$orderItem->setSku($orderline->productcode[0]);
 			$orderItem->setName($orderline->productname[0]);
-			$orderItem->setQty($qty);
+			$orderItem->setIsQtyDecimal(false);
+			$orderItem->setNoDiscount(true);
+			$orderItem->setQtyOrdered($qty);
 			$orderItem->setPrice(floatval($orderline->price[0]));
 			$orderItem->setPriceInclTax(floatval($orderline->priceinctax[0]));
 			$orderItem->setBasePrice(floatval($orderline->price[0]));
@@ -783,6 +825,147 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$order->setBaseGrandTotal($ordertotal);
 		$order->setGrandTotal($ordertotal);
 
+		$orderlineStockReserved = array();
+		foreach($order->getAllVisibleItems() as $item)
+		{
+			$productId = $item->getProductId();
+			if($productId || $productId == 0)
+			{
+				if(isset($orderlineStockReserved[$productId]))
+					$orderlineStockReserved[$productId] += $item->getQtyOrdered();
+				else
+					$orderlineStockReserved[$productId] = $item->getQtyOrdered();
+			}
+		}
+
+		foreach($order->getAllVisibleItems() as $item)
+		{
+			$item->delete();
+		}
+
+		$totalquantity = 0;
+		foreach($ordercontent->orderlines->orderline as $orderline)
+		{
+			if($orderline->productcode[0] != 'FREIGHT')
+			{
+				$product = null;
+				$productcode = $orderline->productcode[0];
+				if($productcode == null)
+					$productcode = '';
+				$productname = $orderline->productname[0];
+				if($productname == null)
+					$productname = '';
+
+				$productid = $orderline->externalreference[0];
+				if($productid != null)
+				{
+					$productid = intval($productid);
+
+					$product = Mage::getModel('catalog/product')->load($productid);
+					if($product->getId())
+					{
+						$productcode = $product->getSku();
+						$productname = $product->getName();
+					}
+					else
+					{
+						$product = null;
+					}
+				}
+
+				$qty = (int)$orderline->quantity[0];
+				$subtotalinctax = floatval($orderline->linetotalinctax[0]);
+				$subtotal = floatval($orderline->linetotal[0]);
+
+				$totalquantity += $qty;
+
+				$item = Mage::getModel('sales/order_item');
+				$item->setStoreId($storeId);
+
+				if($product)
+				{
+					$item->setProduct($product);
+					$item->setProductId($productid);
+				}
+
+				$price = floatval($orderline->price[0]);
+				$priceinctax = floatval($orderline->priceinctax[0]);
+				$taxamount = $priceinctax - $price;
+				$taxpercent = round($priceinctax / $price - 1.0, 2) * 100;
+				$weight = floatval($orderline->weight[0]);
+
+				$item->setProductType('simple');
+				$item->setSku($productcode);
+				$item->setName($productname);
+				$item->setIsQtyDecimal(false);
+				$item->setNoDiscount(true);
+				$item->setQtyOrdered($qty);
+				$item->setPrice($price);
+				$item->setPriceInclTax($priceinctax);
+				$item->setOriginalPrice($priceinctax);
+				$item->setBasePrice($price);
+				$item->setBasePriceInclTax($priceinctax);
+				$item->setBaseOriginalPrice($priceinctax);
+				$item->setTaxPercent($taxpercent);
+				$item->setTaxAmount($taxamount);
+				$item->setDiscountAmount(0);
+				$item->setWeight($weight);
+				$item->setBaseRowTotal($subtotal);
+				$item->setBaseRowTotalInclTax($subtotalinctax);
+				$item->setRowTotal($subtotal);
+				$item->setRowTotalInclTax($subtotalinctax);
+				$item->setWeeeTaxApplied(serialize(array()));
+
+				$order->addItem($item);
+
+				if($ordercontent->orderstate != 'cancelled')
+				{
+					if($product)
+					{
+						$stockItem = $product->getStockItem();
+						if (!$stockItem) {
+							$stockItem = Mage::getModel('cataloginventory/stock_item');
+							$stockItem->assignProduct($product)
+								->setData('stock_id', 1)
+								->setData('store_id', $storeId);
+						}
+
+						$stockData = $stockItem->getData();
+
+						if(isset($stockData['use_config_manage_stock'])) {
+
+							if($stockData['use_config_manage_stock'] != 0) {
+								$stockcontrol = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
+							} else {
+								$stockcontrol = $stockData['manage_stock'];
+							}
+
+							if($stockcontrol != 0) {
+
+								$stockReserved = isset($orderlineStockReserved[$productid]) ? $orderlineStockReserved[$productid] : 0;
+
+								$stockMovement = $qty - $stockReserved;
+
+								if($stockMovement > 0)
+								{
+									$stockItem->subtractQty($stockMovement);
+								}
+								else if($stockMovement < 0)
+								{
+									$stockMovement = abs($stockMovement);
+
+									$stockItem->addQty($stockMovement);
+								}
+
+								$stockItem->save();
+							}
+						}
+					}
+				}
+			}
+		}
+
+		$order->setTotalQtyOrdered((int)$totalquantity);
 
 		/* States: cancelled, processing, captured, inprogress, complete */
 		if($ordercontent->orderstate == 'captured' && ($orderstatus!='pending' && $orderstatus!='new')) {
@@ -803,9 +986,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
 		}
 
-		$totalquantity = 0;
-
-		if(($ordercontent->orderstate == 'cancelled' && $orderstatus!='canceled') || ($ordercontent->orderstate != 'cancelled' && $orderstatus == 'canceled')) {
+		if(
+			($ordercontent->orderstate == 'cancelled' && $orderstatus!='canceled') ||
+			($ordercontent->orderstate != 'cancelled' && $orderstatus == 'canceled'))
+		{
 			foreach($ordercontent->orderlines->orderline as $orderline)
 			{
 				if($orderline->productcode[0] != 'FREIGHT')
@@ -820,7 +1004,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 						$stockItem = Mage::getModel('cataloginventory/stock_item');
 						$stockItem->assignProduct($product)
 							->setData('stock_id', 1)
-							->setData('store_id', 1);
+							->setData('store_id', $storeId);
 					}
 					$stockItem = $product->getStockItem();
 					$stockData = $stockItem->getData();
@@ -846,8 +1030,6 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				}
 			}
 		}
-
-		$order->setTotalQtyOrdered((int)$totalquantity);
 
 		if($ordercontent->paymentstatus == 'complete')
 		{
