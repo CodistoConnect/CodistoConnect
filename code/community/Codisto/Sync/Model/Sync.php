@@ -706,13 +706,7 @@ class Codisto_Sync_Model_Sync
 		foreach($attributes as $attribute)
 		{
 			$backendType = $attribute->getBackendType();
-			if($backendType == 'text')
-			{
-				$TextValue = Mage::getResourceModel('catalog/product')->getAttributeRawValue($productData['entity_id'], $attribute->getAttributeCode(), $store->getId());
-
-				$insertHTMLSQL->execute(array($productData['entity_id'], $attribute->getStoreLabel(), $TextValue));
-			}
-			else if($backendType != 'static')
+			if($backendType != 'static')
 			{
 				$AttributeID = $attribute->getId();
 				$AttributeLabel = $attribute->getStoreLabel();
@@ -760,6 +754,11 @@ class Codisto_Sync_Model_Sync
 
 					if($AttributeValue != null)
 					{
+						if($backendType == 'text')
+						{
+							$insertHTMLSQL->execute(array($productData['entity_id'], $AttributeLabel, $AttributeValue));
+						}
+
 						$insertAttributeSQL->execute(array($AttributeID, $attribute->getName(), $AttributeLabel, $backendType));
 
 						if($AttributeGroupID)
@@ -767,7 +766,6 @@ class Codisto_Sync_Model_Sync
 							$insertAttributeGroupSQL->execute(array($AttributeGroupID, $AttributeGroupName));
 							$insertAttributeGroupMapSQL->execute(array($AttributeGroupID, $AttributeID));
 						}
-
 
 						$insertProductAttributeSQL->execute(array($productData['entity_id'], $AttributeID, $AttributeValue));
 					}
