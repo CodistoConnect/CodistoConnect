@@ -188,6 +188,11 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 										$MerchantID = $data['merchantid'];
 										$HostKey = $data['hostkey'];
+
+										Mage::app()->removeCache('config_store_data');
+										Mage::app()->getCacheInstance()->cleanType('config');
+										Mage::dispatchEvent('adminhtml_cache_refresh_type', array('type' => 'config'));
+										Mage::app()->reinitStores();
 									}
 								}
 								catch(Exception $e)
@@ -461,6 +466,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 								Mage::app()->removeCache('config_store_data');
 								Mage::app()->getCacheInstance()->cleanType('config');
+								Mage::dispatchEvent('adminhtml_cache_refresh_type', array('type' => 'config'));
 								Mage::app()->reinitStores();
 							}
 						}
