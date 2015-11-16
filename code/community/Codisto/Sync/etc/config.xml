@@ -60,7 +60,7 @@
 		<jobs>
 			<Codisto_Sync>
 				<schedule>
-					<cron_expr>*/5 * * * *</cron_expr>
+					<cron_expr>* * * * *</cron_expr>
 				</schedule>
 				<run>
 					<model>codistosync/observer::cronSync</model>

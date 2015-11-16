@@ -173,7 +173,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 									$codistoversion = Codisto_Sync_Helper_Data::getCodistoVersion();
 
 									$remoteResponse = $client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
-									'url' => $url, 'email' => $email, 'storename' => $storename, 'storecurrency' => $storecurrency, 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)))->request('POST');
+									'url' => $url, 'email' => $email, 'test' => true, 'storename' => $storename, 'storecurrency' => $storecurrency, 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)))->request('POST');
 
 									if(!$remoteResponse->isSuccessful())
 										throw new Exception('Error Creating Account');
@@ -188,18 +188,30 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 										$MerchantID = $data['merchantid'];
 										$HostKey = $data['hostkey'];
-									}
-									
-									if(isset($data['ack']) && $data['ack'] == "FAILED") {
 										
-										//Endpoint Unreachable - Turn on cron fallback 
-										$file = new Varien_Io_File();
-										$file->open(array('path' => Mage::getBaseDir('var')));
-										$file->write('codisto-external-sync-failed', '0');
-										$file->close();
+										try {
 										
-										$result = Mage::getModel('codistosync/observer')->cronSync($this);
-		
+											$h = new Zend_Http_Client();
+											$h->setConfig(array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 2 ));
+											$h->setStream();
+											$h->setUri('https://ui.codisto.com/'.$MerchantID.'/testendpoint/');
+											$h->setHeaders('X-HostKey', $HostKey);
+											$testResponse = $h->request('GET');
+											
+											$testdata = Zend_Json::decode($testResponse->getRawBody(), true);
+											
+											if(isset($testdata['ack']) && $testdata['ack'] == "FAILED") {
+												
+												//Endpoint Unreachable - Turn on cron fallback 
+												$file = new Varien_Io_File();
+												$file->open(array('path' => Mage::getBaseDir('var')));
+												$file->write('codisto-external-sync-failed', '0');
+												$file->close();
+				
+											}
+										
+										} catch (Exception $e) {}
+
 									}
 									
 								}
@@ -300,19 +312,6 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				else
 				{
 					$path = preg_replace('/(^\/codisto\/ebaytab\/)(\d+\/?)/', '$1', $path);
-				}
-				
-				if(preg_match('/^\/codisto\/localsync\//', $path))
-				{
-					
-					if($request->getQuery('pushonly'))
-						$result = Mage::getModel('codistosync/observer')->cronSync("pushonly");
-					else
-						$result = Mage::getModel('codistosync/observer')->cronSync($this);
-					
-					echo $result;
-					die();
-					
 				}
 
 				// product page iframe
