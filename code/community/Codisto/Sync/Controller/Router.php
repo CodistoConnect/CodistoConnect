@@ -173,7 +173,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 									$codistoversion = Codisto_Sync_Helper_Data::getCodistoVersion();
 
 									$remoteResponse = $client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
-									'url' => $url, 'email' => $email, 'test' => true, 'storename' => $storename, 'storecurrency' => $storecurrency, 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)))->request('POST');
+									'url' => $url, 'email' => $email, 'storename' => $storename, 'storecurrency' => $storecurrency, 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)))->request('POST');
 
 									if(!$remoteResponse->isSuccessful())
 										throw new Exception('Error Creating Account');
