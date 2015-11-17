@@ -217,13 +217,21 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 										} catch (Exception $e) {
 
-											//Check in cron
-											$file = new Varien_Io_File();
-											$file->open(array('path' => Mage::getBaseDir('var')));
-											$file->write('codisto-external-test-failed', '0');
-											$file->close();
-
 											Mage::log('Error testing endpoint and writing failed sync file. Message: ' . $e->getMessage() . ' on line: ' . $e->getLine());
+
+											try
+											{
+												//Check in cron
+												
+												$file = new Varien_Io_File();
+												$file->open(array('path' => Mage::getBaseDir('var')));
+												$file->write('codisto-external-test-failed', '0');
+												$file->close();
+											}
+											catch (Exception $e2)
+											{
+
+											}
 
 										}
 									}
