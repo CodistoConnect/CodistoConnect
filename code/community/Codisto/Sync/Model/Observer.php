@@ -309,7 +309,7 @@ class Codisto_Sync_Model_Observer
 		}
 		else
 		{
-			$merchant = '';
+			$merchant = '0';
 		}
 
 		$controller = $observer->getAction();
