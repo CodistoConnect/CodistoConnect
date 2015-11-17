@@ -54,6 +54,16 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 			}
 		}
 
+		if($entity == Mage_CatalogInventory_Model_Stock_Item::ENTITY)
+		{
+			if($type == Mage_Index_Model_Event::TYPE_SAVE ||
+				$type == Mage_Index_Model_Event::TYPE_DELETE)
+			{
+				$event->addNewData(self::EVENT_MATCH_RESULT_KEY, true);
+				return true;
+			}
+		}
+
 		if($entity == Mage_Catalog_Model_Category::ENTITY)
 		{
 			if($type == Mage_Index_Model_Event::TYPE_SAVE ||
@@ -88,6 +98,11 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 			case Mage_Catalog_Model_Product::ENTITY:
 
 				$event->addNewData('codisto_sync_product', true);
+				break;
+
+			case Mage_CatalogInventory_Model_Stock_Item::ENTITY:
+
+				$event->addNewData('codisto_sync_stock', true);
 				break;
 
 			case Mage_Catalog_Model_Category::ENTITY:
@@ -170,6 +185,86 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 							$client->setUri('https://api.codisto.com/'.$merchantid);
 							$client->setHeaders('X-HostKey', $hostkey);
 							$client->setRawData('action=sync&categoryid='.$categoryid)->request('POST');
+						}
+					}
+					catch (Exception $e)
+					{
+
+					}
+				}
+			}
+		}
+
+		if(isset($data['codisto_sync_stock']))
+		{
+			if($event->getDataObject())
+			{
+				// always synchronise the admin store on any edit
+				$syncStores = array(0);
+
+				$eventData = $event->getDataObject()->getData();
+				$storeId = $eventData['store_id'];
+				if(!isset($storeId) || !$storeId)
+					$storeId = 0;
+
+				if($storeId != 0)
+				{
+					$defaultMerchantId = (int)Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
+					$storeMerchantId = (int)Mage::getStoreConfig('codisto/merchantid', $storeId);
+
+					// if the default Codisto merchantid is different at this store level
+					// explicitly synchronise it as well
+					if($defaultMerchantId != $storeMerchantId)
+					{
+						$syncStores[] = $storeId;
+					}
+				}
+
+				$syncObject = Mage::getModel('codistosync/sync');
+				$syncIds = Mage::getResourceSingleton('catalog/product_type_configurable')->getParentIdsByChild($event->getDataObject()->getProductId());
+
+				if(empty($syncIds))
+					$syncIds = array($event->getDataObject()->getProductId());
+
+				$productIds = '';
+				if(count($syncIds) == 1)
+					$productIds = $syncIds[0];
+				else
+					$productIds = '['.implode(',', $syncIds).']';
+
+				$client = new Zend_Http_Client();
+				$client->setConfig(array( 'keepalive' => true, 'maxredirects' => 0 ));
+				$client->setStream();
+
+				foreach($syncStores as $storeId)
+				{
+					$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+
+					if($type == Mage_Index_Model_Event::TYPE_DELETE
+							&& count($syncIds) == 1
+							&& $syncIds[0] == $event->getDataObject()->getId())
+					{
+						$syncObject->DeleteProduct($syncDb, $event->getDataObject()->getId(), $storeId);
+					}
+					else
+					{
+						$syncObject->UpdateProducts($syncDb, $syncIds, $storeId);
+					}
+
+					try
+					{
+						$merchantid = Mage::getStoreConfig('codisto/merchantid', $storeId);
+						$hostkey = Mage::getStoreConfig('codisto/hostkey', $storeId);
+
+						$merchantlist = Zend_Json::decode($merchantid);
+						if(!is_array($merchantlist))
+							$merchantlist = array($merchantlist);
+
+						foreach($merchantlist as $merchantid)
+						{
+							$client->setUri('https://api.codisto.com/'.$merchantid);
+							$client->setHeaders('X-HostKey', $hostkey);
+							$client->setRawData('action=sync&productid='.$productIds)->request('POST');
 						}
 					}
 					catch (Exception $e)
