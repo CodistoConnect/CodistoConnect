@@ -23,7 +23,7 @@
 <config>
 	<modules>
 		<Codisto_Sync>
-			<version>1.1.43</version>
+			<version>1.1.49</version>
 			<depends>
 				<Mage_Payment/>
 			</depends>
@@ -161,6 +161,16 @@
 					</codisto_admin>
 				</observers>
 			</core_block_abstract_prepare_layout_after>
+
+			<core_abstract_save_commit_after>
+				<observers>
+					<codisto_staticblocksync>
+						<type>singleton</type>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>cmsStaticBlockSaveAfter</method>
+					</codisto_staticblocksync>
+				</observers>
+			</core_abstract_save_commit_after>
 		</events>
 
 		<fieldsets>
@@ -236,6 +246,16 @@
 		</web>
 
 		<payment>
+			<ebay>
+				<active>1</active>
+				<model>ebaypayment/paymentmethod</model>
+				<order_status>pending</order_status>
+				<title>Ebay Order</title>
+				<allowspecific>0</allowspecific>
+				<group>offline</group>
+			</ebay>
+
+			<!-- legacy payment code -->
 			<ebaypayment>
 				<active>1</active>
 				<model>ebaypayment/paymentmethod</model>

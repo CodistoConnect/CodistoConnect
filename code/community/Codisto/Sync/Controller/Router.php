@@ -188,28 +188,33 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 										$MerchantID = $data['merchantid'];
 										$HostKey = $data['hostkey'];
-										
+
+										Mage::app()->removeCache('config_store_data');
+										Mage::app()->getCacheInstance()->cleanType('config');
+										Mage::dispatchEvent('adminhtml_cache_refresh_type', array('type' => 'config'));
+										Mage::app()->reinitStores();
+
 										try {
-										
+
 											$h = new Zend_Http_Client();
 											$h->setConfig(array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 20 ));
 											$h->setStream();
 											$h->setUri('https://ui.codisto.com/'.$MerchantID.'/testendpoint/');
 											$h->setHeaders('X-HostKey', $HostKey);
 											$testResponse = $h->request('GET');
-											
+
 											$testdata = Zend_Json::decode($testResponse->getRawBody(), true);
-											
+
 											if(isset($testdata['ack']) && $testdata['ack'] == "FAILED") {
-												
-												//Endpoint Unreachable - Turn on cron fallback 
+
+												//Endpoint Unreachable - Turn on cron fallback
 												$file = new Varien_Io_File();
 												$file->open(array('path' => Mage::getBaseDir('var')));
 												$file->write('codisto-external-sync-failed', '0');
 												$file->close();
-				
+
 											}
-										
+
 										} catch (Exception $e) {
 
 											//Check in cron
@@ -217,13 +222,12 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 											$file->open(array('path' => Mage::getBaseDir('var')));
 											$file->write('codisto-external-test-failed', '0');
 											$file->close();
-											
-											Mage::log('Error testing endpoint and writing failed sync file. Message: ' . $e->getMessage() . ' on line: ' . $e->getLine());
-											
-										}
 
+											Mage::log('Error testing endpoint and writing failed sync file. Message: ' . $e->getMessage() . ' on line: ' . $e->getLine());
+
+										}
 									}
-									
+
 								}
 								catch(Exception $e)
 								{
@@ -496,6 +500,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 								Mage::app()->removeCache('config_store_data');
 								Mage::app()->getCacheInstance()->cleanType('config');
+								Mage::dispatchEvent('adminhtml_cache_refresh_type', array('type' => 'config'));
 								Mage::app()->reinitStores();
 							}
 						}

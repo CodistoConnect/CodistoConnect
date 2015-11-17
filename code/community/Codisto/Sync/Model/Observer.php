@@ -400,6 +400,8 @@ class Codisto_Sync_Model_Observer
 			$this->signalStockChange($stockItems);
 
 		}
+
+		return $this;
 	}
 
 	public function stockRevertProductsSale($observer)
@@ -414,6 +416,8 @@ class Codisto_Sync_Model_Observer
 		}
 
 		$this->signalStockChange($stockItems);
+
+		return $this;
 	}
 
 
@@ -429,6 +433,8 @@ class Codisto_Sync_Model_Observer
 		}
 
 		$this->signalStockChange($stockItems);
+
+		return $this;
 	}
 
 	public function cancelOrderItem($observer)
@@ -505,7 +511,7 @@ class Codisto_Sync_Model_Observer
 		}
 		else
 		{
-			$merchant = '';
+			$merchant = '0';
 		}
 
 		$controller = $observer->getAction();
@@ -526,6 +532,73 @@ class Codisto_Sync_Model_Observer
 		$jsBlock = $layout->getBlock('js');
 		if($jsBlock)
 			$jsBlock->append($block);
+
+		return $this;
+	}
+
+	public function cmsStaticBlockSaveAfter($observer)
+	{
+		if(is_object($observer))
+		{
+			$eventData = $observer->getEvent()->getData();
+
+			if(isset($eventData['data_object']))
+			{
+				$dataObject = $eventData['data_object'];
+
+				if(is_subclass_of($dataObject, 'Mage_Core_Model_Abstract'))
+				{
+					if($dataObject->getResourceName() == 'cms/block')
+					{
+						$merchants = array();
+						$visited = array();
+
+						$stores = Mage::getModel('core/store')->getCollection();
+
+						foreach($stores as $store)
+						{
+							$merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
+							if($merchantlist)
+							{
+								if(!is_array($merchantlist))
+									$merchantlist = array($merchantlist);
+
+								foreach($merchantlist as $merchantId)
+								{
+									if(!in_array($merchantId, $visited, true))
+									{
+										$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $store->getConfig('codisto/hostkey'), 'storeid' => $store->getId() );
+										$visited[] = $merchantId;
+									}
+								}
+							}
+						}
+
+						unset($visited);
+
+						$client = new Zend_Http_Client();
+						$client->setConfig(array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 2 ));
+						$client->setStream();
+
+						foreach($merchants as $merchant)
+						{
+							try
+							{
+								$client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
+								$client->setHeaders('X-HostKey', $merchant['hostkey']);
+								$client->setRawData('action=syncstaticblock&id='.rawurlencode($dataObject->getId()).'&identifier='.rawurlencode($dataObject->getIdentifier()).'&content='.rawurlencode($dataObject->getContent()))->request('POST');
+							}
+							catch(Exception $e)
+							{
+
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return $this;
 	}
 
 	private function signalStockChange($stockItems)
