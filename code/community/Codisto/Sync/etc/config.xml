@@ -241,6 +241,16 @@
 				<allowspecific>0</allowspecific>
 				<group>offline</group>
 			</ebay>
+
+			<!-- legacy payment code -->
+			<ebaypayment>
+				<active>1</active>
+				<model>ebaypayment/paymentmethod</model>
+				<order_status>pending</order_status>
+				<title>Ebay Order</title>
+				<allowspecific>0</allowspecific>
+				<group>offline</group>
+			</ebaypayment>
 		</payment>
 	</default>
 
