@@ -36,7 +36,9 @@ class Codisto_Sync_Model_Observer
 			return;
 
 		$extSyncFailed = Mage::getBaseDir('var') . '/codisto-external-sync-failed';
-		if(!file_exists($extSyncFailed)) {
+		$extTestFailed = Mage::getBaseDir('var') . '/codisto-external-test-failed';
+		
+		if(!file_exists($extSyncFailed) && !file_exists($extTestFailed)) {
 			return 'External sync has not failed, manual sync not run';
 		}
 		
@@ -72,7 +74,7 @@ class Codisto_Sync_Model_Observer
 		unset($visited);
 
 		$client = new Zend_Http_Client();
-		$client->setConfig(array( 'keepalive' => false, 'maxredirects' => 0, 'timeout' => 10 ));
+		$client->setConfig(array( 'keepalive' => false, 'maxredirects' => 0, 'timeout' => 30 ));
 		$client->setStream();
 
 		foreach($merchants as $merchant)
@@ -88,6 +90,7 @@ class Codisto_Sync_Model_Observer
 				if(isset($testdata['ack']) && $testdata['ack'] == "SUCCESS") {
 					if(file_exists($extSyncFailed))
 						unlink($extSyncFailed);
+						unlink($extTestFailed);
 					break;
 				}
 				
@@ -101,7 +104,11 @@ class Codisto_Sync_Model_Observer
 		}
 		
 		if(!file_exists($extSyncFailed)) {
-			return 'External endpoint now reachable! Manual sync not run';
+			return; //External endpoint now reachable! Manual sync not run
+		}
+		
+		if(file_exists($extTestFailed)) {
+			return; //Test endpoint again
 		}
 			
 		$file = new Varien_Io_File();
@@ -109,7 +116,7 @@ class Codisto_Sync_Model_Observer
 		$lastSyncTime = $file->read('codisto-external-sync-failed');
 		
 		if((microtime(true) - $lastSyncTime) < 1800)
-			return 'The manual cron sync has already run in the last 30 mins. Last run - ' . (round((microtime(true) - $lastSyncTime)/60)) . ' minutes ago';
+			return; //The manual cron sync has already run in the last 30 mins
 		
 		if($indexer->load('codistoebayindex', 'indexer_code')->getStatus() == 'working')
 			return;

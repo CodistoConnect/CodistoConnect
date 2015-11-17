@@ -920,7 +920,7 @@ class Codisto_Sync_SyncController extends Codisto_Sync_Controller_BaseController
 		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 		$response->setHeader('Pragma', 'no-cache', true);
 
-		if(false && $this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+		if($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 		{
 			$version = (string)Mage::getConfig()->getModuleConfig('Codisto_Sync')->version;
 			$response->setHeader('X-Codisto-Version', $version, true);
