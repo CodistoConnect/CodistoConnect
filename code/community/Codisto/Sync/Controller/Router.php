@@ -192,7 +192,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 										try {
 										
 											$h = new Zend_Http_Client();
-											$h->setConfig(array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 2 ));
+											$h->setConfig(array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 10 ));
 											$h->setStream();
 											$h->setUri('https://ui.codisto.com/'.$MerchantID.'/testendpoint/');
 											$h->setHeaders('X-HostKey', $HostKey);

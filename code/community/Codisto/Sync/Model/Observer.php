@@ -72,7 +72,7 @@ class Codisto_Sync_Model_Observer
 		unset($visited);
 
 		$client = new Zend_Http_Client();
-		$client->setConfig(array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 2 ));
+		$client->setConfig(array( 'keepalive' => false, 'maxredirects' => 0, 'timeout' => 10 ));
 		$client->setStream();
 
 		foreach($merchants as $merchant)
@@ -95,7 +95,7 @@ class Codisto_Sync_Model_Observer
 			catch(Exception $e)
 			{
 
-				Mage::log('Error posting to ui.codisto.com/testendpoint: ' . $e->getMessage() . ' on line: ' . $e->getLine() . ' in file: ' . $e->getFile() . ' for merchant ' . $merchant['merchantid']);
+				Mage::log('Error posting to https://ui.codisto.com/testendpoint'.$merchant['merchantid'].'/: ' . $e->getMessage() . ' on line: ' . $e->getLine() . ' in file: ' . $e->getFile() . ' for merchant ' . $merchant['merchantid']);
 			
 			}
 		}
@@ -117,7 +117,7 @@ class Codisto_Sync_Model_Observer
 		$indexer->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
 
 		$http = new Zend_Http_Client();
-		$http->setConfig(array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 2 ));
+		$http->setConfig(array( 'keepalive' => false, 'maxredirects' => 0, 'timeout' => 5 ));
 		$http->setStream();
 
 		foreach($merchants as $merchant)
