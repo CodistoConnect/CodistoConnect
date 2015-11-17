@@ -20,6 +20,224 @@
 
 class Codisto_Sync_Model_Observer
 {
+	public function cronSync($synctype)
+	{
+		$SyncTimeout = 600;
+		$Sleep = 100000;
+		$ConfigurableCount = 6;
+		$SimpleCount = 250;
+
+		$file = new Varien_Io_File();
+
+		$indexer = Mage::getModel('index/process')->load('codistoebayindex', 'indexer_code');
+
+		try
+		{
+			if($indexer->load('codistoebayindex', 'indexer_code')->getStatus() == 'working')
+				return;
+
+			$extSyncFailed = Mage::getBaseDir('var') . '/codisto-external-sync-failed';
+			$extTestFailed = Mage::getBaseDir('var') . '/codisto-external-test-failed';
+
+			if(!file_exists($extSyncFailed) && !file_exists($extTestFailed)) {
+				return 'External sync has not failed, manual sync not run';
+			}
+
+			$merchants = array();
+			$visited = array();
+
+			$stores = Mage::getModel('core/store')->getCollection();
+			foreach($stores as $store)
+			{
+				$merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
+
+				if($merchantlist)
+				{
+					if(!is_array($merchantlist))
+						$merchantlist = array($merchantlist);
+
+					foreach($merchantlist as $merchantId)
+					{
+						if(!in_array($merchantId, $visited, true))
+						{
+							$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $store->getConfig('codisto/hostkey'), 'storeid' => $store->getId() );
+							$visited[] = $merchantId;
+						}
+					}
+				}
+			}
+
+			$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
+			if(!in_array($MerchantID, $visited, true))
+				$merchants[] = array( 'merchantid' => $MerchantID, 'hostkey' => $HostKey, 'storeid' => 0);
+
+			unset($visited);
+
+			$client = new Zend_Http_Client();
+			$client->setConfig(array( 'keepalive' => false, 'maxredirects' => 0, 'timeout' => 30 ));
+			$client->setStream();
+
+			foreach($merchants as $merchant)
+			{
+				try
+				{
+					$client->setUri('https://ui.codisto.com/'.$merchant['merchantid'].'/testendpoint/');
+					$client->setHeaders('X-HostKey', $merchant['hostkey']);
+					$remoteResponse = $client->request('GET');
+
+					$data = Zend_Json::decode($remoteResponse->getRawBody(), true);
+
+					if(isset($testdata['ack']) && $testdata['ack'] == "SUCCESS") {
+						if(file_exists($extSyncFailed))
+							unlink($extSyncFailed);
+							unlink($extTestFailed);
+						break;
+					}
+
+				}
+				catch(Exception $e)
+				{
+
+					Mage::log('Error posting to https://ui.codisto.com/testendpoint'.$merchant['merchantid'].'/: ' . $e->getMessage() . ' on line: ' . $e->getLine() . ' in file: ' . $e->getFile() . ' for merchant ' . $merchant['merchantid']);
+
+				}
+			}
+
+			if(!file_exists($extSyncFailed)) {
+				return; //External endpoint now reachable! Manual sync not run
+			}
+
+			if(file_exists($extTestFailed)) {
+				return; //Test endpoint again
+			}
+
+
+			$file->open(array('path' => Mage::getBaseDir('var')));
+			$lastSyncTime = $file->read('codisto-external-sync-failed');
+
+			if((microtime(true) - $lastSyncTime) < 1800)
+				return; //The manual cron sync has already run in the last 30 mins
+
+			if($indexer->load('codistoebayindex', 'indexer_code')->getStatus() == 'working')
+				return;
+
+			$indexer->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
+
+			$http = new Zend_Http_Client();
+			$http->setConfig(array( 'keepalive' => false, 'maxredirects' => 0, 'timeout' => 5 ));
+			$http->setStream();
+
+			foreach($merchants as $merchant)
+			{
+
+				$storeId = $merchant['storeid'];
+				$syncObject = Mage::getModel('codistosync/sync');
+				$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-cron-'.$storeId.'.db';
+
+				$startTime = microtime(true);
+
+				for($i = 0;;$i++)
+				{
+
+					try
+					{
+
+						$http->setUri('https://ui.codisto.com/'.$merchant['merchantid'].'/');
+						$http->setHeaders(array('Content-Type' => 'multipart/form-data'));
+						$http->setHeaders('X-HostKey', $merchant['hostkey']);
+						$http->setParameterPost(array('cmd'  => 'updatestatus', 'status' => 'inprogress', 'progress' => (20+$i)));
+						$response = $http->request('POST');
+
+					} catch (Exception $e)
+					{
+						// if we fail to update status - that's ok
+					}
+
+					$result = $syncObject->SyncChunk($syncDb, $SimpleCount, $ConfigurableCount, $storeId, false);
+
+					if($result == 'complete')
+					{
+						$syncObject->SyncTax($syncDb, $storeId);
+						$syncObject->SyncStores($syncDb, $storeId);
+
+						$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+						break;
+					}
+
+					$now = microtime(true);
+
+					if(($now - $startTime) > $SyncTimeout)
+					{
+						break;
+					}
+
+					usleep($Sleep);
+				}
+
+				if($result == 'complete') {
+
+					try
+					{
+						$http->setParameterPost(array('cmd'  => 'updatestatus', 'status' => 'complete'));
+						$response = $http->request('POST');
+					}
+					catch(Exception $e)
+					{
+
+					}
+				}
+
+				try {
+
+					if($result == 'complete' && file_exists($syncDb)) {
+
+						$http->setUri('https://ui.codisto.com/'.$merchant['merchantid'].'/');
+						$http->setHeaders(array('Content-Type' => 'multipart/form-data'));
+						$http->setParameterPost(array('cmd'  => 'pushalldata'));
+						$http->setFileUpload($syncDb, 'syncdb');
+						$http->setHeaders('X-HostKey', $merchant['hostkey']);
+						$response = $http->request('POST');
+
+						unlink($syncDb);
+
+					}
+
+				} catch (Exception $e) {
+
+					try
+					{
+
+						$http->setUri('https://ui.codisto.com/'.$merchant['merchantid'].'/');
+						$http->setHeaders(array('Content-Type' => 'multipart/form-data'));
+						$http->setHeaders('X-HostKey', $merchant['hostkey']);
+						$http->setParameterPost(array('cmd'  => 'updatestatus', 'status' => 'failed'));
+						$response = $http->request('POST');
+
+					} catch (Exception $e)
+					{
+
+					}
+
+					Mage::log('Error Posting sync data to ui.codisto.com: ' . $e->getMessage() . ' on line: ' . $e->getLine()  . ' in file: ' . $e->getFile() . ' for merchant ' . $merchant['merchantid']);
+
+				}
+
+			}
+
+		} catch (Exception $e) {
+
+			$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+			$file->write('codisto-external-sync-failed', 0);
+
+			Mage::log('Codisto Sync Error: ' . $e->getMessage() . ' on line: ' . $e->getLine() . ' in file: ' . $e->getFile());
+
+		}
+
+		$file->write('codisto-external-sync-failed', (string)microtime(true));
+		$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+
+	}
 
 	public function paymentInfoBlockPrepareSpecificInformation($observer)
 	{
@@ -66,6 +284,11 @@ class Codisto_Sync_Model_Observer
 				}
 			}
 		}
+
+		$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+		$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
+		if(!in_array($MerchantID, $visited, true))
+			$merchants[] = array( 'merchantid' => $MerchantID, 'hostkey' => $HostKey, 'storeid' => 0);
 
 		unset($visited);
 
@@ -426,6 +649,11 @@ class Codisto_Sync_Model_Observer
 					}
 				}
 			}
+
+			$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
+			if(!in_array($MerchantID, $visited, true))
+				$merchants[] = array( 'merchantid' => $MerchantID, 'hostkey' => $HostKey, 'storeid' => 0);
 
 			unset($visited);
 
