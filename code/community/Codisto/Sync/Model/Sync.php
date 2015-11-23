@@ -749,6 +749,9 @@ class Codisto_Sync_Model_Sync
 
 					default:
 
+						if(is_array($AttributeValue))
+							$AttributeValue = implode(',', $AttributeValue);
+
 						break;
 					}
 

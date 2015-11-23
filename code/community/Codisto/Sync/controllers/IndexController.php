@@ -272,6 +272,19 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 	{
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
+		if($storeId == 0)
+		{
+			// jump the storeid to first non admin store
+			$stores = Mage::getModel('core/store')->getCollection()
+										->addFieldToFilter('is_active', array('neq' => 0))
+										->addFieldToFilter('store_id', array('gt' => 0))
+										->setOrder('store_id', 'ASC');
+
+			$firstStore = $stores->getFirstItem();
+			if(is_object($firstStore) && $firstStore->getId())
+				$storeId = $firstStore->getId();
+		}
+
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
 			if($orderline->productcode[0] != 'FREIGHT') {
@@ -751,6 +764,8 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 	private function ProcessOrderSync($order, $xml, $storeId)
 	{
+		$storeId = $order->getStoreId();
+
 		$store = Mage::app()->getStore($storeId);
 
 		$orderstatus = $order->getState();
