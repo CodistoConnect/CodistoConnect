@@ -275,7 +275,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		if($storeId == 0)
 		{
 			// jump the storeid to first non admin store
-			$storeCollection = Mage::getModel('core/store')->getCollection()
+			$stores = Mage::getModel('core/store')->getCollection()
 										->addFieldToFilter('is_active', array('neq' => 0))
 										->addFieldToFilter('store_id', array('gt' => 0))
 										->setOrder('store_id', 'ASC');
