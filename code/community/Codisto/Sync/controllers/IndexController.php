@@ -1070,16 +1070,19 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 		$order->save();
 
-		if($ordercontent->paymentstatus == 'complete' && $order->canInvoice())
+		if(!$order->hasInvoices())
 		{
-			$invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
-
-			if($invoice->getTotalQty())
+			if($ordercontent->paymentstatus == 'complete' && $order->canInvoice())
 			{
-				$invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
-				$invoice->register();
+				$invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
+
+				if($invoice->getTotalQty())
+				{
+					$invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
+					$invoice->register();
+				}
+				$invoice->save();
 			}
-			$invoice->save();
 		}
 
 		$response = $this->getResponse();
