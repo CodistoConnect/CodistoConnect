@@ -2,7 +2,19 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.51...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.52...HEAD)
+
+**Fixed bugs:**
+
+- inhibit multiple invoices being generated on the same order [\#171](https://github.com/CodistoConnect/CodistoConnect/pull/171) ([bradmccormack](https://github.com/bradmccormack))
+- inhibit multiple invoices being generated on the same order [\#170](https://github.com/CodistoConnect/CodistoConnect/pull/170) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#172](https://github.com/CodistoConnect/CodistoConnect/pull/172) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.52](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.52) (2015-11-23)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.51...1.1.52)
 
 **Fixed bugs:**
 
