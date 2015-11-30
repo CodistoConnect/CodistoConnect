@@ -1152,9 +1152,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$payment->save();
 		}
 
-		Mage::dispatchEvent('sales_order_save_before', array('order'=>$order));
-
 		$order->save();
+
+		Mage::dispatchEvent('sales_order_save_before', array('order'=>$order));
 
 		Mage::dispatchEvent('sales_order_save_after', array('order'=>$order));
 
