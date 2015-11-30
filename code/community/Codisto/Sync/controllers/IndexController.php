@@ -293,7 +293,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			if(is_object($firstStore) && $firstStore->getId())
 				$storeId = $firstStore->getId();
 		}
-/*
+
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
 			if($orderline->productcode[0] != 'FREIGHT') {
@@ -308,7 +308,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				}
 			}
 		}
-*/
+
 		$store = Mage::app()->getStore($storeId);
 		$websiteId = $store->getWebsiteId();
 
