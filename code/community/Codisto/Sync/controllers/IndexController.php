@@ -487,7 +487,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				if($productname == null)
 					$productname = '';
 
-				$productid = 906; //$orderline->externalreference[0];
+				$productid = $orderline->externalreference[0];
 				if($productid != null)
 				{
 					$productid = intval($productid);
