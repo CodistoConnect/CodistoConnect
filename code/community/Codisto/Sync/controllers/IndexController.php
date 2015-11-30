@@ -103,7 +103,16 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			{
 				$product = $model->load($id);
 
-				$cart->addProduct($product, $productqty);
+				if($product)
+				{
+					$item = Mage::getModel('sales/quote_item');
+					$item->setStoreId($storeId);
+					$item->setQuote($cart->getQuote());
+
+					$item->setProduct($product);
+
+					$cart->getQuote()->getItemsCollection()->addItem($item);
+				}
 			}
 		}
 
@@ -238,7 +247,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 							$response = $this->getResponse();
 							$response->setHeader('Content-Type', 'application/json');
-							$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage())));
+							$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString())));
 
 							$connection->rollback();
 							break;
@@ -284,7 +293,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			if(is_object($firstStore) && $firstStore->getId())
 				$storeId = $firstStore->getId();
 		}
-
+/*
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
 			if($orderline->productcode[0] != 'FREIGHT') {
@@ -299,7 +308,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				}
 			}
 		}
-
+*/
 		$store = Mage::app()->getStore($storeId);
 		$websiteId = $store->getWebsiteId();
 
@@ -362,12 +371,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		}
 
 		$addressData_billing = array(
+			'email' => $email,
+			'prefix' => '',
+			'suffix' => '',
+			'company' => (string)$billing_address->companyname,
 			'firstname' => (string)$billing_first_name,
+			'middlename' => '',
 			'lastname' => (string)$billing_last_name,
-			'street' => (string)$billing_address->address1.','.$billing_address->address2,
+			'street' => (string)$billing_address->address1.($shipping_address->address2 ? '\n'.$billing_address->address2 : ''),
 			'city' => (string)$billing_address->place,
 			'postcode' => (string)$billing_address->postalcode,
 			'telephone' => (string)$billing_address->phone,
+			'fax' => '',
 			'country_id' => (string)$billing_address->countrycode,
 			'region_id' => (string)$regionsel_id, // id from directory_country_region table
 		);
@@ -382,12 +397,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		}
 
 		$addressData_shipping = array(
+			'email' => $email,
+			'prefix' => '',
+			'suffix' => '',
+			'company' => (string)$shipping_address->companyname,
 			'firstname' => (string)$shipping_first_name,
+			'middlename' => '',
 			'lastname' => (string)$shipping_last_name,
-			'street' => (string)$shipping_address->address1.','.$shipping_address->address2,
+			'street' => (string)$shipping_address->address1.($shipping_address->address2 ? '\n'.$shipping_address->address2 : ''),
 			'city' => (string)$shipping_address->place,
 			'postcode' => (string)$shipping_address->postalcode,
 			'telephone' => (string)$shipping_address->phone,
+			'fax' => '',
 			'country_id' => (string)$shipping_address->countrycode,
 			'region_id' => (string)$regionsel_id_ship, // id from directory_country_region table
 		);
@@ -405,16 +426,17 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$ebayGroup->save();
 			}
 
+			$customerGroupId = $ebayGroup->getId();
+
 			$customer->setWebsiteId($websiteId);
 			$customer->setStoreId($storeId);
 			$customer->setEmail($email);
 			$customer->setFirstname((string)$billing_first_name);
 			$customer->setLastname((string)$billing_last_name);
 			$customer->setPassword('');
-			$customer->setData('group_id', $ebayGroup->getId());
+			$customer->setGroupId($customerGroupId);
 			$customer->save();
 			$customer->setConfirmation(null);
-			$customer->setStatus(1);
 			$customer->save();
 
 			$customerId = $customer->getId();
@@ -433,15 +455,26 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				->setSaveInAddressBook(1);
 			$customerAddress->save();
 		}
+		else
+		{
+			$customerId = $customer->getId();
+			$customerGroupId = $customer->getGroupId();
+		}
 
 		$quote = Mage::getModel('sales/quote');
 		$quote->setStoreId($storeId);
 		$quote->assignCustomer($customer);
 
 		$quote->getBillingAddress()->addData($addressData_billing);
+		$quote->getBillingAddress()->setCustomerId($customerId);
 		$quote->getShippingAddress()->addData($addressData_shipping);
+		$quote->getShippingAddress()->setCustomerId($customerId);
 
-		$totalquantity = 0;
+		$carttotal = 0.0;
+		$cartsubtotal = 0.0;
+		$totalitemcount = 0;
+		$totalitemqty = 0;
+
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
 			if($orderline->productcode[0] != 'FREIGHT')
@@ -454,7 +487,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				if($productname == null)
 					$productname = '';
 
-				$productid = $orderline->externalreference[0];
+				$productid = 906; //$orderline->externalreference[0];
 				if($productid != null)
 				{
 					$productid = intval($productid);
@@ -475,10 +508,15 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$subtotalinctax = floatval($orderline->linetotalinctax[0]);
 				$subtotal = floatval($orderline->linetotal[0]);
 
-				$totalquantity += $qty;
+				$totalitemcount += 1;
+				$totalitemqty += $qty;
+
+				$carttotal += $subtotalinctax;
+				$cartsubtotal += $subtotal;
 
 				$item = Mage::getModel('sales/quote_item');
 				$item->setStoreId($storeId);
+				$item->setQuote($quote);
 
 				if($product)
 				{
@@ -513,7 +551,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$item->setRowTotalInclTax($subtotalinctax);
 				$item->setWeeeTaxApplied(serialize(array()));
 
-				$quote->addItem($item);
+				$quote->getItemsCollection()->addItem($item);
 
 				if($ordercontent->orderstate != 'cancelled')
 				{
@@ -548,13 +586,57 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			}
 		}
 
+		$quote->setItemsCount($totalitemcount);
+		$quote->setItemsQty($totalitemqty);
+		$quote->setGrandTotal($carttotal);
+		$quote->setBaseGrandTotal($carttotal);
+		$quote->setSubtotal($cartsubtotal);
+		$quote->setBaseSubtotal($cartsubtotal);
+		$quote->setCustomerId($customerId);
+		$quote->setCustomerGroupId($customerGroupId);
+
+		$quote->getPayment()->setMethod('ebay');
+		$quote->save();
+
+		$freightcode = 'flatrate';
 		$freightcarrier = 'Post';
-		$freightservice = 'Freight';
+		$freightcarriertitle = 'Post';
+		$freightmethod = 'Freight';
+		$freightmethodtitle = 'Freight';
+		$freightmethoddescription = '';
 		$freighttotal =  0.0;
 		$freighttotalextax =  0.0;
 		$freighttax = 0.0;
 		$taxpercent =  0.0;
 		$taxrate =  1.0;
+
+		$freightcost = null;
+
+		try {
+
+			$cart = Mage::getModel('checkout/cart');
+			$cart->setQuote($quote);
+			$cart->save();
+
+			$shippingRates = $quote->getShippingAddress()->getShippingRatesCollection();
+
+			foreach($shippingRates as $rate)
+			{
+				if(is_null($freightcost) || (!is_null($rate->getPrice()) && $rate->getPrice() < $freightcost))
+				{
+					$freightcode = $rate->getCode();
+					$freightcarrier = $rate->getCarrier();
+					$freightcarriertitle = $rate->getCarrierTitle();
+					$freightmethod = $rate->getMethod();
+					$freightmethodtitle = $rate->getMethodTitle();
+					$freightmethoddescription = $rate->getMethodDescription();
+				}
+			}
+		}
+		catch(Exception $e)
+		{
+
+		}
 
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
@@ -572,26 +654,27 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$ordertaxtotal -= $freighttax;
 
 		$rate = Mage::getModel('sales/quote_address_rate');
-		$rate->setCode('flatrate');
+		$rate->setCode($freightcode);
 		$rate->setCarrier($freightcarrier);
-		$rate->setCarrierTitle($freightcarrier);
-		$rate->setMethod($freightservice);
-		$rate->setMethodTitle($freightservice);
+		$rate->setCarrierTitle($freightcarriertitle);
+		$rate->setMethod($freightmethod);
+		$rate->setMethodTitle($freightmethodtitle);
+		$rate->setMethodDescription($freightmethoddescription);
 		$rate->setPrice($freighttotal);
 
 		$shippingAddress = $quote->getShippingAddress();
 		$shippingAddress->addShippingRate($rate);
-		$shippingAddress->setShippingMethod('flatrate_flatrate');
-		$shippingAddress->setShippingDescription($freightservice);
+		$shippingAddress->setShippingMethod($freightcode);
+		$shippingAddress->setShippingDescription($freightmethodtitle);
 		$shippingAddress->setShippingAmountForDiscount(0);
 
-		$paypalavailable = Mage::getSingleton('paypal/express')->isAvailable();
-		$quote->getPayment()->setMethod('ebay');
 		$quote->save();
+
+		Mage::getSingleton('checkout/session')->replaceQuote($quote);
 
 		$convertquote = Mage::getSingleton('sales/convert_quote');
 		$order = $convertquote->toOrder($quote);
-		$order->setTotalQtyOrdered((int)$totalquantity);
+		$order->setTotalQtyOrdered((int)$totalitemqty);
 
 		$convertquote->addressToOrder($quote->getShippingAddress(), $order);
 		$order->setGlobal_currency_code($currencyCode);
@@ -602,6 +685,11 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$order->setShippingAddress($convertquote->addressToOrderAddress($quote->getShippingAddress()));
 		$order->setPayment($convertquote->paymentToOrderPayment($quote->getPayment()));
 		$order->setCanShipPartiallyItem(false);
+
+		$order->getBillingAddress()->addData($addressData_billing);
+		$order->getBillingAddress()->setCustomerId($customerId);
+		$order->getShippingAddress()->addData($addressData_shipping);
+		$order->getShippingAddress()->setCustomerId($customerId);
 
 		$order->setCodistoOrderid($ordercontent->orderid);
 
@@ -690,13 +778,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			}
 		}
 
-		$payment = $order->getPayment();
-
-		Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
 		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
 
-		$order->setShippingMethod('flatrate_flatrate');
-		$order->setShippingDescription($freightservice);
+		$order->setShippingMethod($freightcode);
+		$order->setShippingDescription($freightmethodtitle);
 
 		$order->setBaseShippingAmount($freighttotal);
 		$order->setShippingAmount($freighttotal);
@@ -730,17 +815,19 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 		$order->save();
 
+		$payment->setParentTransactionId(null)
+			->setIsTransactionClosed(1);
+		$payment->setMethod('ebay');
+		$payment->resetTransactionAdditionalInfo();
+		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, '');
 		if($paypaltransactionid) {
 			$payment->setTransactionId($paypaltransactionid);
 		}
-
-		$payment->setParentTransactionId(null)
-			->setIsTransactionClosed(1);
-
-		$payment->setMethod('ebay');
-		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, '');
-
 		$payment->save();
+
+		Mage::dispatchEvent('sales_order_place_before', array('order'=>$order));
+
+		Mage::dispatchEvent('sales_order_place_after', array('order'=>$order));
 
 		$quote->setIsActive(false)->save();
 
@@ -806,9 +893,6 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$ordersubtotal -= $freighttotalextax;
 		$ordersubtotalincltax -= $freighttotal;
 		$ordertaxtotal -= $freighttax;
-
-		$order->setShippingMethod('flatrate_flatrate');
-		$order->setShippingDescription($freightservice);
 
 		$order->setBaseShippingAmount($freighttotal);
 		$order->setShippingAmount($freighttotal);
@@ -1068,7 +1152,11 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$payment->save();
 		}
 
+		Mage::dispatchEvent('sales_order_save_before', array('order'=>$order));
+
 		$order->save();
+
+		Mage::dispatchEvent('sales_order_save_after', array('order'=>$order));
 
 		if(!$order->hasInvoices())
 		{
