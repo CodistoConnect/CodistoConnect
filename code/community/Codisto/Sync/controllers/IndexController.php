@@ -110,6 +110,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					$item->setQuote($cart->getQuote());
 
 					$item->setProduct($product);
+					$item->setData('qty', $qty);
 
 					$cart->getQuote()->getItemsCollection()->addItem($item);
 				}
