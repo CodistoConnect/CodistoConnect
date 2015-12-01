@@ -1027,8 +1027,12 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$item->setStoreId($store->getId());
 				$item->setQuote($quote);
 
-				$item->setProduct($product);
+				$item->setData('product', $product);
 				$item->setProductId($productid);
+				$item->setProductType('simple');
+				$item->setTaxClassId($product->getTaxClassId());
+				$item->setBaseCost($product->getBaseCost());
+				$item->setIsRecurring(false);
 
 				$price = floatval($orderline->price[0]);
 				$priceinctax = floatval($orderline->priceinctax[0]);
