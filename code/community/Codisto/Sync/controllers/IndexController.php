@@ -20,131 +20,204 @@
 
 class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseController
 {
-	protected $_PayPalmethodType = Mage_Paypal_Model_Config::METHOD_WPP_EXPRESS;
-
 	public function calcAction()
 	{
 		set_time_limit(0);
 		ignore_user_abort(false);
 
-		$request = $this->getRequest();
-		$response = $this->getResponse();
-
-		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
-		$store = Mage::app()->getStore($storeId);
-
-		$model = Mage::getModel('catalog/product');
-
-		$cart = Mage::getSingleton('checkout/cart');
-
-		$postalcode = $request->getPost('POSTALCODE');
-		$division = $request->getPost('DIVISION');
-		$countrycode = $request->getPost('COUNTRYCODE');
-
-		if($countrycode == 'AU')
-		{
-			$pc = $postalcode{0};
-
-			if ($pc == 2 || $pc == 1) {
-				$regiontext = 'NSW';
-			} else if ($pc == 3 || $pc == 8) {
-				$regiontext = 'VIC';
-			} else if ($pc == 4) {
-				$regiontext = 'QLD';
-			} else if ($pc == 5) {
-				$regiontext = 'SA';
-			} else if ($pc == 6) {
-				$regiontext = 'WA';
-			} else if ($pc == 7) {
-				$regiontext = 'TAS';
-			}
-
-			$pc3 = $postalcode{0} . $postalcode{1};
-			if ($pc3 == '08' || $pc3 == '09') {
-				$regiontext = 'NT';
-			}
-
-			if ($postalcode == '0872') {
-				$regiontext = 'SA';
-			} else if ($postalcode == '2611' || $postalcode == '3500' || $postalcode == '3585' || $postalcode == '3586' || $postalcode == '3644' || $postalcode == '3707') {
-				$regiontext = 'NSW';
-			} else if ($postalcode == '2620') {
-				$regiontext = 'ACT';
-			}
-
-			if (intval($postalcode) >= 2600 && intval($postalcode) <= 2618) {
-				$regiontext = 'ACT';
-			}
-
-			$region = Mage::getModel('directory/region')->loadByCode($regiontext, $countrycode);
-			if($region)
-				$regionid = $region->getId();
-		}
-		else
-		{
-			$region = Mage::getModel('directory/region')->loadByName($division, $countrycode);
-			if($region)
-				$regionid = $region->getId();
-		}
-
-		for($inputidx = 0; ; $inputidx++)
-		{
-			$productcode = $request->getPost('PRODUCTCODE('.$inputidx.')');
-			$id = $model->getIdBySku($productcode);
-
-			$productqty = $request->getPost('PRODUCTQUANTITY('.$inputidx.')');
-			if(!$productqty && $productqty !=0)
-				$productqty = 1;
-
-			if(!$productcode)
-				break;
-
-			if($id)
-			{
-				$product = $model->load($id);
-
-				if($product)
-				{
-					$item = Mage::getModel('sales/quote_item');
-					$item->setStoreId($storeId);
-					$item->setQuote($cart->getQuote());
-
-					$item->setProduct($product);
-					$item->setData('qty', $productqty);
-					$item->setWeight($product->getWeight());
-
-					$cart->getQuote()->getItemsCollection()->addItem($item);
-				}
-			}
-		}
-
-		$address = $cart->getQuote()
-			->setStore($store)
-			->getShippingAddress()
-			->setCountryId((string) $countrycode)
-			->setPostcode((string) $postalcode);
-
-		if($regionid)
-			$address->setRegionId((string) $regionid);
-
-		$cart->save();
-
-		$rates = $cart->getQuote()->getShippingAddress()->getShippingRatesCollection();
-
 		$output = '';
-		$outputidx = 0;
-
-		foreach ($rates as $rate) {
-			$output .= 'FREIGHTNAME('.$outputidx.')=Freight&FREIGHTCHARGEINCTAX('.$outputidx.')='.$rate->getPrice() . '&';
-
-			$outputidx++;
-		}
 
 		try
 		{
-			$cart->getQuote()
-				->setIsActive(false)
-				->delete();
+			$request = $this->getRequest();
+			$response = $this->getResponse();
+
+			$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
+			$store = Mage::app()->getStore($storeId);
+
+			$currencyCode = $request->getPost('CURRENCY');
+			if(!$currencyCode)
+				$currencyCode = $store->getCurrentCurrencyCode();
+
+			$place = $request->getPost('PLACE');
+			if(!$place)
+				$place = '';
+			$postalcode = $request->getPost('POSTALCODE');
+			$division = $request->getPost('DIVISION');
+			$countrycode = $request->getPost('COUNTRYCODE');
+			$regionid = null;
+			$regioncode = null;
+
+			if($countrycode == 'AU')
+			{
+				$pc = $postalcode{0};
+
+				if ($pc == 2 || $pc == 1) {
+					$regiontext = 'NSW';
+				} else if ($pc == 3 || $pc == 8) {
+					$regiontext = 'VIC';
+				} else if ($pc == 4) {
+					$regiontext = 'QLD';
+				} else if ($pc == 5) {
+					$regiontext = 'SA';
+				} else if ($pc == 6) {
+					$regiontext = 'WA';
+				} else if ($pc == 7) {
+					$regiontext = 'TAS';
+				}
+
+				$pc3 = $postalcode{0} . $postalcode{1};
+				if ($pc3 == '08' || $pc3 == '09') {
+					$regiontext = 'NT';
+				}
+
+				if ($postalcode == '0872') {
+					$regiontext = 'SA';
+				} else if ($postalcode == '2611' || $postalcode == '3500' || $postalcode == '3585' || $postalcode == '3586' || $postalcode == '3644' || $postalcode == '3707') {
+					$regiontext = 'NSW';
+				} else if ($postalcode == '2620') {
+					$regiontext = 'ACT';
+				}
+
+				if (intval($postalcode) >= 2600 && intval($postalcode) <= 2618) {
+					$regiontext = 'ACT';
+				}
+
+				$region = Mage::getModel('directory/region')->loadByCode($regiontext, $countrycode);
+				if($region)
+				{
+					$regionid = $region->getId();
+					$regioncode = $region->getCode();
+				}
+			}
+			else
+			{
+				$region = Mage::getModel('directory/region')->loadByName($division, $countrycode);
+				if($region)
+				{
+					$regionid = $region->getId();
+					$regioncode = $region->getCode();
+				}
+			}
+
+			$quote = Mage::getModel('sales/quote');
+
+			for($inputidx = 0; ; $inputidx++)
+			{
+				$productcode = $request->getPost('PRODUCTCODE('.$inputidx.')');
+				$productid = Mage::getModel('catalog/product')->getIdBySku($productcode);
+
+				$productqty = $request->getPost('PRODUCTQUANTITY('.$inputidx.')');
+				if(!$productqty && $productqty !=0)
+					$productqty = 1;
+
+				$productprice = floatval($request->getPost('PRODUCTPRICE('.$inputidx.')'));
+				$productpriceincltax = floatval($request->getPost('PRODUCTPRICEINCTAX('.$inputidx.')'));
+				$producttax = floatval($request->getPost('PRODUCTTAX('.$inputidx.')'));
+
+				$taxpercent = $productprice == 0 ? 0 : round($productpriceincltax / $productprice - 1.0, 2) * 100;
+
+				if(!$productcode)
+					break;
+
+				if($productid)
+				{
+					$product = Mage::getModel('catalog/product')->load($productid);
+
+					if($product)
+					{
+						$item = Mage::getModel('sales/quote_item');
+						$item->setStoreId($store->getId());
+						$item->setQuote($quote);
+
+						$item->setData('product', $product);
+						$item->setProductId($productid);
+						$item->setProductType('simple');
+						$item->setIsRecurring(false);
+						$item->setTaxClassId($product->getTaxClassId());
+						$item->setBaseCost($product->getCost());
+						$item->setSku($product->getSku());
+						$item->setName($product->getName());
+						$item->setIsVirtual(false);
+						$item->setIsQtyDecimal(false);
+						$item->setNoDiscount(true);
+						$item->setWeight($product->getWeight());
+						$item->setData('qty', $productqty);
+						$item->setPrice($productprice);
+						$item->setBasePrice($productprice);
+						$item->setCustomPrice($productprice);
+						$item->setDiscountPercent(0);
+						$item->setDiscountAmount(0);
+						$item->setBaseDiscountAmount(0);
+						$item->setTaxPercent($taxpercent);
+						$item->setTaxAmount($producttax);
+						$item->setBaseTaxAmount($producttax);
+						$item->setRowTotal($productprice * $productqty);
+						$item->setBaseRowTotal($productprice * $productqty);
+						$item->setRowTotalWithDiscount($productprice * $productqty);
+						$item->setRowWeight($product->getWeight() * $productqty);
+						$item->setOriginalCustomPrice($productprice);
+						$item->setPriceInclTax($productpriceincltax);
+						$item->setBasePriceInclTax($productpriceincltax);
+						$item->setRowTotalInclTax($productpriceincltax * $productqty);
+						$item->setBaseRowTotalInclTax($productpriceincltax * $productqty);
+						$item->setWeeeTaxApplied(serialize(array()));
+
+						$quote->getItemsCollection()->addItem($item);
+					}
+				}
+			}
+
+			$quote->save();
+
+			$shippingRequest = Mage::getModel('shipping/rate_request');
+			$shippingRequest->setAllItems($quote->getAllItems());
+			$shippingRequest->setDestCountryId($countrycode);
+			if($regionid)
+				$shippingRequest->setDestRegionId($regionid);
+			if($regioncode)
+				$shippingRequest->setDestRegionCode($regioncode);
+			if($place)
+				$shippingRequest->setDestCity($place);
+			$shippingRequest->setDestPostcode($postalcode);
+			$shippingRequest->setPackageValue($quote->getGrandTotal());
+			$shippingRequest->setPackageValueWithDiscount($quote->getGrandTotal());
+			$shippingRequest->setPackageWeight($quote->getWeight());
+			$shippingRequest->setPackageQty($quote->getItemQty());
+			$shippingRequest->setPackagePhysicalValue($quote->getGrandTotal());
+			$shippingRequest->setFreeMethodWeight(0);
+			$shippingRequest->setStoreId($store->getId());
+			$shippingRequest->setWebsiteId($store->getWebsiteId());
+			$shippingRequest->setFreeShipping(false);
+			$shippingRequest->setBaseCurrency($currencyCode);
+			$shippingRequest->setPackageCurrency($currencyCode);
+			$shippingRequest->setBaseSubtotalInclTax($quote->getGrandTotal());
+
+			$shippingResult = Mage::getModel('shipping/shipping')->collectRates($shippingRequest)->getResult();
+
+			$shippingRates = $shippingResult->getAllRates();
+
+			$outputidx = 0;
+			foreach($shippingRates as $shippingRate)
+			{
+				if($shippingRate instanceof Mage_Shipping_Model_Rate_Result_Method)
+				{
+					$output .= 'FREIGHTNAME('.$outputidx.')='.rawurlencode($shippingRate->getMethodTitle()).'&FREIGHTCHARGEINCTAX('.$outputidx.')='.$shippingRate->getPrice().'&';
+					$outputidx++;
+				}
+			}
+
+			try
+			{
+				$quote
+					->setIsActive(false)
+					->delete();
+			}
+			catch(Exception $e)
+			{
+
+			}
+
 		}
 		catch(Exception $e)
 		{
@@ -947,7 +1020,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 									$productsToReindex[$product->getId()] = $product->getId();
 
 									$stockItem->subtractQty(intval($qty));
-									
+
 								}
 
 								$stockItem->save();
@@ -1283,7 +1356,6 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$item->setBaseRowTotal($subtotal);
 				$item->setRowTotalWithDiscount($subtotal);
 				$item->setRowWeight($weight * $qty);
-				$item->setProductType('simple');
 				$item->setOriginalCustomPrice($price);
 				$item->setPriceInclTax($priceinctax);
 				$item->setBasePriceInclTax($priceinctax);
