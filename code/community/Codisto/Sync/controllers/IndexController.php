@@ -103,7 +103,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			{
 				$product = $model->load($id);
 
-				$cart->addProduct($product, $productqty);
+				if($product)
+				{
+					$item = Mage::getModel('sales/quote_item');
+					$item->setStoreId($storeId);
+					$item->setQuote($cart->getQuote());
+
+					$item->setProduct($product);
+					$item->setData('qty', $productqty);
+					$item->setWeight($product->getWeight());
+
+					$cart->getQuote()->getItemsCollection()->addItem($item);
+				}
 			}
 		}
 
@@ -184,6 +195,8 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 				if($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 				{
+					$productsToReindex = array();
+
 					$connection = Mage::getSingleton('core/resource')->getConnection('core_write');
 
 					try
@@ -199,12 +212,47 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 					}
 
+					if($storeId == 0)
+					{
+						// jump the storeid to first non admin store
+						$stores = Mage::getModel('core/store')->getCollection()
+													->addFieldToFilter('is_active', array('neq' => 0))
+													->addFieldToFilter('store_id', array('gt' => 0))
+													->setOrder('store_id', 'ASC');
+
+						$firstStore = $stores->getFirstItem();
+						if(is_object($firstStore) && $firstStore->getId())
+							$storeId = $firstStore->getId();
+					}
+
 					$store = Mage::app()->getStore($storeId);
 
 					Mage::app()->setCurrentStore($store);
 
+					$quote = null;
+
 					for($Retry = 0; ; $Retry++)
 					{
+						$productsToReindex = array();
+
+						$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)->getFirstItem();
+						if(!($order && $order->getId()))
+						{
+							try
+							{
+								$quote = Mage::getModel('sales/quote');
+
+								$this->ProcessQuote($quote, $xml, $store);
+							}
+							catch(Exception $e)
+							{
+								$response = $this->getResponse();
+								$response->setHeader('Content-Type', 'application/json');
+								$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString())));
+								break;
+							}
+						}
+
 						$connection->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
 						$connection->beginTransaction();
 
@@ -214,11 +262,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 							if($order && $order->getId())
 							{
-								$this->ProcessOrderSync($order, $xml, $storeId);
+								$this->ProcessOrderSync($order, $xml, $productsToReindex, $store);
 							}
 							else
 							{
-								$this->ProcessOrderCreate($xml, $storeId);
+								if(!$quote)
+								{
+									$connection->rollback();
+									sleep($Retry * 10);
+									continue;
+								}
+
+								$this->ProcessOrderCreate($quote, $xml, $productsToReindex, $store);
 							}
 
 							$connection->commit();
@@ -238,11 +293,26 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 							$response = $this->getResponse();
 							$response->setHeader('Content-Type', 'application/json');
-							$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage())));
+							$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString())));
 
 							$connection->rollback();
 							break;
 						}
+					}
+
+					try
+					{
+
+						if(count($productsToReindex) > 0)
+						{
+							Mage::getResourceSingleton('cataloginventory/indexer_stock')->reindexProducts($productsToReindex);
+							Mage::getResourceSingleton('catalog/product_indexer_price')->reindexProductIds($productsToReindex);
+						}
+
+					}
+					catch (Exception $e)
+					{
+
 					}
 				}
 			}
@@ -268,191 +338,46 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		}
 	}
 
-	private function ProcessOrderCreate($xml, $storeId)
+	private function ProcessOrderCreate($quote, $xml, $productsToReindex, $store)
 	{
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
-		if($storeId == 0)
-		{
-			// jump the storeid to first non admin store
-			$stores = Mage::getModel('core/store')->getCollection()
-										->addFieldToFilter('is_active', array('neq' => 0))
-										->addFieldToFilter('store_id', array('gt' => 0))
-										->setOrder('store_id', 'ASC');
+		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
 
-			$firstStore = $stores->getFirstItem();
-			if(is_object($firstStore) && $firstStore->getId())
-				$storeId = $firstStore->getId();
-		}
-
-		foreach($ordercontent->orderlines->orderline as $orderline)
-		{
-			if($orderline->productcode[0] != 'FREIGHT') {
-				$productid = (int)$orderline->externalreference[0];
-				$product = null;
-				if($productid)
-					$product = Mage::getModel('catalog/product')->load($productid);
-				if(!$product) {
-
-					throw new Exception('externalreference not found');
-
-				}
-			}
-		}
-
-		$store = Mage::app()->getStore($storeId);
-		$websiteId = $store->getWebsiteId();
-
-		Mage::app()->setCurrentStore($store);
-
-		$currencyCode = $ordercontent->transactcurrency[0];
 		$ordertotal = floatval($ordercontent->ordertotal[0]);
-		$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
-		$ordertaxtotal = floatval($ordercontent->ordertaxtotal[0]);
 
-		$ordersubtotal = $store->roundPrice($ordersubtotal);
-		$ordersubtotalincltax = $store->roundPrice($ordersubtotal + $ordertaxtotal);
-		$ordertotal = $store->roundPrice($ordertotal);
-
-		$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
+		$ebaysalesrecordnumber = (string)$ordercontent->ebaysalesrecordnumber;
 		if(!$ebaysalesrecordnumber)
 			$ebaysalesrecordnumber = '';
 
-		$billing_address = $ordercontent->orderaddresses->orderaddress[0];
-		$billing_first_name = $billing_last_name = '';
+		$quoteConverter =  Mage::getModel('sales/convert_quote');
 
-		if(strpos($billing_address->name, ' ') !== false) {
-			$billing_name = explode(' ', $billing_address->name, 2);
-			$billing_first_name = $billing_name[0];
-			$billing_last_name = $billing_name[1];
-		} else {
-			$billing_first_name = $billing_address->name;
-		}
+		$quote->reserveOrderId();
+		$order = $quoteConverter->addressToOrder($quote->getShippingAddress());
+		$order->setBillingAddress($quoteConverter->addressToOrderAddress($quote->getBillingAddress()));
+		$order->setShippingAddress($quoteConverter->addressToOrderAddress($quote->getShippingAddress()));
+		$order->setPayment($quoteConverter->paymentToOrderPayment($quote->getPayment()));
+		$order->setCodistoOrderid($ordercontent->orderid);
 
-		$shipping_address = $ordercontent->orderaddresses->orderaddress[1];
-		$shipping_first_name = $shipping_last_name = '';
-
-		if(strpos($shipping_address->name, ' ') !== false) {
-			$shipping_name = explode(' ', $shipping_address->name, 2);
-			$shipping_first_name = $shipping_name[0];
-			$shipping_last_name = $shipping_name[1];
-		} else {
-			$shipping_first_name = $shipping_address->name;
-		}
-
-		$email = (string)$billing_address->email;
-		if(!$email)
-			$email = 'mail@example.com';
-
-		$customer = Mage::getModel('customer/customer');
-		$customer->setWebsiteId($websiteId);
-		$customer->setStoreId($storeId);
-		$customer->loadByEmail($email);
-
-		$regionCollection = $this->getRegionCollection($billing_address->countrycode);
-
-		$regionsel_id = 0;
-		foreach($regionCollection as $region)
-		{
-			if(in_array($billing_address->division, array($region['code'], $region['name'])))
-			{
-
-				$regionsel_id = $region['region_id'];
-			}
-		}
-
-		$addressData_billing = array(
-			'firstname' => (string)$billing_first_name,
-			'lastname' => (string)$billing_last_name,
-			'street' => (string)$billing_address->address1.','.$billing_address->address2,
-			'city' => (string)$billing_address->place,
-			'postcode' => (string)$billing_address->postalcode,
-			'telephone' => (string)$billing_address->phone,
-			'country_id' => (string)$billing_address->countrycode,
-			'region_id' => (string)$regionsel_id, // id from directory_country_region table
-		);
-
-		$regionsel_id_ship = 0;
-		foreach($regionCollection as $region)
-		{
-			if(in_array($shipping_address->division, array($region['code'], $region['name'])))
-			{
-				$regionsel_id_ship = $region['region_id'];
-			}
-		}
-
-		$addressData_shipping = array(
-			'firstname' => (string)$shipping_first_name,
-			'lastname' => (string)$shipping_last_name,
-			'street' => (string)$shipping_address->address1.','.$shipping_address->address2,
-			'city' => (string)$shipping_address->place,
-			'postcode' => (string)$shipping_address->postalcode,
-			'telephone' => (string)$shipping_address->phone,
-			'country_id' => (string)$shipping_address->countrycode,
-			'region_id' => (string)$regionsel_id_ship, // id from directory_country_region table
-		);
-
-		if(!$customer->getId())
-		{
-			$ebayGroup = Mage::getModel('customer/group');
-			$ebayGroup->load('eBay', 'customer_group_code');
-			if(!$ebayGroup->getId())
-			{
-				$defaultGroup = Mage::getModel('customer/group')->load(1);
-
-				$ebayGroup->setCode('eBay');
-				$ebayGroup->setTaxClassId($defaultGroup->getTaxClassId());
-				$ebayGroup->save();
-			}
-
-			$customer->setWebsiteId($websiteId);
-			$customer->setStoreId($storeId);
-			$customer->setEmail($email);
-			$customer->setFirstname((string)$billing_first_name);
-			$customer->setLastname((string)$billing_last_name);
-			$customer->setPassword('');
-			$customer->setData('group_id', $ebayGroup->getId());
-			$customer->save();
-			$customer->setConfirmation(null);
-			$customer->setStatus(1);
-			$customer->save();
-
-			$customerId = $customer->getId();
-
-			$customerAddress = Mage::getModel('customer/address');
-			$customerAddress->setData($addressData_billing)
-				->setCustomerId($customer->getId())
-				->setIsDefaultBilling(1)
-				->setSaveInAddressBook(1);
-			$customerAddress->save();
-
-
-			$customerAddress->setData($addressData_shipping)
-				->setCustomerId($customer->getId())
-				->setIsDefaultShipping(1)
-				->setSaveInAddressBook(1);
-			$customerAddress->save();
-		}
-
-		$quote = Mage::getModel('sales/quote');
-		$quote->setStoreId($storeId);
-		$quote->assignCustomer($customer);
-
-		$quote->getBillingAddress()->addData($addressData_billing);
-		$quote->getShippingAddress()->addData($addressData_shipping);
-
-		$totalquantity = 0;
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
 			if($orderline->productcode[0] != 'FREIGHT')
 			{
+				$adjustStock = true;
+
 				$product = null;
+
 				$productcode = $orderline->productcode[0];
 				if($productcode == null)
 					$productcode = '';
+				else
+					$productcode = (string)$productcode;
+
 				$productname = $orderline->productname[0];
 				if($productname == null)
 					$productname = '';
+				else
+					$productname = (string)$productname;
 
 				$productid = $orderline->externalreference[0];
 				if($productid != null)
@@ -471,280 +396,160 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					}
 				}
 
+				if(!$product)
+				{
+					$product = Mage::getModel('catalog/product');
+					$adjustStock = false;
+				}
+
 				$qty = (int)$orderline->quantity[0];
 				$subtotalinctax = floatval($orderline->linetotalinctax[0]);
 				$subtotal = floatval($orderline->linetotal[0]);
 
-				$totalquantity += $qty;
-
-				$item = Mage::getModel('sales/quote_item');
-				$item->setStoreId($storeId);
-
-				if($product)
-				{
-					$item->setProduct($product);
-					$item->setProductId($productid);
-				}
-
 				$price = floatval($orderline->price[0]);
 				$priceinctax = floatval($orderline->priceinctax[0]);
 				$taxamount = $priceinctax - $price;
-				$taxpercent = round($priceinctax / $price - 1.0, 2) * 100;
+				$taxpercent = $price == 0 ? 0 : round($priceinctax / $price - 1.0, 2) * 100;
 				$weight = floatval($orderline->weight[0]);
+				if($weight == 0)
+					$weight = 1;
 
-				$item->setSku($productcode);
-				$item->setName($orderline->productname[0]);
-				$item->setIsQtyDecimal(false);
-				$item->setNoDiscount(true);
-				$item->setQty($qty);
-				$item->setPrice($price);
-				$item->setPriceInclTax($priceinctax);
-				$item->setOriginalPrice($priceinctax);
-				$item->setBasePrice($price);
-				$item->setBasePriceInclTax($priceinctax);
-				$item->setBaseOriginalPrice($priceinctax);
-				$item->setTaxPercent($taxpercent);
-				$item->setTaxAmount($taxamount);
-				$item->setDiscountAmount(0);
-				$item->setWeight($weight);
-				$item->setBaseRowTotal($subtotal);
-				$item->setBaseRowTotalInclTax($subtotalinctax);
-				$item->setRowTotal($subtotal);
-				$item->setRowTotalInclTax($subtotalinctax);
-				$item->setWeeeTaxApplied(serialize(array()));
+				$orderItem = Mage::getModel('sales/order_item');
+				$orderItem->setStoreId($store->getId());
+				$orderItem->setData('product', $product);
 
-				$quote->addItem($item);
+				if($productid)
+					$orderItem->setProductId($productid);
+
+				if($productid)
+					$orderItem->setBaseCost($product->getCost());
+
+				if($productid)
+				{
+					$orderItem->setOriginalPrice($product->getFinalPrice());
+					$orderItem->setBaseOriginalPrice($product->getFinalPrice());
+				}
+				else
+				{
+					$orderItem->setOriginalPrice($priceinctax);
+					$orderItem->setBaseOriginalPrice($priceinctax);
+				}
+
+				$orderItem->setIsVirtual(false);
+				$orderItem->setProductType('simple');
+				$orderItem->setSku($productcode);
+				$orderItem->setName($productname);
+				$orderItem->setIsQtyDecimal(false);
+				$orderItem->setNoDiscount(true);
+				$orderItem->setQtyOrdered($qty);
+				$orderItem->setPrice($price);
+				$orderItem->setPriceInclTax($priceinctax);
+				$orderItem->setBasePrice($price);
+				$orderItem->setBasePriceInclTax($priceinctax);
+				$orderItem->setTaxPercent($taxpercent);
+				$orderItem->setTaxAmount($taxamount);
+				$orderItem->setTaxBeforeDiscount($taxamount);
+				$orderItem->setBaseTaxBeforeDiscount($taxamount);
+				$orderItem->setDiscountAmount(0);
+				$orderItem->setWeight($weight);
+				$orderItem->setBaseRowTotal($subtotal);
+				$orderItem->setBaseRowTotalInclTax($subtotalinctax);
+				$orderItem->setRowTotal($subtotal);
+				$orderItem->setRowTotalInclTax($subtotalinctax);
+				$orderItem->setWeeeTaxApplied(serialize(array()));
+
+				$order->addItem($orderItem);
 
 				if($ordercontent->orderstate != 'cancelled')
 				{
-					if($product)
+					if($adjustStock)
 					{
 						$stockItem = $product->getStockItem();
 						if (!$stockItem) {
 							$stockItem = Mage::getModel('cataloginventory/stock_item');
 							$stockItem->assignProduct($product)
 								->setData('stock_id', 1)
-								->setData('store_id', $storeId);
+								->setData('store_id', $store->getId());
 						}
 
-						$stockData = $stockItem->getData();
+						if($stockItem->canSubtractQty())
+						{
+							$productsToReindex[$product->getId()] = $product->getId();
 
-						if(isset($stockData['use_config_manage_stock'])) {
-
-							if($stockData['use_config_manage_stock'] != 0) {
-								$stockcontrol = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
-							} else {
-								$stockcontrol = $stockData['manage_stock'];
-							}
-
-							if($stockcontrol !=0)
-							{
-								$stockItem->subtractQty($qty);
-								$stockItem->save();
-							}
+							$stockItem->subtractQty($orderItem->getQtyOrdered());
+							$stockItem->save();
 						}
 					}
 				}
 			}
 		}
 
-		$freightcarrier = 'Post';
-		$freightservice = 'Freight';
-		$freighttotal =  0.0;
-		$freighttotalextax =  0.0;
-		$freighttax = 0.0;
-		$taxpercent =  0.0;
-		$taxrate =  1.0;
+		$quote->setInventoryProcessed(true);
 
-		foreach($ordercontent->orderlines->orderline as $orderline)
+		$order->setQuote($quote);
+		$order->save();
+
+		try
 		{
-			if($orderline->productcode[0] == 'FREIGHT')
-			{
-				$freighttotal += floatval($orderline->linetotalinctax[0]);
-				$freighttotalextax += floatval($orderline->linetotal[0]);
-				$freighttax = (float)$freighttotal - $freighttotalextax;
-				$freightservice = $orderline->productname[0];
-			}
+			$order->place();
 		}
-
-		$ordersubtotal -= $freighttotalextax;
-		$ordersubtotalincltax -= $freighttotal;
-		$ordertaxtotal -= $freighttax;
-
-		$rate = Mage::getModel('sales/quote_address_rate');
-		$rate->setCode('flatrate');
-		$rate->setCarrier($freightcarrier);
-		$rate->setCarrierTitle($freightcarrier);
-		$rate->setMethod($freightservice);
-		$rate->setMethodTitle($freightservice);
-		$rate->setPrice($freighttotal);
-
-		$shippingAddress = $quote->getShippingAddress();
-		$shippingAddress->addShippingRate($rate);
-		$shippingAddress->setShippingMethod('flatrate_flatrate');
-		$shippingAddress->setShippingDescription($freightservice);
-		$shippingAddress->setShippingAmountForDiscount(0);
-
-		$paypalavailable = Mage::getSingleton('paypal/express')->isAvailable();
-		$quote->getPayment()->setMethod('ebay');
-		$quote->save();
-
-		$convertquote = Mage::getSingleton('sales/convert_quote');
-		$order = $convertquote->toOrder($quote);
-		$order->setTotalQtyOrdered((int)$totalquantity);
-
-		$convertquote->addressToOrder($quote->getShippingAddress(), $order);
-		$order->setGlobal_currency_code($currencyCode);
-		$order->setBase_currency_code($currencyCode);
-		$order->setStore_currency_code($currencyCode);
-		$order->setOrder_currency_code($currencyCode);
-		$order->setBillingAddress($convertquote->addressToOrderAddress($quote->getBillingAddress()));
-		$order->setShippingAddress($convertquote->addressToOrderAddress($quote->getShippingAddress()));
-		$order->setPayment($convertquote->paymentToOrderPayment($quote->getPayment()));
-		$order->setCanShipPartiallyItem(false);
-
-		$order->setCodistoOrderid($ordercontent->orderid);
-
-		$lineidx = 0;
-		foreach ($quote->getAllItems() as $item) {
-
-			while(true)
-			{
-				$orderline = $ordercontent->orderlines->orderline[$lineidx];
-				if($orderline->productcode[0] == 'FREIGHT')
-				{
-					$lineidx++;
-					continue;
-				}
-
-				break;
-			}
-
-			$orderItem = $convertquote->itemToOrderItem($item);
-			if ($item->getParentItem()) {
-				$orderItem->setParentItem($order->getItemByQuoteItemId($item->getParentItem()->getId()));
-			}
-
-			$taxamount = $store->roundPrice(floatval($orderline->linetotalinctax[0]) - floatval($orderline->linetotal[0]));
-
-			$qty = (int)$orderline->quantity[0];
-			$subtotalinctax = floatval($orderline->linetotalinctax[0]);
-			$subtotal = floatval($orderline->linetotal[0]);
-
-			$orderItem->setBaseTaxAmount($taxamount);
-			$orderItem->setTaxAmount($taxamount);
-			$orderItem->setTaxPercent(round(floatval($orderline->priceinctax[0]) / floatval($orderline->price[0]) - 1.0, 2) * 100);
-
-			$orderItem->setProduct($product);
-			$orderItem->setProductType('simple');
-			$orderItem->setSku($orderline->productcode[0]);
-			$orderItem->setName($orderline->productname[0]);
-			$orderItem->setIsQtyDecimal(false);
-			$orderItem->setNoDiscount(true);
-			$orderItem->setQtyOrdered($qty);
-			$orderItem->setPrice(floatval($orderline->price[0]));
-			$orderItem->setPriceInclTax(floatval($orderline->priceinctax[0]));
-			$orderItem->setBasePrice(floatval($orderline->price[0]));
-			$orderItem->setBasePriceInclTax(floatval($orderline->priceinctax[0]));
-			$orderItem->setOriginalPrice(floatval($orderline->priceinctax[0]));
-			$orderItem->setDiscountAmount(0);
-			$orderItem->setWeight($orderline->weight[0]);
-			$orderItem->setBaseRowTotal($subtotal);
-			$orderItem->setBaseRowTotalInclTax($subtotalinctax);
-			$orderItem->setRowTotal($subtotal);
-			$orderItem->setRowTotalInclTax($subtotalinctax);
-			$orderItem->setWeeeTaxApplied(serialize(array()));
-
-			$order->addItem($orderItem);
-
-			$lineidx++;
+		catch(Exception $e)
+		{
+			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_PROCESSING, "Exception Occurred Placing Order : ".$e->getMessage());
 		}
 
 		/* cancelled, processing, captured, inprogress, complete */
-		if($ordercontent->orderstate == 'captured') {
-			$order->setState(Mage_Sales_Model_Order::STATE_NEW, true);
-			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
-		} else if($ordercontent->orderstate == 'cancelled') {
-			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true);
-			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been cancelled");
-		} else if($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') {
-			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true);
-			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is in progress");
-		} else if ($ordercontent->orderstate == 'complete') {
-			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE);
-			$order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
-			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
-		} else {
-			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been captured");
-		}
+		if($ordercontent->orderstate == 'cancelled') {
 
-		if($ordercontent->paymentstatus == 'complete') {
-			$order->setBaseTotalPaid($ordertotal);
-			$order->setTotalPaid($ordertotal);
-			$order->setBaseTotalDue('0');
-			$order->setTotalDue('0');
-			$order->setDue('0');
-			$payments = $order->getAllPayments();
-			foreach($payments as $key=>$payment) {
-				$payment->setBaseAmountPaid($ordertotal);
-			}
+			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED);
+			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been cancelled");
+
+		} else if($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') {
+
+			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
+			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is in progress");
+
+		} else if ($ordercontent->orderstate == 'complete') {
+
+			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
+			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
+
+		} else {
+
+			$order->setState(Mage_Sales_Model_Order::STATE_NEW);
+			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been captured");
+
 		}
 
 		$payment = $order->getPayment();
 
-		Mage::getSingleton('paypal/info')->importToPayment(null , $payment);
-		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
+		if($ordercontent->paymentstatus == 'complete')
+		{
+			$order->setBaseTotalPaid($ordertotal);
+			$order->setTotalPaid($ordertotal);
+			$order->setBaseTotalDue(0);
+			$order->setTotalDue(0);
+			$order->setDue(0);
 
-		$order->setShippingMethod('flatrate_flatrate');
-		$order->setShippingDescription($freightservice);
-
-		$order->setBaseShippingAmount($freighttotal);
-		$order->setShippingAmount($freighttotal);
-
-		$order->setBaseShippingInclTax($freighttotal);
-		$order->setShippingInclTax($freighttotal);
-
-		$order->setBaseShippingTaxAmount($freighttax);
-		$order->setShippingTaxAmount($freighttax);
-
-		$order->setBaseSubtotal($ordersubtotal);
-		$order->setSubtotal($ordersubtotal);
-
-		$order->setBaseSubtotalInclTax($ordersubtotalincltax);
-		$order->setSubtotalInclTax($ordersubtotalincltax);
-
-		$order->setBaseTaxAmount($ordertaxtotal);
-		$order->setTaxAmount($ordertaxtotal);
-
-		$order->setDiscountAmount(0.0);
-		$order->setShippingDiscountAmount(0.0);
-		$order->setBaseShippingDiscountAmount(0.0);
-
-		$order->setBaseHiddenTaxAmount(0.0);
-		$order->setHiddenTaxAmount(0.0);
-		$order->setBaseHiddenShippingTaxAmnt(0.0);
-		$order->setHiddenShippingTaxAmount(0.0);
-
-		$order->setBaseGrandTotal($ordertotal);
-		$order->setGrandTotal($ordertotal);
-
-		$order->save();
-
-		if($paypaltransactionid) {
-			$payment->setTransactionId($paypaltransactionid);
+			$payment->setBaseAmountPaid($ordertotal);
 		}
 
 		$payment->setParentTransactionId(null)
 			->setIsTransactionClosed(1);
-
 		$payment->setMethod('ebay');
+		$payment->resetTransactionAdditionalInfo();
 		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, '');
-
+		if($paypaltransactionid)
+		{
+			$payment->setTransactionId($paypaltransactionid);
+		}
 		$payment->save();
+
+		$order->save();
 
 		$quote->setIsActive(false)->save();
 
-		if($ordercontent->paymentstatus == 'complete' && $order->canInvoice())
+		if($ordercontent->paymentstatus == 'complete')
 		{
 			$invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
 
@@ -759,23 +564,19 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$response = $this->getResponse();
 
 		$response->setHeader('Content-Type', 'application/json');
-		$response->setBody(Zend_Json::encode(array( 'productid' => $productid,  'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 	}
 
-	private function ProcessOrderSync($order, $xml, $storeId)
+	private function ProcessOrderSync($order, $xml, $productsToReindex, $store)
 	{
-		$storeId = $order->getStoreId();
-
-		$store = Mage::app()->getStore($storeId);
-
 		$orderstatus = $order->getState();
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
-		$ebaysalesrecordnumber = $ordercontent->ebaysalesrecordnumber[0];
+		$ebaysalesrecordnumber = (string)$ordercontent->ebaysalesrecordnumber;
 		if(!$ebaysalesrecordnumber)
 			$ebaysalesrecordnumber = '';
 
-		$currencyCode = $ordercontent->transactcurrency[0];
+		$currencyCode = (string)$ordercontent->transactcurrency;
 		$ordertotal = floatval($ordercontent->ordertotal[0]);
 		$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
 		$ordertaxtotal = floatval($ordercontent->ordertaxtotal[0]);
@@ -799,16 +600,13 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$freighttotal += floatval($orderline->linetotalinctax[0]);
 				$freighttotalextax += floatval($orderline->linetotal[0]);
 				$freighttax = $freighttotal - $freighttotalextax;
-				$freightservice = $orderline->productname[0];
+				$freightservice = (string)$orderline->productname[0];
 			}
 		}
 
 		$ordersubtotal -= $freighttotalextax;
 		$ordersubtotalincltax -= $freighttotal;
 		$ordertaxtotal -= $freighttax;
-
-		$order->setShippingMethod('flatrate_flatrate');
-		$order->setShippingDescription($freightservice);
 
 		$order->setBaseShippingAmount($freighttotal);
 		$order->setShippingAmount($freighttotal);
@@ -841,7 +639,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$order->setGrandTotal($ordertotal);
 
 		$orderlineStockReserved = array();
-		foreach($order->getAllVisibleItems() as $item)
+		foreach($order->getAllItems() as $item)
 		{
 			$productId = $item->getProductId();
 			if($productId || $productId == 0)
@@ -853,23 +651,28 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			}
 		}
 
-		foreach($order->getAllVisibleItems() as $item)
-		{
-			$item->delete();
-		}
+		$visited = array();
 
 		$totalquantity = 0;
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
 			if($orderline->productcode[0] != 'FREIGHT')
 			{
+				$adjustStock = true;
+
 				$product = null;
+
 				$productcode = $orderline->productcode[0];
 				if($productcode == null)
 					$productcode = '';
+				else
+					$productcode = (string)$productcode;
+
 				$productname = $orderline->productname[0];
 				if($productname == null)
 					$productname = '';
+				else
+					$productname = (string)$productname;
 
 				$productid = $orderline->externalreference[0];
 				if($productid != null)
@@ -884,8 +687,14 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					}
 					else
 					{
-						$product = null;
+						$product = Mage::getModel('catalog/product');
 					}
+				}
+
+				if(!$product)
+				{
+					$product = Mage::getModel('catalog/product');
+					$adjustStock = false;
 				}
 
 				$qty = (int)$orderline->quantity[0];
@@ -894,21 +703,63 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 				$totalquantity += $qty;
 
-				$item = Mage::getModel('sales/order_item');
-				$item->setStoreId($storeId);
-
-				if($product)
-				{
-					$item->setProduct($product);
-					$item->setProductId($productid);
-				}
-
 				$price = floatval($orderline->price[0]);
 				$priceinctax = floatval($orderline->priceinctax[0]);
 				$taxamount = $priceinctax - $price;
-				$taxpercent = round($priceinctax / $price - 1.0, 2) * 100;
+				$taxpercent = $price == 0 ? 0 : round($priceinctax / $price - 1.0, 2) * 100;
 				$weight = floatval($orderline->weight[0]);
 
+				$itemFound = false;
+				foreach($order->getAllItems() as $item)
+				{
+					if(!isset($visited[$item->getId()]))
+					{
+						if($productid)
+						{
+							if($item->getProductId() == $productid)
+							{
+								$itemFound = true;
+								$visited[$item->getId()] = true;
+								break;
+							}
+						}
+						else
+						{
+							if($item->getSku() == $productcode)
+							{
+								$itemFound = true;
+								$visited[$item->getId()] = true;
+								break;
+							}
+						}
+					}
+				}
+
+				if(!$itemFound)
+					$item = Mage::getModel('sales/order_item');
+
+				$item->setStoreId($store->getId());
+
+				$item->setData('product', $product);
+
+				if($productid)
+					$item->setProductId($productid);
+
+				if($productid)
+					$item->setBaseCost($product->getCost());
+
+				if($productid)
+				{
+					$item->setOriginalPrice($product->getFinalPrice());
+					$item->setBaseOriginalPrice($product->getFinalPrice());
+				}
+				else
+				{
+					$item->setOriginalPrice($priceinctax);
+					$item->setBaseOriginalPrice($priceinctax);
+				}
+
+				$item->setIsVirtual(false);
 				$item->setProductType('simple');
 				$item->setSku($productcode);
 				$item->setName($productname);
@@ -917,12 +768,12 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$item->setQtyOrdered($qty);
 				$item->setPrice($price);
 				$item->setPriceInclTax($priceinctax);
-				$item->setOriginalPrice($priceinctax);
 				$item->setBasePrice($price);
 				$item->setBasePriceInclTax($priceinctax);
-				$item->setBaseOriginalPrice($priceinctax);
 				$item->setTaxPercent($taxpercent);
 				$item->setTaxAmount($taxamount);
+				$item->setTaxBeforeDiscount($taxamount);
+				$item->setBaseTaxBeforeDiscount($taxamount);
 				$item->setDiscountAmount(0);
 				$item->setWeight($weight);
 				$item->setBaseRowTotal($subtotal);
@@ -931,79 +782,133 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$item->setRowTotalInclTax($subtotalinctax);
 				$item->setWeeeTaxApplied(serialize(array()));
 
-				$order->addItem($item);
+				if(!$itemFound)
+					$order->addItem($item);
 
 				if($ordercontent->orderstate != 'cancelled')
 				{
-					if($product)
+					if($adjustStock)
 					{
 						$stockItem = $product->getStockItem();
 						if (!$stockItem) {
 							$stockItem = Mage::getModel('cataloginventory/stock_item');
 							$stockItem->assignProduct($product)
 								->setData('stock_id', 1)
-								->setData('store_id', $storeId);
+								->setData('store_id', $store->getId());
 						}
 
-						$stockData = $stockItem->getData();
+						if($stockItem->canSubtractQty())
+						{
+							$stockReserved = isset($orderlineStockReserved[$productid]) ? $orderlineStockReserved[$productid] : 0;
 
-						if(isset($stockData['use_config_manage_stock'])) {
+							$stockMovement = $qty - $stockReserved;
 
-							if($stockData['use_config_manage_stock'] != 0) {
-								$stockcontrol = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
-							} else {
-								$stockcontrol = $stockData['manage_stock'];
+							if($stockMovement > 0)
+							{
+								$productsToReindex[$product->getId()] = $product->getId();
+
+								$stockItem->subtractQty($stockMovement);
+							}
+							else if($stockMovement < 0)
+							{
+								$productsToReindex[$product->getId()] = $product->getId();
+
+								$stockMovement = abs($stockMovement);
+
+								$stockItem->addQty($stockMovement);
 							}
 
-							if($stockcontrol != 0) {
-
-								$stockReserved = isset($orderlineStockReserved[$productid]) ? $orderlineStockReserved[$productid] : 0;
-
-								$stockMovement = $qty - $stockReserved;
-
-								if($stockMovement > 0)
-								{
-									$stockItem->subtractQty($stockMovement);
-								}
-								else if($stockMovement < 0)
-								{
-									$stockMovement = abs($stockMovement);
-
-									$stockItem->addQty($stockMovement);
-								}
-
-								$stockItem->save();
-							}
+							$stockItem->save();
 						}
 					}
 				}
 			}
 		}
 
+		$visited = array();
+		foreach($order->getAllItems() as $item)
+		{
+			$itemFound = false;
+
+			$orderlineIndex = 0;
+			foreach($ordercontent->orderlines->orderline as $orderline)
+			{
+				if(!isset($visited[$orderlineIndex]) &&
+						$orderline->productcode[0] != 'FREIGHT')
+				{
+					$productcode = $orderline->productcode[0];
+					if($productcode == null)
+						$productcode = '';
+					else
+						$productcode = (string)$productcode;
+
+					$productname = $orderline->productname[0];
+					if($productname == null)
+						$productname = '';
+					else
+						$productname = (string)$productname;
+
+					$productid = $orderline->externalreference[0];
+					if($productid != null)
+					{
+						$productid = intval($productid);
+					}
+
+					if($productid)
+					{
+						if($item->getProductId() == $productid)
+						{
+							$itemFound = true;
+							$visited[$orderlineIndex] = true;
+						}
+					}
+					else
+					{
+						if($item->getSku() == $productcode)
+						{
+							$itemFound = true;
+							$visited[$orderlineIndex] = true;
+						}
+					}
+				}
+
+				$orderlineIndex++;
+			}
+
+			if(!$itemFound)
+				$item->delete();
+		}
+
 		$order->setTotalQtyOrdered((int)$totalquantity);
 
 		/* States: cancelled, processing, captured, inprogress, complete */
-		if($ordercontent->orderstate == 'captured' && ($orderstatus!='pending' && $orderstatus!='new')) {
-			$order->setState(Mage_Sales_Model_Order::STATE_NEW, true);
+		if($ordercontent->orderstate == 'captured' && ($orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING && $orderstatus!=Mage_Sales_Model_Order::STATE_NEW)) {
+
+			$order->setState(Mage_Sales_Model_Order::STATE_NEW);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
 		}
-		if($ordercontent->orderstate == 'cancelled' && $orderstatus!='canceled') {
-			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true);
+
+		if($ordercontent->orderstate == 'cancelled' && $orderstatus!=Mage_Sales_Model_Order::STATE_CANCELED) {
+
+			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been cancelled");
 		}
-		if(($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') && $orderstatus!='processing') {
-			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true);
+
+		if(($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') && $orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING) {
+			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is in progress");
 		}
-		if($ordercontent->orderstate == 'complete' && $orderstatus!='complete') {
-			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE);
-			$order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
+
+		if($ordercontent->orderstate == 'complete' && $orderstatus!=Mage_Sales_Model_Order::STATE_COMPLETE) {
+
+			$order->setData('status', Mage_Sales_Model_Order::STATE_COMPLETE);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
+
 		}
 
 		if(
-			($ordercontent->orderstate == 'cancelled' && $orderstatus!='canceled') ||
-			($ordercontent->orderstate != 'cancelled' && $orderstatus == 'canceled'))
+			($ordercontent->orderstate == 'cancelled' && $orderstatus!= Mage_Sales_Model_Order::STATE_CANCELED) ||
+			($ordercontent->orderstate != 'cancelled' && $orderstatus == Mage_Sales_Model_Order::STATE_CANCELED))
 		{
 			foreach($ordercontent->orderlines->orderline as $orderline)
 			{
@@ -1011,36 +916,44 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				{
 					$catalog = Mage::getModel('catalog/product');
 					$prodid = $catalog->getIdBySku((string)$orderline->productcode[0]);
-					$product = Mage::getModel('catalog/product')->load($prodid);
-					$qty = $orderline->quantity[0];
-					$totalquantity += $qty;
 
-					if (!($stockItem = $product->getStockItem())) {
-						$stockItem = Mage::getModel('cataloginventory/stock_item');
-						$stockItem->assignProduct($product)
-							->setData('stock_id', 1)
-							->setData('store_id', $storeId);
-					}
-					$stockItem = $product->getStockItem();
-					$stockData = $stockItem->getData();
+					if($prodid)
+					{
+						$product = Mage::getModel('catalog/product')->load($prodid);
+						if($product)
+						{
+							$qty = $orderline->quantity[0];
+							$totalquantity += $qty;
 
-					if(isset($stockData['use_config_manage_stock'])) {
-						if($stockData['use_config_manage_stock'] != 0) {
-							$stockcontrol = Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
-						} else {
-							$stockcontrol = $stockData['manage_stock'];
-						}
+							$stockItem = $product->getStockItem();
 
-						if($stockcontrol !=0) {
-							if($ordercontent->orderstate == 'cancelled') {
-								$stockItem->addQty(intval($qty));
-							} else {
-								$stockItem->subtractQty(intval($qty));
+							if (!$stockItem) {
+								$stockItem = Mage::getModel('cataloginventory/stock_item');
+								$stockItem->assignProduct($product)
+									->setData('stock_id', 1)
+									->setData('store_id', $store->getId());
+							}
+
+							if($stockItem->canSubtractQty())
+							{
+								if($ordercontent->orderstate == 'cancelled') {
+
+									$productsToReindex[$product->getId()] = $product->getId();
+
+									$stockItem->addQty(intval($qty));
+
+								} else {
+
+									$productsToReindex[$product->getId()] = $product->getId();
+
+									$stockItem->subtractQty(intval($qty));
+									
+								}
+
+								$stockItem->save();
 							}
 						}
 					}
-
-					$stockItem->save();
 
 				}
 			}
@@ -1088,6 +1001,433 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$response = $this->getResponse();
 		$response->setHeader('Content-Type', 'application/json');
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+	}
+
+	private function ProcessQuote($quote, $xml, $store)
+	{
+		$connection = Mage::getSingleton('core/resource')->getConnection('core_write');
+
+		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
+
+		$websiteId = $store->getWebsiteId();
+
+		$billing_address = $ordercontent->orderaddresses->orderaddress[0];
+		$billing_first_name = $billing_last_name = '';
+
+		if(strpos($billing_address->name, ' ') !== false) {
+			$billing_name = explode(' ', $billing_address->name, 2);
+			$billing_first_name = $billing_name[0];
+			$billing_last_name = $billing_name[1];
+		} else {
+			$billing_first_name = $billing_address->name;
+		}
+
+		$shipping_address = $ordercontent->orderaddresses->orderaddress[1];
+		$shipping_first_name = $shipping_last_name = '';
+
+		if(strpos($shipping_address->name, ' ') !== false) {
+			$shipping_name = explode(' ', $shipping_address->name, 2);
+			$shipping_first_name = $shipping_name[0];
+			$shipping_last_name = $shipping_name[1];
+		} else {
+			$shipping_first_name = $shipping_address->name;
+		}
+
+		$email = (string)$billing_address->email;
+		if(!$email)
+			$email = 'mail@example.com';
+
+		$regionCollection = $this->getRegionCollection($billing_address->countrycode);
+
+		$regionsel_id = 0;
+		foreach($regionCollection as $region)
+		{
+			if(in_array($billing_address->division, array($region['code'], $region['name'])))
+			{
+
+				$regionsel_id = $region['region_id'];
+			}
+		}
+
+		$addressBilling = array(
+			'email' => $email,
+			'prefix' => '',
+			'suffix' => '',
+			'company' => (string)$billing_address->companyname,
+			'firstname' => (string)$billing_first_name,
+			'middlename' => '',
+			'lastname' => (string)$billing_last_name,
+			'street' => (string)$billing_address->address1.($shipping_address->address2 ? "\n".$billing_address->address2 : ''),
+			'city' => (string)$billing_address->place,
+			'postcode' => (string)$billing_address->postalcode,
+			'telephone' => (string)$billing_address->phone,
+			'fax' => '',
+			'country_id' => (string)$billing_address->countrycode,
+			'region_id' => $regionsel_id, // id from directory_country_region table
+		);
+
+		$regionsel_id_ship = 0;
+		foreach($regionCollection as $region)
+		{
+			if(in_array($shipping_address->division, array($region['code'], $region['name'])))
+			{
+				$regionsel_id_ship = $region['region_id'];
+			}
+		}
+
+		$addressShipping = array(
+			'email' => $email,
+			'prefix' => '',
+			'suffix' => '',
+			'company' => (string)$shipping_address->companyname,
+			'firstname' => (string)$shipping_first_name,
+			'middlename' => '',
+			'lastname' => (string)$shipping_last_name,
+			'street' => (string)$shipping_address->address1.($shipping_address->address2 ? "\n".$shipping_address->address2 : ''),
+			'city' => (string)$shipping_address->place,
+			'postcode' => (string)$shipping_address->postalcode,
+			'telephone' => (string)$shipping_address->phone,
+			'fax' => '',
+			'country_id' => (string)$shipping_address->countrycode,
+			'region_id' => $regionsel_id_ship, // id from directory_country_region table
+		);
+
+		for($Retry = 0; ; $Retry++)
+		{
+			try
+			{
+				$connection->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
+				$connection->beginTransaction();
+
+				$customer = Mage::getModel('customer/customer');
+				$customer->setWebsiteId($websiteId);
+				$customer->setStoreId($store->getId());
+				$customer->loadByEmail($email);
+
+				if(!$customer->getId())
+				{
+					$ebayGroup = Mage::getModel('customer/group');
+					$ebayGroup->load('eBay', 'customer_group_code');
+					if(!$ebayGroup->getId())
+					{
+						$defaultGroup = Mage::getModel('customer/group')->load(1);
+
+						$ebayGroup->setCode('eBay');
+						$ebayGroup->setTaxClassId($defaultGroup->getTaxClassId());
+						$ebayGroup->save();
+					}
+
+					$customerGroupId = $ebayGroup->getId();
+
+					$customer->setWebsiteId($websiteId);
+					$customer->setStoreId($store->getId());
+					$customer->setEmail($email);
+					$customer->setFirstname((string)$billing_first_name);
+					$customer->setLastname((string)$billing_last_name);
+					$customer->setPassword('');
+					$customer->setGroupId($customerGroupId);
+					$customer->save();
+					$customer->setConfirmation(null);
+					$customer->save();
+
+					$customerId = $customer->getId();
+
+					$customerAddress = Mage::getModel('customer/address');
+					$customerAddress->setData($addressBilling)
+						->setCustomerId($customer->getId())
+						->setIsDefaultBilling(1)
+						->setSaveInAddressBook(1);
+					$customerAddress->save();
+
+
+					$customerAddress->setData($addressShipping)
+						->setCustomerId($customer->getId())
+						->setIsDefaultShipping(1)
+						->setSaveInAddressBook(1);
+					$customerAddress->save();
+				}
+				else
+				{
+					$customerId = $customer->getId();
+					$customerGroupId = $customer->getGroupId();
+				}
+
+				$connection->commit();
+				break;
+			}
+			catch(Exception $e)
+			{
+				if($Retry < 5)
+				{
+					if($e->getCode() == 40001)
+					{
+						$connection->rollback();
+						sleep($Retry * 10);
+						continue;
+					}
+				}
+
+				$connection->rollback();
+				throw $e;
+			}
+		}
+
+		$currencyCode = $ordercontent->transactcurrency[0];
+		$ordertotal = floatval($ordercontent->ordertotal[0]);
+		$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
+		$ordertaxtotal = floatval($ordercontent->ordertaxtotal[0]);
+
+		$ordersubtotal = $store->roundPrice($ordersubtotal);
+		$ordersubtotalincltax = $store->roundPrice($ordersubtotal + $ordertaxtotal);
+		$ordertotal = $store->roundPrice($ordertotal);
+
+		$quote->setStore($store);
+		$quote->setCheckoutMethod(Mage_Checkout_Model_Type_Onepage::METHOD_GUEST);
+		$quote->save();
+
+		$quote->assignCustomer($customer);
+
+		$billingAddress = $quote->getBillingAddress();
+		$billingAddress->setCustomer($customer);
+		$billingAddress->addData($addressBilling);
+
+		$shippingAddress = $quote->getShippingAddress();
+		$shippingAddress->setCustomer($customer);
+		$shippingAddress->addData($addressShipping);
+		$shippingAddress->implodeStreetAddress();
+
+		$totalitemcount = 0;
+		$totalitemqty = 0;
+
+		foreach($ordercontent->orderlines->orderline as $orderline)
+		{
+			if($orderline->productcode[0] != 'FREIGHT')
+			{
+				$adjustStock = true;
+
+				$product = null;
+				$productcode = (string)$orderline->productcode;
+				if($productcode == null)
+					$productcode = '';
+				$productname = (string)$orderline->productname;
+				if($productname == null)
+					$productname = '';
+
+				$productid = $orderline->externalreference[0];
+				if($productid != null)
+				{
+					$productid = intval($productid);
+
+					$product = Mage::getModel('catalog/product')->load($productid);
+					if($product->getId())
+					{
+						$productcode = $product->getSku();
+						$productname = $product->getName();
+					}
+					else
+					{
+						$product = null;
+					}
+				}
+
+				if(!$product)
+				{
+					$product = Mage::getModel('catalog/product');
+				}
+
+				$qty = (int)$orderline->quantity[0];
+				$subtotalinctax = floatval($orderline->linetotalinctax[0]);
+				$subtotal = floatval($orderline->linetotal[0]);
+
+				$totalitemcount += 1;
+				$totalitemqty += $qty;
+
+				$price = floatval($orderline->price[0]);
+				$priceinctax = floatval($orderline->priceinctax[0]);
+				$taxamount = $priceinctax - $price;
+				$taxpercent = $price == 0 ? 0 : round($priceinctax / $price - 1.0, 2) * 100;
+				$weight = floatval($orderline->weight[0]);
+
+				$item = Mage::getModel('sales/quote_item');
+				$item->setStoreId($store->getId());
+				$item->setQuote($quote);
+
+				$item->setData('product', $product);
+				$item->setProductId($productid);
+				$item->setProductType('simple');
+				$item->setIsRecurring(false);
+
+				if($productid)
+					$item->setTaxClassId($product->getTaxClassId());
+
+				if($productid)
+					$item->setBaseCost($product->getCost());
+
+				$item->setSku($productcode);
+				$item->setName($productname);
+				$item->setIsVirtual(false);
+				$item->setIsQtyDecimal(false);
+				$item->setNoDiscount(true);
+				$item->setWeight($weight);
+				$item->setData('qty', $qty);
+				$item->setPrice($price);
+				$item->setBasePrice($price);
+				$item->setCustomPrice($price);
+				$item->setDiscountPercent(0);
+				$item->setDiscountAmount(0);
+				$item->setBaseDiscountAmount(0);
+				$item->setTaxPercent($taxpercent);
+				$item->setTaxAmount($taxamount);
+				$item->setBaseTaxAmount($taxamount);
+				$item->setRowTotal($subtotal);
+				$item->setBaseRowTotal($subtotal);
+				$item->setRowTotalWithDiscount($subtotal);
+				$item->setRowWeight($weight * $qty);
+				$item->setProductType('simple');
+				$item->setOriginalCustomPrice($price);
+				$item->setPriceInclTax($priceinctax);
+				$item->setBasePriceInclTax($priceinctax);
+				$item->setRowTotalInclTax($subtotalinctax);
+				$item->setBaseRowTotalInclTax($subtotalinctax);
+				$item->setWeeeTaxApplied(serialize(array()));
+
+				$quote->getItemsCollection()->addItem($item);
+			}
+		}
+
+		$freighttotal = 0.0;
+		$freighttotalextax = 0.0;
+		$freighttax = 0.0;
+		$freightservice = '';
+
+		foreach($ordercontent->orderlines->orderline as $orderline)
+		{
+			if($orderline->productcode[0] == 'FREIGHT')
+			{
+				$freighttotal += floatval($orderline->linetotalinctax[0]);
+				$freighttotalextax += floatval($orderline->linetotal[0]);
+				$freighttax = (float)$freighttotal - $freighttotalextax;
+				$freightservice = $orderline->productname[0];
+			}
+		}
+
+		$ordersubtotal -= $freighttotalextax;
+		$ordersubtotalincltax -= $freighttotal;
+		$ordertaxtotal -= $freighttax;
+
+		$quotePayment = $quote->getPayment();
+		$quotePayment->importData(array('method' => 'ebay'));
+
+		$quote->setBaseCurrencyCode($currencyCode);
+		$quote->setStoreCurrencyCode($currencyCode);
+		$quote->setQuoteCurrencyCode($currencyCode);
+		$quote->setItemsCount($totalitemcount);
+		$quote->setItemsQty($totalitemqty);
+		$quote->setVirtualItemsQty(0);
+		$quote->setGrandTotal($ordertotal);
+		$quote->setBaseGrandTotal($ordertotal);
+		$quote->setSubtotal($ordersubtotal);
+		$quote->setBaseSubtotal($ordersubtotal);
+		$quote->setSubtotal($ordersubtotal);
+		$quote->setBaseSubtotalWithDiscount($ordersubtotal);
+		$quote->setSubtotalWithDiscount($ordersubtotal);
+		$quote->setCustomerId($customerId);
+		$quote->setCustomerGroupId($customerGroupId);
+		$quote->setData('trigger_recollect', 0);
+		$quote->setTotalsCollectedFlag(true);
+		$quote->save();
+
+		$shippingAddress = $quote->getShippingAddress();
+		$shippingAddress->setSubtotal($ordersubtotal);
+		$shippingAddress->setBaseSubtotal($ordersubtotal);
+		$shippingAddress->setSubtotalWithDiscount($ordersubtotal);
+		$shippingAddress->setBaseSubtotalWithDiscount($ordersubtotal);
+		$shippingAddress->setTaxAmount($ordertaxtotal);
+		$shippingAddress->setBaseTaxAmount($ordertaxtotal);
+		$shippingAddress->setShippingTaxAmount($freighttax);
+		$shippingAddress->setBaseShippingTaxAmount($freighttax);
+		$shippingAddress->setDiscountAmount(0);
+		$shippingAddress->setBaseDiscountAmount(0);
+		$shippingAddress->setGrandTotal($ordertotal);
+		$shippingAddress->setBaseGrandTotal($ordertotal);
+		$shippingAddress->setAppliedTaxes(array());
+		$shippingAddress->setShippingDiscountAmount(0);
+		$shippingAddress->setBaseShippingDiscountAmount(0);
+		$shippingAddress->setSubtotalInclTax($ordersubtotalincltax);
+		$shippingAddress->setBaseSubtotalTotalInclTax($ordersubtotalincltax);
+
+		$freightcode = 'flatrate';
+		$freightcarrier = 'Post';
+		$freightcarriertitle = 'Post';
+		$freightmethod = 'Freight';
+		$freightmethodtitle = 'Freight';
+		$freightmethoddescription = '';
+		$freighttotal =  0.0;
+		$freighttotalextax =  0.0;
+		$freighttax = 0.0;
+		$taxpercent =  0.0;
+		$taxrate =  1.0;
+
+		$freightcost = null;
+		$freightrate = null;
+
+		try {
+
+			$shippingRequest = Mage::getModel('shipping/rate_request');
+			$shippingRequest->setAllItems($quote->getAllItems());
+			$shippingRequest->setDestCountryId($shippingAddress->getCountryId());
+			$shippingRequest->setDestRegionId($shippingAddress->getRegionId());
+			$shippingRequest->setDestRegionCode($shippingAddress->getRegionCode());
+			$shippingRequest->setDestStreet($shippingAddress->getStreet(Mage_Sales_Model_Quote_Address::DEFAULT_DEST_STREET));
+			$shippingRequest->setDestCity($shippingAddress->getCity());
+			$shippingRequest->setDestPostcode($shippingAddress->getPostcode());
+			$shippingRequest->setPackageValue($quote->getBaseSubtotal());
+			$shippingRequest->setPackageValueWithDiscount($quote->getBaseSubtotalWithDiscount());
+			$shippingRequest->setPackageWeight($quote->getWeight());
+			$shippingRequest->setPackageQty($quote->getItemQty());
+			$shippingRequest->setPackagePhysicalValue($quote->getBaseSubtotal());
+			$shippingRequest->setFreeMethodWeight(0);
+			$shippingRequest->setStoreId($store->getId());
+			$shippingRequest->setWebsiteId($store->getWebsiteId());
+			$shippingRequest->setFreeShipping(false);
+			$shippingRequest->setBaseCurrency($currencyCode);
+			$shippingRequest->setPackageCurrency($currencyCode);
+			$shippingRequest->setBaseSubtotalInclTax($quote->getBaseSubtotalInclTax());
+
+			$shippingResult = Mage::getModel('shipping/shipping')->collectRates($shippingRequest)->getResult();
+
+			$shippingRates = $shippingResult->getAllRates();
+
+			foreach($shippingRates as $shippingRate)
+			{
+				$quoteRate = Mage::getModel('sales/quote_address_rate')
+								->importShippingRate($shippingRate);
+
+				if(is_null($freightcost) || (!is_null($rate->getPrice()) && $rate->getPrice() < $freightcost))
+				{
+					$freightcode = $quoteRate->getCode();
+					$freightcarrier = $quoteRate->getCarrier();
+					$freightcarriertitle = $quoteRate->getCarrierTitle();
+					$freightmethod = $quoteRate->getMethod();
+					$freightmethodtitle = $quoteRate->getMethodTitle();
+					$freightmethoddescription = $quoteRate->getMethodDescription();
+
+					$freightRate = $quoteRate;
+				}
+
+			}
+		}
+		catch(Exception $e)
+		{
+
+		}
+
+		$shippingAddress->addShippingRate($freightRate);
+		$shippingAddress->setShippingMethod($freightcode);
+		$shippingAddress->setShippingDescription($freightmethodtitle);
+		$shippingAddress->setShippingAmount($freighttotal);
+		$shippingAddress->setBaseShippingAmount($freighttotal);
+		$shippingAddress->save();
 	}
 
 	private function getRegionCollection($countryCode)
