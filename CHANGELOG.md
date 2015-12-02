@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.52...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.53...HEAD)
+
+**Merged pull requests:**
+
+- Release [\#174](https://github.com/CodistoConnect/CodistoConnect/pull/174) ([bradmccormack](https://github.com/bradmccormack))
+- enhancements to order processing [\#173](https://github.com/CodistoConnect/CodistoConnect/pull/173) ([lamery](https://github.com/lamery))
+
+## [1.1.53](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.53) (2015-11-24)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.52...1.1.53)
 
 **Fixed bugs:**
 
