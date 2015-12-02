@@ -359,18 +359,110 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$order->setPayment($quoteConverter->paymentToOrderPayment($quote->getPayment()));
 		$order->setCodistoOrderid($ordercontent->orderid);
 
-		foreach ($quote->getAllItems() as $quoteItem)
+		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
-			$orderItem = $quoteConverter->itemToOrderItem($quoteItem);
-			if ($quoteItem->getParentItem()) {
-				$orderItem->setParentItem($order->getItemByQuoteItemId($quoteItem->getParentItem()->getId()));
+			$adjustStock = true;
+
+			$product = null;
+
+			$productcode = $orderline->productcode[0];
+			if($productcode == null)
+				$productcode = '';
+			else
+				$productcode = (string)$productcode;
+
+			$productname = $orderline->productname[0];
+			if($productname == null)
+				$productname = '';
+			else
+				$productname = (string)$productname;
+
+			$productid = $orderline->externalreference[0];
+			if($productid != null)
+			{
+				$productid = intval($productid);
+
+				$product = Mage::getModel('catalog/product')->load($productid);
+				if($product->getId())
+				{
+					$productcode = $product->getSku();
+					$productname = $product->getName();
+				}
+				else
+				{
+					$product = null;
+				}
 			}
+
+			if(!$product)
+			{
+				$product = Mage::getModel('catalog/product');
+				$adjustStock = false;
+			}
+
+			$qty = (int)$orderline->quantity[0];
+			$subtotalinctax = floatval($orderline->linetotalinctax[0]);
+			$subtotal = floatval($orderline->linetotal[0]);
+
+			$price = floatval($orderline->price[0]);
+			$priceinctax = floatval($orderline->priceinctax[0]);
+			$taxamount = $priceinctax - $price;
+			$taxpercent = round($priceinctax / $price - 1.0, 2) * 100;
+			$weight = floatval($orderline->weight[0]);
+			if($weight == 0)
+				$weight = 1;
+
+			$orderItem = Mage::getModel('sales/quote_item');
+			$orderItem->setStoreId($store->getId());
+			$orderItem->setData('product', $product);
+
+			if($productid)
+				$orderItem->setProductId($productid);
+
+			if($productid)
+				$orderItem->setBaseCost($product->getCost());
+
+			if($productid)
+			{
+				$orderItem->setOriginalPrice($product->getFinalPrice());
+				$orderItem->setBaseOriginalPrice($product->getFinalPrice());
+			}
+			else
+			{
+				$orderItem->setOriginalPrice($priceinctax);
+				$orderItem->setBaseOriginalPrice($priceinctax);
+			}
+
+			$orderItem->setIsVirtual(false);
+			$orderItem->setProductType('simple');
+			$orderItem->setSku($productcode);
+			$orderItem->setName($productname);
+			$orderItem->setIsQtyDecimal(false);
+			$orderItem->setNoDiscount(true);
+			$orderItem->setQtyOrdered($qty);
+			$orderItem->setPrice($price);
+			$orderItem->setPriceInclTax($priceinctax);
+			$orderItem->setBasePrice($price);
+			$orderItem->setBasePriceInclTax($priceinctax);
+			$orderItem->setTaxPercent($taxpercent);
+			$orderItem->setTaxAmount($taxamount);
+			$orderItem->setTaxBeforeDiscount($taxamount);
+			$orderItem->setBaseTaxBeforeDiscount($taxamount);
+			$orderItem->setDiscountAmount(0);
+			$orderItem->setWeight($weight);
+			$orderItem->setBaseRowTotal($subtotal);
+			$orderItem->setBaseRowTotalInclTax($subtotalinctax);
+			$orderItem->setRowTotal($subtotal);
+			$orderItem->setRowTotalInclTax($subtotalinctax);
+			$orderItem->setWeeeTaxApplied(serialize(array()));
+
 			$order->addItem($orderItem);
+
+			$orderlineIndex++;
 
 			if($ordercontent->orderstate != 'cancelled')
 			{
-				$product = $orderItem->getProduct();
-				if($product && $product->getId())
+				if($adjustStock)
 				{
 					$stockItem = $product->getStockItem();
 					if (!$stockItem) {
@@ -507,7 +599,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$freighttotal += floatval($orderline->linetotalinctax[0]);
 				$freighttotalextax += floatval($orderline->linetotal[0]);
 				$freighttax = $freighttotal - $freighttotalextax;
-				$freightservice = $orderline->productname[0];
+				$freightservice = (string)$orderline->productname[0];
 			}
 		}
 
@@ -571,12 +663,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$adjustStock = true;
 
 				$product = null;
+
 				$productcode = $orderline->productcode[0];
 				if($productcode == null)
 					$productcode = '';
+				else
+					$productcode = (string)$productcode;
+
 				$productname = $orderline->productname[0];
 				if($productname == null)
 					$productname = '';
+				else
+					$productname = (string)$productname;
 
 				$productid = $orderline->externalreference[0];
 				if($productid != null)
@@ -607,18 +705,35 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 				$totalquantity += $qty;
 
-				$item = Mage::getModel('sales/order_item');
-				$item->setStoreId($store->getId());
-
-				$item->setProduct($product);
-				$item->setProductId($productid);
-
 				$price = floatval($orderline->price[0]);
 				$priceinctax = floatval($orderline->priceinctax[0]);
 				$taxamount = $priceinctax - $price;
 				$taxpercent = round($priceinctax / $price - 1.0, 2) * 100;
 				$weight = floatval($orderline->weight[0]);
 
+				$item = Mage::getModel('sales/order_item');
+				$item->setStoreId($store->getId());
+
+				$item->setData('product', $product);
+
+				if($productid)
+					$item->setProductId($productid);
+
+				if($productid)
+					$item->setBaseCost($product->getCost());
+
+				if($productid)
+				{
+					$item->setOriginalPrice($product->getFinalPrice());
+					$item->setBaseOriginalPrice($product->getFinalPrice());
+				}
+				else
+				{
+					$item->setOriginalPrice($priceinctax);
+					$item->setBaseOriginalPrice($priceinctax);
+				}
+
+				$item->setIsVirtual(false);
 				$item->setProductType('simple');
 				$item->setSku($productcode);
 				$item->setName($productname);
@@ -627,12 +742,12 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$item->setQtyOrdered($qty);
 				$item->setPrice($price);
 				$item->setPriceInclTax($priceinctax);
-				$item->setOriginalPrice($priceinctax);
 				$item->setBasePrice($price);
 				$item->setBasePriceInclTax($priceinctax);
-				$item->setBaseOriginalPrice($priceinctax);
 				$item->setTaxPercent($taxpercent);
 				$item->setTaxAmount($taxamount);
+				$item->setTaxBeforeDiscount($taxamount);
+				$item->setBaseTaxBeforeDiscount($taxamount);
 				$item->setDiscountAmount(0);
 				$item->setWeight($weight);
 				$item->setBaseRowTotal($subtotal);
@@ -705,7 +820,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 		if($ordercontent->orderstate == 'complete' && $orderstatus!=Mage_Sales_Model_Order::STATE_COMPLETE) {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_COMPLETE);
+			$order->setData('status', Mage_Sales_Model_Order::STATE_COMPLETE);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
 
 		}
@@ -1005,10 +1120,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$adjustStock = true;
 
 				$product = null;
-				$productcode = $orderline->productcode[0];
+				$productcode = (string)$orderline->productcode;
 				if($productcode == null)
 					$productcode = '';
-				$productname = $orderline->productname[0];
+				$productname = (string)$orderline->productname;
 				if($productname == null)
 					$productname = '';
 
@@ -1041,6 +1156,12 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$totalitemcount += 1;
 				$totalitemqty += $qty;
 
+				$price = floatval($orderline->price[0]);
+				$priceinctax = floatval($orderline->priceinctax[0]);
+				$taxamount = $priceinctax - $price;
+				$taxpercent = round($priceinctax / $price - 1.0, 2) * 100;
+				$weight = floatval($orderline->weight[0]);
+
 				$item = Mage::getModel('sales/quote_item');
 				$item->setStoreId($store->getId());
 				$item->setQuote($quote);
@@ -1048,18 +1169,17 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$item->setData('product', $product);
 				$item->setProductId($productid);
 				$item->setProductType('simple');
-				$item->setTaxClassId($product->getTaxClassId());
-				$item->setBaseCost($product->getBaseCost());
 				$item->setIsRecurring(false);
 
-				$price = floatval($orderline->price[0]);
-				$priceinctax = floatval($orderline->priceinctax[0]);
-				$taxamount = $priceinctax - $price;
-				$taxpercent = round($priceinctax / $price - 1.0, 2) * 100;
-				$weight = floatval($orderline->weight[0]);
+				if($productid)
+					$item->setTaxClassId($product->getTaxClassId());
+
+				if($productid)
+					$item->setBaseCost($product->getCost());
 
 				$item->setSku($productcode);
-				$item->setName($orderline->productname[0]);
+				$item->setName($productname);
+				$item->setIsVirtual(false);
 				$item->setIsQtyDecimal(false);
 				$item->setNoDiscount(true);
 				$item->setWeight($weight);
@@ -1083,7 +1203,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$item->setBasePriceInclTax($priceinctax);
 				$item->setRowTotalInclTax($subtotalinctax);
 				$item->setBaseRowTotalInclTax($subtotalinctax);
-				$item->setWeeeTaxApplied(array());
+				$item->setWeeeTaxApplied(serialize(array()));
 
 				$quote->getItemsCollection()->addItem($item);
 			}
