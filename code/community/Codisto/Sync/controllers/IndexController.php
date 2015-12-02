@@ -361,123 +361,124 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
-			$adjustStock = true;
-
-			$product = null;
-
-			$productcode = $orderline->productcode[0];
-			if($productcode == null)
-				$productcode = '';
-			else
-				$productcode = (string)$productcode;
-
-			$productname = $orderline->productname[0];
-			if($productname == null)
-				$productname = '';
-			else
-				$productname = (string)$productname;
-
-			$productid = $orderline->externalreference[0];
-			if($productid != null)
+			if($orderline->productcode[0] != 'FREIGHT')
 			{
-				$productid = intval($productid);
+				$adjustStock = true;
 
-				$product = Mage::getModel('catalog/product')->load($productid);
-				if($product->getId())
+				$product = null;
+
+				$productcode = $orderline->productcode[0];
+				if($productcode == null)
+					$productcode = '';
+				else
+					$productcode = (string)$productcode;
+
+				$productname = $orderline->productname[0];
+				if($productname == null)
+					$productname = '';
+				else
+					$productname = (string)$productname;
+
+				$productid = $orderline->externalreference[0];
+				if($productid != null)
 				{
-					$productcode = $product->getSku();
-					$productname = $product->getName();
+					$productid = intval($productid);
+
+					$product = Mage::getModel('catalog/product')->load($productid);
+					if($product->getId())
+					{
+						$productcode = $product->getSku();
+						$productname = $product->getName();
+					}
+					else
+					{
+						$product = null;
+					}
+				}
+
+				if(!$product)
+				{
+					$product = Mage::getModel('catalog/product');
+					$adjustStock = false;
+				}
+
+				$qty = (int)$orderline->quantity[0];
+				$subtotalinctax = floatval($orderline->linetotalinctax[0]);
+				$subtotal = floatval($orderline->linetotal[0]);
+
+				$price = floatval($orderline->price[0]);
+				$priceinctax = floatval($orderline->priceinctax[0]);
+				$taxamount = $priceinctax - $price;
+				$taxpercent = $price == 0 ? 0 : round($priceinctax / $price - 1.0, 2) * 100;
+				$weight = floatval($orderline->weight[0]);
+				if($weight == 0)
+					$weight = 1;
+
+				$orderItem = Mage::getModel('sales/order_item');
+				$orderItem->setStoreId($store->getId());
+				$orderItem->setData('product', $product);
+
+				if($productid)
+					$orderItem->setProductId($productid);
+
+				if($productid)
+					$orderItem->setBaseCost($product->getCost());
+
+				if($productid)
+				{
+					$orderItem->setOriginalPrice($product->getFinalPrice());
+					$orderItem->setBaseOriginalPrice($product->getFinalPrice());
 				}
 				else
 				{
-					$product = null;
+					$orderItem->setOriginalPrice($priceinctax);
+					$orderItem->setBaseOriginalPrice($priceinctax);
 				}
-			}
 
-			if(!$product)
-			{
-				$product = Mage::getModel('catalog/product');
-				$adjustStock = false;
-			}
+				$orderItem->setIsVirtual(false);
+				$orderItem->setProductType('simple');
+				$orderItem->setSku($productcode);
+				$orderItem->setName($productname);
+				$orderItem->setIsQtyDecimal(false);
+				$orderItem->setNoDiscount(true);
+				$orderItem->setQtyOrdered($qty);
+				$orderItem->setPrice($price);
+				$orderItem->setPriceInclTax($priceinctax);
+				$orderItem->setBasePrice($price);
+				$orderItem->setBasePriceInclTax($priceinctax);
+				$orderItem->setTaxPercent($taxpercent);
+				$orderItem->setTaxAmount($taxamount);
+				$orderItem->setTaxBeforeDiscount($taxamount);
+				$orderItem->setBaseTaxBeforeDiscount($taxamount);
+				$orderItem->setDiscountAmount(0);
+				$orderItem->setWeight($weight);
+				$orderItem->setBaseRowTotal($subtotal);
+				$orderItem->setBaseRowTotalInclTax($subtotalinctax);
+				$orderItem->setRowTotal($subtotal);
+				$orderItem->setRowTotalInclTax($subtotalinctax);
+				$orderItem->setWeeeTaxApplied(serialize(array()));
 
-			$qty = (int)$orderline->quantity[0];
-			$subtotalinctax = floatval($orderline->linetotalinctax[0]);
-			$subtotal = floatval($orderline->linetotal[0]);
+				$order->addItem($orderItem);
 
-			$price = floatval($orderline->price[0]);
-			$priceinctax = floatval($orderline->priceinctax[0]);
-			$taxamount = $priceinctax - $price;
-			$taxpercent = round($priceinctax / $price - 1.0, 2) * 100;
-			$weight = floatval($orderline->weight[0]);
-			if($weight == 0)
-				$weight = 1;
-
-			$orderItem = Mage::getModel('sales/quote_item');
-			$orderItem->setStoreId($store->getId());
-			$orderItem->setData('product', $product);
-
-			if($productid)
-				$orderItem->setProductId($productid);
-
-			if($productid)
-				$orderItem->setBaseCost($product->getCost());
-
-			if($productid)
-			{
-				$orderItem->setOriginalPrice($product->getFinalPrice());
-				$orderItem->setBaseOriginalPrice($product->getFinalPrice());
-			}
-			else
-			{
-				$orderItem->setOriginalPrice($priceinctax);
-				$orderItem->setBaseOriginalPrice($priceinctax);
-			}
-
-			$orderItem->setIsVirtual(false);
-			$orderItem->setProductType('simple');
-			$orderItem->setSku($productcode);
-			$orderItem->setName($productname);
-			$orderItem->setIsQtyDecimal(false);
-			$orderItem->setNoDiscount(true);
-			$orderItem->setQtyOrdered($qty);
-			$orderItem->setPrice($price);
-			$orderItem->setPriceInclTax($priceinctax);
-			$orderItem->setBasePrice($price);
-			$orderItem->setBasePriceInclTax($priceinctax);
-			$orderItem->setTaxPercent($taxpercent);
-			$orderItem->setTaxAmount($taxamount);
-			$orderItem->setTaxBeforeDiscount($taxamount);
-			$orderItem->setBaseTaxBeforeDiscount($taxamount);
-			$orderItem->setDiscountAmount(0);
-			$orderItem->setWeight($weight);
-			$orderItem->setBaseRowTotal($subtotal);
-			$orderItem->setBaseRowTotalInclTax($subtotalinctax);
-			$orderItem->setRowTotal($subtotal);
-			$orderItem->setRowTotalInclTax($subtotalinctax);
-			$orderItem->setWeeeTaxApplied(serialize(array()));
-
-			$order->addItem($orderItem);
-
-			$orderlineIndex++;
-
-			if($ordercontent->orderstate != 'cancelled')
-			{
-				if($adjustStock)
+				if($ordercontent->orderstate != 'cancelled')
 				{
-					$stockItem = $product->getStockItem();
-					if (!$stockItem) {
-						$stockItem = Mage::getModel('cataloginventory/stock_item');
-						$stockItem->assignProduct($product)
-							->setData('stock_id', 1)
-							->setData('store_id', $store->getId());
-					}
-
-					if($stockItem->canSubtractQty())
+					if($adjustStock)
 					{
-						$productsToReindex[$product->getId()] = $product->getId();
+						$stockItem = $product->getStockItem();
+						if (!$stockItem) {
+							$stockItem = Mage::getModel('cataloginventory/stock_item');
+							$stockItem->assignProduct($product)
+								->setData('stock_id', 1)
+								->setData('store_id', $store->getId());
+						}
 
-						$stockItem->subtractQty($orderItem->getQtyOrdered());
-						$stockItem->save();
+						if($stockItem->canSubtractQty())
+						{
+							$productsToReindex[$product->getId()] = $product->getId();
+
+							$stockItem->subtractQty($orderItem->getQtyOrdered());
+							$stockItem->save();
+						}
 					}
 				}
 			}
@@ -638,7 +639,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$order->setGrandTotal($ordertotal);
 
 		$orderlineStockReserved = array();
-		foreach($order->getAllVisibleItems() as $item)
+		foreach($order->getAllItems() as $item)
 		{
 			$productId = $item->getProductId();
 			if($productId || $productId == 0)
@@ -650,10 +651,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			}
 		}
 
-		foreach($order->getAllVisibleItems() as $item)
-		{
-			$item->delete();
-		}
+		$visited = array();
 
 		$totalquantity = 0;
 		foreach($ordercontent->orderlines->orderline as $orderline)
@@ -708,10 +706,38 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$price = floatval($orderline->price[0]);
 				$priceinctax = floatval($orderline->priceinctax[0]);
 				$taxamount = $priceinctax - $price;
-				$taxpercent = round($priceinctax / $price - 1.0, 2) * 100;
+				$taxpercent = $price == 0 ? 0 : round($priceinctax / $price - 1.0, 2) * 100;
 				$weight = floatval($orderline->weight[0]);
 
-				$item = Mage::getModel('sales/order_item');
+				$itemFound = false;
+				foreach($order->getAllItems() as $item)
+				{
+					if(!isset($visited[$item->getId()]))
+					{
+						if($productid)
+						{
+							if($item->getProductId() == $productid)
+							{
+								$itemFound = true;
+								$visited[$item->getId()] = true;
+								break;
+							}
+						}
+						else
+						{
+							if($item->getSku() == $productcode)
+							{
+								$itemFound = true;
+								$visited[$item->getId()] = true;
+								break;
+							}
+						}
+					}
+				}
+
+				if(!$itemFound)
+					$item = Mage::getModel('sales/order_item');
+
 				$item->setStoreId($store->getId());
 
 				$item->setData('product', $product);
@@ -756,7 +782,8 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$item->setRowTotalInclTax($subtotalinctax);
 				$item->setWeeeTaxApplied(serialize(array()));
 
-				$order->addItem($item);
+				if(!$itemFound)
+					$order->addItem($item);
 
 				if($ordercontent->orderstate != 'cancelled')
 				{
@@ -796,6 +823,60 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					}
 				}
 			}
+		}
+
+		$visited = array();
+		foreach($order->getAllItems() as $item)
+		{
+			$itemFound = false;
+
+			$orderlineIndex = 0;
+			foreach($ordercontent->orderlines->orderline as $orderline)
+			{
+				if(!isset($visited[$orderlineIndex]) &&
+						$orderline->productcode[0] != 'FREIGHT')
+				{
+					$productcode = $orderline->productcode[0];
+					if($productcode == null)
+						$productcode = '';
+					else
+						$productcode = (string)$productcode;
+
+					$productname = $orderline->productname[0];
+					if($productname == null)
+						$productname = '';
+					else
+						$productname = (string)$productname;
+
+					$productid = $orderline->externalreference[0];
+					if($productid != null)
+					{
+						$productid = intval($productid);
+					}
+
+					if($productid)
+					{
+						if($item->getProductId() == $productid)
+						{
+							$itemFound = true;
+							$visited[$orderlineIndex] = true;
+						}
+					}
+					else
+					{
+						if($item->getSku() == $productcode)
+						{
+							$itemFound = true;
+							$visited[$orderlineIndex] = true;
+						}
+					}
+				}
+
+				$orderlineIndex++;
+			}
+
+			if(!$itemFound)
+				$item->delete();
 		}
 
 		$order->setTotalQtyOrdered((int)$totalquantity);
@@ -860,8 +941,13 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 									$productsToReindex[$product->getId()] = $product->getId();
 
 									$stockItem->addQty(intval($qty));
+
 								} else {
+
+									$productsToReindex[$product->getId()] = $product->getId();
+
 									$stockItem->subtractQty(intval($qty));
+									
 								}
 
 								$stockItem->save();
@@ -1159,7 +1245,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$price = floatval($orderline->price[0]);
 				$priceinctax = floatval($orderline->priceinctax[0]);
 				$taxamount = $priceinctax - $price;
-				$taxpercent = round($priceinctax / $price - 1.0, 2) * 100;
+				$taxpercent = $price == 0 ? 0 : round($priceinctax / $price - 1.0, 2) * 100;
 				$weight = floatval($orderline->weight[0]);
 
 				$item = Mage::getModel('sales/quote_item');
