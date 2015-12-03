@@ -26,7 +26,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		ignore_user_abort(false);
 
 		$output = '';
-
+Mage::log('calc start');
 		try
 		{
 			$request = $this->getRequest();
@@ -108,6 +108,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 			for($inputidx = 0; ; $inputidx++)
 			{
+				if(!$request->getPost('PRODUCTCODE('.$inputidx.')'))
+					break;
+
 				$productid = (int)$request->getPost('PRODUCTID('.$inputidx.')');
 				if(!$productid)
 				{
@@ -152,8 +155,8 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 						$item->setBaseCost($product->getCost());
 						$item->setSku($product->getSku());
 						$item->setName($product->getName());
-						$item->setIsVirtual(false);
-						$item->setIsQtyDecimal(false);
+						$item->setIsVirtual(0);
+						$item->setIsQtyDecimal(0);
 						$item->setNoDiscount(true);
 						$item->setWeight($product->getWeight());
 						$item->setData('qty', $productqty);
@@ -220,7 +223,6 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$outputidx = 0;
 			foreach($shippingRates as $shippingRate)
 			{
-Mage::log($shippingRate->debug());
 				if($shippingRate instanceof Mage_Shipping_Model_Rate_Result_Method)
 				{
 					$output .= 'FREIGHTNAME('.$outputidx.')='.rawurlencode($shippingRate->getMethodTitle()).'&FREIGHTCHARGEINCTAX('.$outputidx.')='.$shippingRate->getPrice().'&';
@@ -244,7 +246,7 @@ Mage::log($shippingRate->debug());
 		{
 
 		}
-
+Mage::log('calc end');
 		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 		$response->setHeader('Pragma', 'no-cache', true);
