@@ -42,7 +42,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$place = $request->getPost('PLACE');
 			if(!$place)
 				$place = '';
-			$postalcode = $request->getPost('POSTALCODE');
+			$postalcode = $request->getPost('POSgit TALCODE');
 			$division = $request->getPost('DIVISION');
 			$countrycode = $request->getPost('COUNTRYCODE');
 			$regionid = null;
@@ -117,7 +117,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				else
 				{
 					$sku = Mage::getResourceSingleton('catalog/product')->getProductsSku(array($productid));
-					if(!empty($sku))
+					if(empty($sku))
 					{
 						$productcode = $request->getPost('PRODUCTCODE('.$inputidx.')');
 						$productid = Mage::getModel('catalog/product')->getIdBySku($productcode);
