@@ -42,7 +42,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$place = $request->getPost('PLACE');
 			if(!$place)
 				$place = '';
-			$postalcode = $request->getPost('POSgit TALCODE');
+			$postalcode = $request->getPost('POSTALCODE');
 			$division = $request->getPost('DIVISION');
 			$countrycode = $request->getPost('COUNTRYCODE');
 			$regionid = null;
