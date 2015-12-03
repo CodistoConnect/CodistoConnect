@@ -72,6 +72,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$regiontext = 'ACT';
 			}
 
+<<<<<<< Updated upstream
 			if (intval($postalcode) >= 2600 && intval($postalcode) <= 2618) {
 				$regiontext = 'ACT';
 			}
@@ -86,6 +87,16 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			if($region)
 				$regionid = $region->getId();
 		}
+=======
+			$total = 0;
+			$itemqty = 0;
+			$totalweight = 0;
+
+			for($inputidx = 0; ; $inputidx++)
+			{
+				$productcode = $request->getPost('PRODUCTCODE('.$inputidx.')');
+				$productid = Mage::getModel('catalog/product')->getIdBySku($productcode);
+>>>>>>> Stashed changes
 
 		for($inputidx = 0; ; $inputidx++)
 		{
@@ -96,8 +107,15 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			if(!$productqty && $productqty !=0)
 				$productqty = 1;
 
+<<<<<<< Updated upstream
 			if(!$productcode)
 				break;
+=======
+				$total += $productpriceincltax;
+				$itemqty += $productqty;
+
+				$taxpercent = $productprice == 0 ? 0 : round($productpriceincltax / $productprice - 1.0, 2) * 100;
+>>>>>>> Stashed changes
 
 			if($id)
 			{
@@ -109,11 +127,57 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					$item->setStoreId($storeId);
 					$item->setQuote($cart->getQuote());
 
+<<<<<<< Updated upstream
 					$item->setProduct($product);
 					$item->setData('qty', $productqty);
 					$item->setWeight($product->getWeight());
 
 					$cart->getQuote()->getItemsCollection()->addItem($item);
+=======
+					if($product)
+					{
+						$item = Mage::getModel('sales/quote_item');
+						$item->setStoreId($store->getId());
+						$item->setQuote($quote);
+
+						$item->setData('product', $product);
+						$item->setProductId($productid);
+						$item->setProductType('simple');
+						$item->setIsRecurring(false);
+						$item->setTaxClassId($product->getTaxClassId());
+						$item->setBaseCost($product->getCost());
+						$item->setSku($product->getSku());
+						$item->setName($product->getName());
+						$item->setIsVirtual(false);
+						$item->setIsQtyDecimal(false);
+						$item->setNoDiscount(true);
+						$item->setWeight($product->getWeight());
+						$item->setData('qty', $productqty);
+						$item->setPrice($productprice);
+						$item->setBasePrice($productprice);
+						$item->setCustomPrice($productprice);
+						$item->setDiscountPercent(0);
+						$item->setDiscountAmount(0);
+						$item->setBaseDiscountAmount(0);
+						$item->setTaxPercent($taxpercent);
+						$item->setTaxAmount($producttax);
+						$item->setBaseTaxAmount($producttax);
+						$item->setRowTotal($productprice * $productqty);
+						$item->setBaseRowTotal($productprice * $productqty);
+						$item->setRowTotalWithDiscount($productprice * $productqty);
+						$item->setRowWeight($product->getWeight() * $productqty);
+						$item->setOriginalCustomPrice($productprice);
+						$item->setPriceInclTax($productpriceincltax);
+						$item->setBasePriceInclTax($productpriceincltax);
+						$item->setRowTotalInclTax($productpriceincltax * $productqty);
+						$item->setBaseRowTotalInclTax($productpriceincltax * $productqty);
+						$item->setWeeeTaxApplied(serialize(array()));
+
+						$totalweight += $product->getWeight();
+
+						$quote->getItemsCollection()->addItem($item);
+					}
+>>>>>>> Stashed changes
 				}
 			}
 		}
@@ -124,8 +188,35 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			->setCountryId((string) $countrycode)
 			->setPostcode((string) $postalcode);
 
+<<<<<<< Updated upstream
 		if($regionid)
 			$address->setRegionId((string) $regionid);
+=======
+			$currency = Mage::getModel('directory/currency')->load($currencyCode);
+
+			$shippingRequest = Mage::getModel('shipping/rate_request');
+			$shippingRequest->setAllItems($quote->getAllItems());
+			$shippingRequest->setDestCountryId($countrycode);
+			if($regionid)
+				$shippingRequest->setDestRegionId($regionid);
+			if($regioncode)
+				$shippingRequest->setDestRegionCode($regioncode);
+			if($place)
+				$shippingRequest->setDestCity($place);
+			$shippingRequest->setDestPostcode($postalcode);
+			$shippingRequest->setPackageValue($total);
+			$shippingRequest->setPackageValueWithDiscount($total);
+			$shippingRequest->setPackageWeight($totalweight);
+			$shippingRequest->setPackageQty($itemqty);
+			$shippingRequest->setPackagePhysicalValue($total);
+			$shippingRequest->setFreeMethodWeight(0);
+			$shippingRequest->setStoreId($store->getId());
+			$shippingRequest->setWebsiteId($store->getWebsiteId());
+			$shippingRequest->setFreeShipping(0);
+			$shippingRequest->setBaseCurrency($currency);
+			$shippingRequest->setPackageCurrency($currency);
+			$shippingRequest->setBaseSubtotalInclTax($total);
+>>>>>>> Stashed changes
 
 		$cart->save();
 
