@@ -26,7 +26,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		ignore_user_abort(false);
 
 		$output = '';
-Mage::log('calc start');
+
 		try
 		{
 			$request = $this->getRequest();
@@ -246,7 +246,7 @@ Mage::log('calc start');
 		{
 
 		}
-Mage::log('calc end');
+
 		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 		$response->setHeader('Pragma', 'no-cache', true);
