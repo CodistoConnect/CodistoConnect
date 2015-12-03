@@ -2,7 +2,19 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.53...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.54...HEAD)
+
+**Implemented enhancements:**
+
+- improvements to cart calculation [\#176](https://github.com/CodistoConnect/CodistoConnect/pull/176) ([lamery](https://github.com/lamery))
+- match shipping calc to work the same as order processing for consistency [\#175](https://github.com/CodistoConnect/CodistoConnect/pull/175) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#177](https://github.com/CodistoConnect/CodistoConnect/pull/177) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.54](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.54) (2015-12-02)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.53...1.1.54)
 
 **Merged pull requests:**
 
