@@ -100,12 +100,32 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				}
 			}
 
+			$total = 0;
+			$itemqty = 0;
+			$totalweight = 0;
+
 			$quote = Mage::getModel('sales/quote');
 
 			for($inputidx = 0; ; $inputidx++)
 			{
-				$productcode = $request->getPost('PRODUCTCODE('.$inputidx.')');
-				$productid = Mage::getModel('catalog/product')->getIdBySku($productcode);
+				if(!$request->getPost('PRODUCTCODE('.$inputidx.')'))
+					break;
+
+				$productid = (int)$request->getPost('PRODUCTID('.$inputidx.')');
+				if(!$productid)
+				{
+					$productcode = $request->getPost('PRODUCTCODE('.$inputidx.')');
+					$productid = Mage::getModel('catalog/product')->getIdBySku($productcode);
+				}
+				else
+				{
+					$sku = Mage::getResourceSingleton('catalog/product')->getProductsSku(array($productid));
+					if(empty($sku))
+					{
+						$productcode = $request->getPost('PRODUCTCODE('.$inputidx.')');
+						$productid = Mage::getModel('catalog/product')->getIdBySku($productcode);
+					}
+				}
 
 				$productqty = $request->getPost('PRODUCTQUANTITY('.$inputidx.')');
 				if(!$productqty && $productqty !=0)
@@ -115,17 +135,14 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$productpriceincltax = floatval($request->getPost('PRODUCTPRICEINCTAX('.$inputidx.')'));
 				$producttax = floatval($request->getPost('PRODUCTTAX('.$inputidx.')'));
 
-				$taxpercent = $productprice == 0 ? 0 : round($productpriceincltax / $productprice - 1.0, 2) * 100;
-
-				if(!$productcode)
-					break;
-
 				if($productid)
 				{
 					$product = Mage::getModel('catalog/product')->load($productid);
 
 					if($product)
 					{
+						$taxpercent = $productprice == 0 ? 0 : round($productpriceincltax / $productprice - 1.0, 2) * 100;
+
 						$item = Mage::getModel('sales/quote_item');
 						$item->setStoreId($store->getId());
 						$item->setQuote($quote);
@@ -138,8 +155,8 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 						$item->setBaseCost($product->getCost());
 						$item->setSku($product->getSku());
 						$item->setName($product->getName());
-						$item->setIsVirtual(false);
-						$item->setIsQtyDecimal(false);
+						$item->setIsVirtual(0);
+						$item->setIsQtyDecimal(0);
 						$item->setNoDiscount(true);
 						$item->setWeight($product->getWeight());
 						$item->setData('qty', $productqty);
@@ -163,12 +180,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 						$item->setBaseRowTotalInclTax($productpriceincltax * $productqty);
 						$item->setWeeeTaxApplied(serialize(array()));
 
+						$total += $productpriceincltax;
+						$itemqty += $productqty;
+						$totalweight += $product->getWeight();
+
 						$quote->getItemsCollection()->addItem($item);
 					}
 				}
 			}
 
 			$quote->save();
+
+			$currency = Mage::getModel('directory/currency')->load($currencyCode);
 
 			$shippingRequest = Mage::getModel('shipping/rate_request');
 			$shippingRequest->setAllItems($quote->getAllItems());
@@ -180,18 +203,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			if($place)
 				$shippingRequest->setDestCity($place);
 			$shippingRequest->setDestPostcode($postalcode);
-			$shippingRequest->setPackageValue($quote->getGrandTotal());
-			$shippingRequest->setPackageValueWithDiscount($quote->getGrandTotal());
-			$shippingRequest->setPackageWeight($quote->getWeight());
-			$shippingRequest->setPackageQty($quote->getItemQty());
-			$shippingRequest->setPackagePhysicalValue($quote->getGrandTotal());
+			$shippingRequest->setPackageValue($total);
+			$shippingRequest->setPackageValueWithDiscount($total);
+			$shippingRequest->setPackageWeight($totalweight);
+			$shippingRequest->setPackageQty($itemqty);
+			$shippingRequest->setPackagePhysicalValue($total);
 			$shippingRequest->setFreeMethodWeight(0);
 			$shippingRequest->setStoreId($store->getId());
 			$shippingRequest->setWebsiteId($store->getWebsiteId());
-			$shippingRequest->setFreeShipping(false);
-			$shippingRequest->setBaseCurrency($currencyCode);
-			$shippingRequest->setPackageCurrency($currencyCode);
-			$shippingRequest->setBaseSubtotalInclTax($quote->getGrandTotal());
+			$shippingRequest->setFreeShipping(0);
+			$shippingRequest->setBaseCurrency($currency);
+			$shippingRequest->setPackageCurrency($currency);
+			$shippingRequest->setBaseSubtotalInclTax($total);
 
 			$shippingResult = Mage::getModel('shipping/shipping')->collectRates($shippingRequest)->getResult();
 
