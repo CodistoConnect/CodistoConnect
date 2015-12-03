@@ -132,17 +132,14 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$productpriceincltax = floatval($request->getPost('PRODUCTPRICEINCTAX('.$inputidx.')'));
 				$producttax = floatval($request->getPost('PRODUCTTAX('.$inputidx.')'));
 
-				$total += $productpriceincltax;
-				$itemqty += $productqty;
-
-				$taxpercent = $productprice == 0 ? 0 : round($productpriceincltax / $productprice - 1.0, 2) * 100;
-
 				if($productid)
 				{
 					$product = Mage::getModel('catalog/product')->load($productid);
 
 					if($product)
 					{
+						$taxpercent = $productprice == 0 ? 0 : round($productpriceincltax / $productprice - 1.0, 2) * 100;
+
 						$item = Mage::getModel('sales/quote_item');
 						$item->setStoreId($store->getId());
 						$item->setQuote($quote);
@@ -180,6 +177,8 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 						$item->setBaseRowTotalInclTax($productpriceincltax * $productqty);
 						$item->setWeeeTaxApplied(serialize(array()));
 
+						$total += $productpriceincltax;
+						$itemqty += $productqty;
 						$totalweight += $product->getWeight();
 
 						$quote->getItemsCollection()->addItem($item);
