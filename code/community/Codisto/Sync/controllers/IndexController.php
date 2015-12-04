@@ -1473,7 +1473,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$shippingRequest->setDestCountryId($shippingAddress->getCountryId());
 			$shippingRequest->setDestRegionId($shippingAddress->getRegionId());
 			$shippingRequest->setDestRegionCode($shippingAddress->getRegionCode());
-			$shippingRequest->setDestStreet($shippingAddress->getStreet(Mage_Sales_Model_Quote_Address::DEFAULT_DEST_STREET));
+			$shippingRequest->setDestStreet($shippingAddress->getStreet(-1));
 			$shippingRequest->setDestCity($shippingAddress->getCity());
 			$shippingRequest->setDestPostcode($shippingAddress->getPostcode());
 			$shippingRequest->setPackageValue($quote->getBaseSubtotal());
