@@ -560,11 +560,8 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				{
 					if($adjustStock)
 					{
-						$stockItem = $product->getStockItem();
-						if (!$stockItem) {
-							$stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productid);
-							$stockItem->setStoreId($store->getId());
-						}
+						$stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productid);
+						$stockItem->setStoreId($store->getId());
 
 						if (Mage::helper('catalogInventory')->isQty($stockItem->getTypeId()))
 						{
