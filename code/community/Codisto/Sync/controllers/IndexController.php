@@ -1495,21 +1495,21 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 			foreach($shippingRates as $shippingRate)
 			{
-				$quoteRate = Mage::getModel('sales/quote_address_rate')
-								->importShippingRate($shippingRate);
-
-				if(is_null($freightcost) || (!is_null($rate->getPrice()) && $rate->getPrice() < $freightcost))
+				if($shippingRate instanceof Mage_Shipping_Model_Rate_Result_Method)
 				{
-					$freightcode = $quoteRate->getCode();
-					$freightcarrier = $quoteRate->getCarrier();
-					$freightcarriertitle = $quoteRate->getCarrierTitle();
-					$freightmethod = $quoteRate->getMethod();
-					$freightmethodtitle = $quoteRate->getMethodTitle();
-					$freightmethoddescription = $quoteRate->getMethodDescription();
+					if(is_null($freightcost) || (!is_null($rate->getPrice()) && $rate->getPrice() < $freightcost))
+					{
+						$freightcode = $quoteRate->getCode();
+						$freightcarrier = $quoteRate->getCarrier();
+						$freightcarriertitle = $quoteRate->getCarrierTitle();
+						$freightmethod = $quoteRate->getMethod();
+						$freightmethodtitle = $quoteRate->getMethodTitle();
+						$freightmethoddescription = $quoteRate->getMethodDescription();
 
-					$freightRate = $quoteRate;
+						$freightRate = Mage::getModel('sales/quote_address_rate')
+										->importShippingRate($shippingRate);
+					}
 				}
-
 			}
 		}
 		catch(Exception $e)
