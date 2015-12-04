@@ -597,22 +597,22 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		/* cancelled, processing, captured, inprogress, complete */
 		if($ordercontent->orderstate == 'cancelled') {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_CANCELED);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been cancelled");
 
 		} else if($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is in progress");
 
 		} else if ($ordercontent->orderstate == 'complete') {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
 
 		} else {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_NEW);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_NEW);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been captured");
 
 		}
@@ -980,18 +980,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		/* States: cancelled, processing, captured, inprogress, complete */
 		if($ordercontent->orderstate == 'captured' && ($orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING && $orderstatus!=Mage_Sales_Model_Order::STATE_NEW)) {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_NEW);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_NEW);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
 		}
 
 		if($ordercontent->orderstate == 'cancelled' && $orderstatus!=Mage_Sales_Model_Order::STATE_CANCELED) {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_CANCELED);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been cancelled");
 		}
 
 		if(($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') && $orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING) {
-			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is in progress");
 		}
 
@@ -1451,7 +1451,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$shippingAddress->setSubtotalInclTax($ordersubtotalincltax);
 		$shippingAddress->setBaseSubtotalTotalInclTax($ordersubtotalincltax);
 
-		$freightcode = 'flatrate';
+		$freightcode = 'flatrate_flatrate';
 		$freightcarrier = 'Post';
 		$freightcarriertitle = 'Post';
 		$freightmethod = 'Freight';
@@ -1464,7 +1464,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$taxrate =  1.0;
 
 		$freightcost = null;
-		$freightrate = null;
+		$freightRate = null;
 
 		try {
 
@@ -1515,6 +1515,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		catch(Exception $e)
 		{
 
+		}
+
+		if(!freightRate)
+		{
+			$freightRate = Mage::getModel('sales/quote_address_rate');
+			$freightRate->setCode($freightcode)
+				->setCarrier($freightcarrier)
+				->setCarrierTitle($freightcarriertitle)
+				->setMethod($freightmethod)
+				->setMethodTitle($freightmethodtitle)
+				->setMethodDescription($freightmethoddescription)
+				->setPrice($freighttotal);
 		}
 
 		$shippingAddress->addShippingRate($freightRate);
