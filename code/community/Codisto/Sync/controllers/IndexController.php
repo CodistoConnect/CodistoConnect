@@ -1517,7 +1517,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 		}
 
-		if(!freightRate)
+		if(!$freightRate)
 		{
 			$freightRate = Mage::getModel('sales/quote_address_rate');
 			$freightRate->setCode($freightcode)
