@@ -2,7 +2,18 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.54...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.55...HEAD)
+
+**Fixed bugs:**
+
+- load stock item correctly if not available on product [\#180](https://github.com/CodistoConnect/CodistoConnect/pull/180) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#181](https://github.com/CodistoConnect/CodistoConnect/pull/181) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.55](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.55) (2015-12-03)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.54...1.1.55)
 
 **Implemented enhancements:**
 
