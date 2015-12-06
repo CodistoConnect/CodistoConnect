@@ -560,20 +560,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				{
 					if($adjustStock)
 					{
-						$stockItem = $product->getStockItem();
-						if (!$stockItem) {
-							$stockItem = Mage::getModel('cataloginventory/stock_item');
-							$stockItem->assignProduct($product)
-								->setData('stock_id', 1)
-								->setData('store_id', $store->getId());
-						}
+						$stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productid);
+						$stockItem->setStoreId($store->getId());
 
-						if($stockItem->canSubtractQty())
+						if (Mage::helper('catalogInventory')->isQty($stockItem->getTypeId()))
 						{
-							$productsToReindex[$product->getId()] = $product->getId();
+							if($stockItem->canSubtractQty())
+							{
+								$productsToReindex[$product->getId()] = $product->getId();
 
-							$stockItem->subtractQty($orderItem->getQtyOrdered());
-							$stockItem->save();
+								$stockItem->subtractQty($orderItem->getQtyOrdered());
+								$stockItem->save();
+							}
 						}
 					}
 				}
@@ -597,22 +595,22 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		/* cancelled, processing, captured, inprogress, complete */
 		if($ordercontent->orderstate == 'cancelled') {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_CANCELED);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been cancelled");
 
 		} else if($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is in progress");
 
 		} else if ($ordercontent->orderstate == 'complete') {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
 
 		} else {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_NEW);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_NEW);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been captured");
 
 		}
@@ -980,18 +978,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		/* States: cancelled, processing, captured, inprogress, complete */
 		if($ordercontent->orderstate == 'captured' && ($orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING && $orderstatus!=Mage_Sales_Model_Order::STATE_NEW)) {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_NEW);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_NEW);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
 		}
 
 		if($ordercontent->orderstate == 'cancelled' && $orderstatus!=Mage_Sales_Model_Order::STATE_CANCELED) {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_CANCELED);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been cancelled");
 		}
 
 		if(($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') && $orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING) {
-			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is in progress");
 		}
 
@@ -1451,7 +1449,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$shippingAddress->setSubtotalInclTax($ordersubtotalincltax);
 		$shippingAddress->setBaseSubtotalTotalInclTax($ordersubtotalincltax);
 
-		$freightcode = 'flatrate';
+		$freightcode = 'flatrate_flatrate';
 		$freightcarrier = 'Post';
 		$freightcarriertitle = 'Post';
 		$freightmethod = 'Freight';
@@ -1464,7 +1462,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$taxrate =  1.0;
 
 		$freightcost = null;
-		$freightrate = null;
+		$freightRate = null;
 
 		try {
 
@@ -1473,7 +1471,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$shippingRequest->setDestCountryId($shippingAddress->getCountryId());
 			$shippingRequest->setDestRegionId($shippingAddress->getRegionId());
 			$shippingRequest->setDestRegionCode($shippingAddress->getRegionCode());
-			$shippingRequest->setDestStreet($shippingAddress->getStreet(Mage_Sales_Model_Quote_Address::DEFAULT_DEST_STREET));
+			$shippingRequest->setDestStreet($shippingAddress->getStreet(-1));
 			$shippingRequest->setDestCity($shippingAddress->getCity());
 			$shippingRequest->setDestPostcode($shippingAddress->getPostcode());
 			$shippingRequest->setPackageValue($quote->getBaseSubtotal());
@@ -1495,26 +1493,38 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 			foreach($shippingRates as $shippingRate)
 			{
-				$quoteRate = Mage::getModel('sales/quote_address_rate')
-								->importShippingRate($shippingRate);
-
-				if(is_null($freightcost) || (!is_null($rate->getPrice()) && $rate->getPrice() < $freightcost))
+				if($shippingRate instanceof Mage_Shipping_Model_Rate_Result_Method)
 				{
-					$freightcode = $quoteRate->getCode();
-					$freightcarrier = $quoteRate->getCarrier();
-					$freightcarriertitle = $quoteRate->getCarrierTitle();
-					$freightmethod = $quoteRate->getMethod();
-					$freightmethodtitle = $quoteRate->getMethodTitle();
-					$freightmethoddescription = $quoteRate->getMethodDescription();
+					if(is_null($freightcost) || (!is_null($shippingRate->getPrice()) && $shippingRate->getPrice() < $freightcost))
+					{
+						$freightRate = Mage::getModel('sales/quote_address_rate')
+										->importShippingRate($shippingRate);
 
-					$freightRate = $quoteRate;
+						$freightcode = $freightRate->getCode();
+						$freightcarrier = $freightRate->getCarrier();
+						$freightcarriertitle = $freightRate->getCarrierTitle();
+						$freightmethod = $freightRate->getMethod();
+						$freightmethodtitle = $freightRate->getMethodTitle();
+						$freightmethoddescription = $freightRate->getMethodDescription();
+					}
 				}
-
 			}
 		}
 		catch(Exception $e)
 		{
 
+		}
+
+		if(!$freightRate)
+		{
+			$freightRate = Mage::getModel('sales/quote_address_rate');
+			$freightRate->setCode($freightcode)
+				->setCarrier($freightcarrier)
+				->setCarrierTitle($freightcarriertitle)
+				->setMethod($freightmethod)
+				->setMethodTitle($freightmethodtitle)
+				->setMethodDescription($freightmethoddescription)
+				->setPrice($freighttotal);
 		}
 
 		$shippingAddress->addShippingRate($freightRate);
