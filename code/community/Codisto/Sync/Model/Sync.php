@@ -749,9 +749,6 @@ class Codisto_Sync_Model_Sync
 
 					default:
 
-						if(is_array($AttributeValue))
-							$AttributeValue = implode(',', $AttributeValue);
-
 						break;
 					}
 
@@ -769,6 +766,9 @@ class Codisto_Sync_Model_Sync
 							$insertAttributeGroupSQL->execute(array($AttributeGroupID, $AttributeGroupName));
 							$insertAttributeGroupMapSQL->execute(array($AttributeGroupID, $AttributeID));
 						}
+
+						if(is_array($AttributeValue))
+							$AttributeValue = implode(',', $AttributeValue);
 
 						$insertProductAttributeSQL->execute(array($productData['entity_id'], $AttributeID, $AttributeValue));
 					}
