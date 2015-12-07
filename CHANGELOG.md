@@ -2,7 +2,18 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.56...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.57...HEAD)
+
+**Fixed bugs:**
+
+- always convert magento attribute values that are arrays into strings … [\#183](https://github.com/CodistoConnect/CodistoConnect/pull/183) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#184](https://github.com/CodistoConnect/CodistoConnect/pull/184) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.57](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.57) (2015-12-06)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.56...1.1.57)
 
 **Fixed bugs:**
 
