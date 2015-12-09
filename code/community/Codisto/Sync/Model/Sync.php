@@ -455,7 +455,7 @@ class Codisto_Sync_Model_Sync
 		$data[] = $args['parent_id'];
 		$data[] = $skuName;
 		$data[] = $stockItem->getManageStock() ? -1 : 0;
-		$data[] = $qty;
+		$data[] = (int)$qty;
 		$data[] = $price;
 		$data[] = $skuData['status'] != 1 ? 0 : -1;
 
@@ -693,7 +693,7 @@ class Codisto_Sync_Model_Sync
 		$data[] = $description;
 		$data[] = $productData['status'] != 1 ? 0 : -1;
 		$data[] = $stockItem->getManageStock() ? -1 : 0;
-		$data[] = $qty;
+		$data[] = (int)$qty;
 		$data[] = isset($productData['weight']) && is_numeric($productData['weight']) ? (float)$productData['weight'] : $productData['weight'];
 
 		if($db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM Product WHERE ExternalReference = '.$productData['entity_id'].') THEN 1 ELSE 0 END')->fetchColumn())
