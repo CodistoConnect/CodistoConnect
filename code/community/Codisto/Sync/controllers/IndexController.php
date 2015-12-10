@@ -225,8 +225,11 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			{
 				if($shippingRate instanceof Mage_Shipping_Model_Rate_Result_Method)
 				{
-					$output .= 'FREIGHTNAME('.$outputidx.')='.rawurlencode($shippingRate->getMethodTitle()).'&FREIGHTCHARGEINCTAX('.$outputidx.')='.$shippingRate->getPrice().'&';
-					$outputidx++;
+					if(!preg_match('/(?:^|\w)pickup(?:\w|$)/i', $shippingRate->getMethod()))
+					{
+						$output .= 'FREIGHTNAME('.$outputidx.')='.rawurlencode($shippingRate->getMethodTitle()).'&FREIGHTCHARGEINCTAX('.$outputidx.')='.$shippingRate->getPrice().'&';
+						$outputidx++;
+					}
 				}
 			}
 
@@ -1497,15 +1500,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				{
 					if(is_null($freightcost) || (!is_null($shippingRate->getPrice()) && $shippingRate->getPrice() < $freightcost))
 					{
-						$freightRate = Mage::getModel('sales/quote_address_rate')
-										->importShippingRate($shippingRate);
+						if(!preg_match('/(?:^|\w)pickup(?:\w|$)/i', $shippingRate->getMethod()))
+						{
+							$freightRate = Mage::getModel('sales/quote_address_rate')
+											->importShippingRate($shippingRate);
 
-						$freightcode = $freightRate->getCode();
-						$freightcarrier = $freightRate->getCarrier();
-						$freightcarriertitle = $freightRate->getCarrierTitle();
-						$freightmethod = $freightRate->getMethod();
-						$freightmethodtitle = $freightRate->getMethodTitle();
-						$freightmethoddescription = $freightRate->getMethodDescription();
+							$freightcode = $freightRate->getCode();
+							$freightcarrier = $freightRate->getCarrier();
+							$freightcarriertitle = $freightRate->getCarrierTitle();
+							$freightmethod = $freightRate->getMethod();
+							$freightmethodtitle = $freightRate->getMethodTitle();
+							$freightmethoddescription = $freightRate->getMethodDescription();
+						}
 					}
 				}
 			}
