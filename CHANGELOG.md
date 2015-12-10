@@ -2,7 +2,22 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.58...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.59...HEAD)
+
+**Implemented enhancements:**
+
+- avoid selecting pickup services during ebay push and cart calc [\#188](https://github.com/CodistoConnect/CodistoConnect/pull/188) ([lamery](https://github.com/lamery))
+
+**Fixed bugs:**
+
+- find session in either adminhtml or PHPSESSID [\#187](https://github.com/CodistoConnect/CodistoConnect/pull/187) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#189](https://github.com/CodistoConnect/CodistoConnect/pull/189) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.59](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.59) (2015-12-10)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.58...1.1.59)
 
 **Implemented enhancements:**
 
