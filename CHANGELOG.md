@@ -2,7 +2,18 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.57...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.58...HEAD)
+
+**Implemented enhancements:**
+
+- improve reading stock levels [\#185](https://github.com/CodistoConnect/CodistoConnect/pull/185) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#186](https://github.com/CodistoConnect/CodistoConnect/pull/186) ([jschiller](https://github.com/jschiller))
+
+## [1.1.58](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.58) (2015-12-07)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.57...1.1.58)
 
 **Fixed bugs:**
 
