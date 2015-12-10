@@ -74,19 +74,35 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				session_write_close();
 
 			// determine logged in state
-			session_id($request->getCookie('adminhtml'));
-			session_start('admin');
-			if(isset($_SESSION['admin']) &&
-				isset($_SESSION['admin']['user']) &&
-				is_object($_SESSION['admin']['user']))
+			$loggedIn = false;
+
+			if($request->getCookie('adminhtml'))
 			{
+				Mage::unregister('admin/session');
+				Mage::unregister('core/session');
+				Mage::getSingleton('core/session', array( 'name' => 'adminhtml' ));
+				if(Mage::getSingleton('admin/session')->isLoggedIn())
+				{
 					$loggedIn = true;
+				}
+				Mage::unregister('admin/session');
+				Mage::unregister('core/session');
 			}
-			else
+
+			if(!$loggedIn && $request->getCookie('PHPSESSID'))
 			{
-					$loggedIn = false;
+				Mage::unregister('admin/session');
+				Mage::unregister('core/session');
+				Mage::getSingleton('core/session', array( 'name' => null ));
+				if(Mage::getSingleton('admin/session')->isLoggedIn())
+				{
+					$loggedIn = true;
+				}
+				Mage::unregister('admin/session');
+				Mage::unregister('core/session');
 			}
 			session_write_close();
+
 
 			if($loggedIn)
 			{
@@ -222,7 +238,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 											try
 											{
 												//Check in cron
-												
+
 												$file = new Varien_Io_File();
 												$file->open(array('path' => Mage::getBaseDir('var')));
 												$file->write('codisto-external-test-failed', '0');
