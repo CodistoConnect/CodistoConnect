@@ -225,7 +225,12 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			{
 				if($shippingRate instanceof Mage_Shipping_Model_Rate_Result_Method)
 				{
-					if(!preg_match('/(?:^|\w)pickup(?:\w|$)/i', $shippingRate->getMethod()))
+					$isPickup = $shippingRate->getPrice() == 0 &&
+								(preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethod())) ||
+									preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getCarrierTitle())) ||
+									preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethodTitle())));
+
+					if(!isPickup)
 					{
 						$output .= 'FREIGHTNAME('.$outputidx.')='.rawurlencode($shippingRate->getMethodTitle()).'&FREIGHTCHARGEINCTAX('.$outputidx.')='.$shippingRate->getPrice().'&';
 						$outputidx++;
@@ -1500,7 +1505,12 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				{
 					if(is_null($freightcost) || (!is_null($shippingRate->getPrice()) && $shippingRate->getPrice() < $freightcost))
 					{
-						if(!preg_match('/(?:^|\w)pickup(?:\w|$)/i', $shippingRate->getMethod()))
+						$isPickup = $shippingRate->getPrice() == 0 &&
+									(preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethod())) ||
+										preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getCarrierTitle())) ||
+										preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethodTitle())));
+
+						if(!isPickup)
 						{
 							$freightRate = Mage::getModel('sales/quote_address_rate')
 											->importShippingRate($shippingRate);
