@@ -230,7 +230,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 									preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getCarrierTitle())) ||
 									preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethodTitle())));
 
-					if(!isPickup)
+					if(!$isPickup)
 					{
 						$output .= 'FREIGHTNAME('.$outputidx.')='.rawurlencode($shippingRate->getMethodTitle()).'&FREIGHTCHARGEINCTAX('.$outputidx.')='.$shippingRate->getPrice().'&';
 						$outputidx++;
@@ -1417,7 +1417,8 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$ordertaxtotal -= $freighttax;
 
 		$quotePayment = $quote->getPayment();
-		$quotePayment->importData(array('method' => 'ebay'));
+		$quotePayment->setMethod('ebay');
+		$quotePayment->save();
 
 		$quote->setBaseCurrencyCode($currencyCode);
 		$quote->setStoreCurrencyCode($currencyCode);
@@ -1510,7 +1511,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 										preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getCarrierTitle())) ||
 										preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethodTitle())));
 
-						if(!isPickup)
+						if(!$isPickup)
 						{
 							$freightRate = Mage::getModel('sales/quote_address_rate')
 											->importShippingRate($shippingRate);
