@@ -411,14 +411,18 @@ class Codisto_Sync_Model_Sync
 		}
 
 		$product = Mage::getModel('catalog/product');
-		$product->setData($skuData);
+		$product->setData($skuData)
+				->setStore($store)
+				->setStoreId($store->getId());
+
+		$stockItem = Mage::getModel('cataloginventory/stock_item');
+		$stockItem->setStockId(Mage_CatalogInventory_Model_Stock::DEFAULT_STOCK_ID)
+					->assignProduct($product);
 
 		$insertSQL = $args['preparedStatement'];
 		$insertCategorySQL = $args['preparedcategoryproductStatement'];
 		$insertImageSQL = $args['preparedimageStatement'];
 		$insertSKUMatrixSQL = $args['preparedskumatrixStatement'];
-
-		$stockData = Mage::getModel('cataloginventory/stock_item')->loadByProduct($skuData['entity_id'])->getData();
 
 		$totalPrice = $args['baseprice'];
 
@@ -435,20 +439,23 @@ class Codisto_Sync_Model_Sync
 		}
 
 		$price = $this->getExTaxPrice($product, $totalPrice, $store);
+		$qty = $stockItem->getQty();
+		if(!is_numeric($qty))
+			$qty = 0;
 
 		$skuName = $skuData['name'];
 		if(!$skuName)
 			$skuName = '';
+
+
 
 		$data = array();
 		$data[] = $skuData['entity_id'];
 		$data[] = $skuData['sku'];
 		$data[] = $args['parent_id'];
 		$data[] = $skuName;
-		$data[] = !isset($stockData['use_config_manage_stock']) || $stockData['use_config_manage_stock'] == 0 ?
-					(isset($stockData['manage_stock']) && $stockData['manage_stock'] ? -1 : 0) :
-					(Mage::getStoreConfig('cataloginventory/item_options/manage_stock', $store) ? -1 : 0);
-		$data[] = isset($stockData['qty']) && is_numeric($stockData['qty']) ? (int)$stockData['qty'] : 1;
+		$data[] = $stockItem->getManageStock() ? -1 : 0;
+		$data[] = (int)$qty;
 		$data[] = $price;
 		$data[] = $skuData['status'] != 1 ? 0 : -1;
 
@@ -612,9 +619,13 @@ class Codisto_Sync_Model_Sync
 		$productData = $args['row'];
 
 		$product = Mage::getModel('catalog/product');
-		$product->setData($productData);
+		$product->setData($productData)
+				->setStore($store)
+				->setStoreId($store->getId());
 
-		$stockData = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productData['entity_id'])->getData();
+		$stockItem = Mage::getModel('cataloginventory/stock_item');
+		$stockItem->setStockId(Mage_CatalogInventory_Model_Stock::DEFAULT_STOCK_ID)
+					->assignProduct($product);
 
 		$insertSQL = $args['preparedStatement'];
 		$insertCategorySQL = $args['preparedcategoryproductStatement'];
@@ -629,6 +640,10 @@ class Codisto_Sync_Model_Sync
 		$listPrice = $this->getExTaxPrice($product, $product->getPrice(), $store);
 		if($listPrice == null)
 			$listPrice = $price;
+
+		$qty = $stockItem->getQty();
+		if(!is_numeric($qty))
+			$qty = 0;
 
 		// work around for description not appearing via collection
 		if(!isset($productData['description']))
@@ -677,10 +692,8 @@ class Codisto_Sync_Model_Sync
 		$data[] = isset($productData['tax_class_id']) && $productData['tax_class_id'] ? $productData['tax_class_id'] : '';
 		$data[] = $description;
 		$data[] = $productData['status'] != 1 ? 0 : -1;
-		$data[] = !isset($stockData['use_config_manage_stock']) || $stockData['use_config_manage_stock'] == 0 ?
-					(isset($stockData['manage_stock']) && $stockData['manage_stock'] ? -1 : 0) :
-					(Mage::getStoreConfig('cataloginventory/item_options/manage_stock', $store) ? -1 : 0);
-		$data[] = isset($stockData['qty']) && is_numeric($stockData['qty']) ? (int)$stockData['qty'] : 1;
+		$data[] = $stockItem->getManageStock() ? -1 : 0;
+		$data[] = (int)$qty;
 		$data[] = isset($productData['weight']) && is_numeric($productData['weight']) ? (float)$productData['weight'] : $productData['weight'];
 
 		if($db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM Product WHERE ExternalReference = '.$productData['entity_id'].') THEN 1 ELSE 0 END')->fetchColumn())
@@ -754,9 +767,6 @@ class Codisto_Sync_Model_Sync
 						break;
 					}
 
-					if(is_array($AttributeValue))
-						$AttributeValue = implode(',', $AttributeValue);
-
 					if($AttributeValue != null)
 					{
 						if($backendType == 'text')
@@ -771,7 +781,10 @@ class Codisto_Sync_Model_Sync
 							$insertAttributeGroupSQL->execute(array($AttributeGroupID, $AttributeGroupName));
 							$insertAttributeGroupMapSQL->execute(array($AttributeGroupID, $AttributeID));
 						}
-						
+
+						if(is_array($AttributeValue))
+							$AttributeValue = implode(',', $AttributeValue);
+
 						$insertProductAttributeSQL->execute(array($productData['entity_id'], $AttributeID, $AttributeValue));
 					}
 				}
