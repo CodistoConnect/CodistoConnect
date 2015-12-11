@@ -743,17 +743,19 @@ class Codisto_Sync_Model_Sync
 
 						$product->setData($attribute->getAttributeCode(), $AttributeValue);
 
+						try{
 						$AttributeValue = $product->getAttributeText($attribute->getAttributeCode());
-
+						}catch(Exception $e){}
+						
 						break;
 
 					default:
 
-						if(is_array($AttributeValue))
-							$AttributeValue = implode(',', $AttributeValue);
-
 						break;
 					}
+
+					if(is_array($AttributeValue))
+						$AttributeValue = implode(',', $AttributeValue);
 
 					if($AttributeValue != null)
 					{
@@ -769,7 +771,7 @@ class Codisto_Sync_Model_Sync
 							$insertAttributeGroupSQL->execute(array($AttributeGroupID, $AttributeGroupName));
 							$insertAttributeGroupMapSQL->execute(array($AttributeGroupID, $AttributeID));
 						}
-
+						
 						$insertProductAttributeSQL->execute(array($productData['entity_id'], $AttributeID, $AttributeValue));
 					}
 				}

@@ -658,6 +658,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$response = $this->getResponse();
 
 		$response->setHeader('Content-Type', 'application/json');
+		//$response->setBody("ERROR MESSAGE");
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 	}
 
@@ -1094,6 +1095,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 		$response = $this->getResponse();
 		$response->setHeader('Content-Type', 'application/json');
+		//$response->setBody("ERROR MESSAGE");
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 	}
 
