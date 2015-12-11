@@ -1194,6 +1194,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			'region_id' => $regionsel_id_ship, // id from directory_country_region table
 		);
 
+		$customer = Mage::getModel('customer/customer');
+		$customer->setWebsiteId($websiteId);
+		$customer->setStoreId($store->getId());
+
 		for($Retry = 0; ; $Retry++)
 		{
 			try
@@ -1201,9 +1205,6 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$connection->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
 				$connection->beginTransaction();
 
-				$customer = Mage::getModel('customer/customer');
-				$customer->setWebsiteId($websiteId);
-				$customer->setStoreId($store->getId());
 				$customer->loadByEmail($email);
 
 				if(!$customer->getId())
@@ -1550,6 +1551,14 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$shippingAddress->setShippingAmount($freighttotal);
 		$shippingAddress->setBaseShippingAmount($freighttotal);
 		$shippingAddress->save();
+
+		$customerInstruction = @count($ordercontent->instructions) ? strval($ordercontent->instructions) : '';
+
+		$checkoutSession = Mage::getSingleton('checkout/session');
+		$checkoutSession->setCustomer($customer);
+		$checkoutSession->replaceQuote($quote);
+		$checkoutSession->setData('customer_comment', $customerInstruction);
+		$checkoutSession->setData('destination_type', 'residence');
 	}
 
 	private function getRegionCollection($countryCode)
