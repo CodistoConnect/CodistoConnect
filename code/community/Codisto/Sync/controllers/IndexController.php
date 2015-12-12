@@ -191,6 +191,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 			$quote->save();
 
+			$checkoutSession = Mage::getSingleton('checkout/session');
+			$checkoutSession->replaceQuote($quote);
+			$checkoutSession->setData('destination_type', 'residence');
+
 			$currency = Mage::getModel('directory/currency')->load($currencyCode);
 
 			$shippingRequest = Mage::getModel('shipping/rate_request');
@@ -1440,6 +1444,14 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$quote->setTotalsCollectedFlag(true);
 		$quote->save();
 
+		$customerInstruction = @count($ordercontent->instructions) ? strval($ordercontent->instructions) : '';
+
+		$checkoutSession = Mage::getSingleton('checkout/session');
+		$checkoutSession->setCustomer($customer);
+		$checkoutSession->replaceQuote($quote);
+		$checkoutSession->setData('customer_comment', $customerInstruction);
+		$checkoutSession->setData('destination_type', 'residence');
+
 		$shippingAddress = $quote->getShippingAddress();
 		$shippingAddress->setSubtotal($ordersubtotal);
 		$shippingAddress->setBaseSubtotal($ordersubtotal);
@@ -1551,14 +1563,6 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$shippingAddress->setShippingAmount($freighttotal);
 		$shippingAddress->setBaseShippingAmount($freighttotal);
 		$shippingAddress->save();
-
-		$customerInstruction = @count($ordercontent->instructions) ? strval($ordercontent->instructions) : '';
-
-		$checkoutSession = Mage::getSingleton('checkout/session');
-		$checkoutSession->setCustomer($customer);
-		$checkoutSession->replaceQuote($quote);
-		$checkoutSession->setData('customer_comment', $customerInstruction);
-		$checkoutSession->setData('destination_type', 'residence');
 	}
 
 	private function getRegionCollection($countryCode)
