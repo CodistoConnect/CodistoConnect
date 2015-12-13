@@ -137,7 +137,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 				$syncStores = array(0);
 
 				$eventData = $event->getDataObject()->getData();
-				$storeId = $eventData['store_id'];
+				$storeId = isset($eventData['store_id']) ? $eventData['store_id'] : 0;
 				if(!isset($storeId) || !$storeId)
 					$storeId = 0;
 
@@ -203,7 +203,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 				$syncStores = array(0);
 
 				$eventData = $event->getDataObject()->getData();
-				$storeId = $eventData['store_id'];
+				$storeId = isset($eventData['store_id']) ? $eventData['store_id'] : 0;
 				if(!isset($storeId) || !$storeId)
 					$storeId = 0;
 
@@ -283,7 +283,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 				$syncStores = array(0);
 
 				$eventData = $event->getDataObject()->getData();
-				$storeId = $eventData['store_id'];
+				$storeId = isset($eventData['store_id']) ? $eventData['store_id'] : 0;
 				if(!isset($storeId) || !$storeId)
 					$storeId = 0;
 

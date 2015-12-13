@@ -191,6 +191,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 			$quote->save();
 
+			$checkoutSession = Mage::getSingleton('checkout/session');
+			$checkoutSession->replaceQuote($quote);
+			$checkoutSession->setData('destination_type', 'residence');
+
 			$currency = Mage::getModel('directory/currency')->load($currencyCode);
 
 			$shippingRequest = Mage::getModel('shipping/rate_request');
@@ -1194,6 +1198,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			'region_id' => $regionsel_id_ship, // id from directory_country_region table
 		);
 
+		$customer = Mage::getModel('customer/customer');
+		$customer->setWebsiteId($websiteId);
+		$customer->setStoreId($store->getId());
+
 		for($Retry = 0; ; $Retry++)
 		{
 			try
@@ -1201,9 +1209,6 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$connection->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
 				$connection->beginTransaction();
 
-				$customer = Mage::getModel('customer/customer');
-				$customer->setWebsiteId($websiteId);
-				$customer->setStoreId($store->getId());
 				$customer->loadByEmail($email);
 
 				if(!$customer->getId())
@@ -1438,6 +1443,14 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$quote->setData('trigger_recollect', 0);
 		$quote->setTotalsCollectedFlag(true);
 		$quote->save();
+
+		$customerInstruction = @count($ordercontent->instructions) ? strval($ordercontent->instructions) : '';
+
+		$checkoutSession = Mage::getSingleton('checkout/session');
+		$checkoutSession->setCustomer($customer);
+		$checkoutSession->replaceQuote($quote);
+		$checkoutSession->setData('customer_comment', $customerInstruction);
+		$checkoutSession->setData('destination_type', 'residence');
 
 		$shippingAddress = $quote->getShippingAddress();
 		$shippingAddress->setSubtotal($ordersubtotal);
