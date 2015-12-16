@@ -241,20 +241,31 @@ class Codisto_Sync_Model_Observer
 
 	public function paymentInfoBlockPrepareSpecificInformation($observer)
 	{
-		if (!$observer->getEvent()->getBlock()->getIsSecureMode()) {
-			return;
-		}
-
 		$transport = $observer->getEvent()->getTransport();
 		$payment = $observer->getEvent()->getPayment();
 		$paypaltransactionid = $payment->getLastTransId();
 
-		if($paypaltransactionid)
-			$transport['PayPal TransactionID'] = $paypaltransactionid;
+		$orderid = $payment->getOrder()->getCodistoOrderid();
 
-		$ebaysalesrecordnumber =  $payment->getAdditonalInformation('ebaysalesrecordnumber');
-		if($ebaysalesrecordnumber)
-			$transport['ebay Sales Record Number'] = $ebaysalesrecordnumber;
+		if($paypaltransactionid)
+			$transport['PayPal TransactionID'] = '<a href="'.htmlspecialchars(Mage::getBaseUrl()).'codisto/ebaypayment?orderid='.htmlspecialchars($orderid).'" target="codisto!ebaypayment" class="codisto-ebay-payment-link">'.htmlspecialchars($paypaltransactionid).'</a>';
+
+		$additionalInfo = $payment->getData('additional_information');
+
+		if(is_array($additionalInfo))
+		{
+			if(isset($additionalInfo['ebaysalesrecordnumber']) &&
+				$additionalInfo['ebaysalesrecordnumber'])
+			{
+				$transport['eBay Sales Record Number'] = '<a href="'.htmlspecialchars(Mage::getBaseUrl()).'codisto/ebaysale?orderid='.htmlspecialchars($orderid).'" target="codisto!ebaysale" class="codisto-ebay-sales-link">'.htmlspecialchars($additionalInfo['ebaysalesrecordnumber']).'</a>';
+			}
+
+			if(isset($additionalInfo['ebayuser']) &&
+				$additionalInfo['ebayuser'])
+			{
+				$transport['eBay User'] = '<a href="'.htmlspecialchars(Mage::getBaseUrl()).'codisto/ebayuser?orderid='.htmlspecialchars($orderid).'" target="codisto!ebayuser" class="codisto-ebay-user-link">'.htmlspecialchars($additionalInfo['ebayuser']).'</a>';
+			}
+		}
 
 		return $this;
 	}
@@ -545,7 +556,7 @@ class Codisto_Sync_Model_Observer
 		};
 		(function() {
 			var s = document.createElement("script");
-			s.src = "https://d31wxntiwn0x96.cloudfront.net/connect/" + window.codisto.merchantid + "/js/app/adminhtml.js?v'.$version.'";
+			s.src = "https://d31wxntiwn0x96.cloudfront.net/connect/" + window.codisto.merchantid + "/js/app/adminhtml.js?v'.$version.'-5";
 			document.getElementsByTagName("HEAD")[0].appendChild(s);
 		})();
 		</script>');

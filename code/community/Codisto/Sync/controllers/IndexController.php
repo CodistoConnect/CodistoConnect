@@ -458,6 +458,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		if(!$ebaysalesrecordnumber)
 			$ebaysalesrecordnumber = '';
 
+		$ebayusername = (string)$ordercontent->ebayusername;
+		if(!$ebayusername)
+			$ebayusername = '';
+
 		$quoteConverter =  Mage::getModel('sales/convert_quote');
 
 		$quote->reserveOrderId();
@@ -622,7 +626,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 		} else {
 
-			$order->setStatus(Mage_Sales_Model_Order::STATE_NEW);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been captured");
 
 		}
@@ -648,7 +652,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		if($paypaltransactionid)
 		{
 			$payment->setTransactionId($paypaltransactionid);
+			$payment->setLastTransId($paypaltransactionid);
 		}
+		$payment->setAdditionalInformation('ebaysalesrecordnumber', $ebaysalesrecordnumber);
+		$payment->setAdditionalInformation('ebayuser', $ebayusername);
 		$payment->save();
 
 		$order->save();
@@ -988,28 +995,37 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$order->setTotalQtyOrdered((int)$totalquantity);
 
 		/* States: cancelled, processing, captured, inprogress, complete */
-		if($ordercontent->orderstate == 'captured' && ($orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING && $orderstatus!=Mage_Sales_Model_Order::STATE_NEW)) {
+		if(($ordercontent->orderstate == 'captured' ||
+			$ordercontent->paymentstatus != 'complete') &&
+			($orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING &&
+				$orderstatus!=Mage_Sales_Model_Order::STATE_PENDING_PAYMENT &&
+				$orderstatus!=Mage_Sales_Model_Order::STATE_NEW))
+		{
 
-			$order->setStatus(Mage_Sales_Model_Order::STATE_NEW);
+			$order->setStatus(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
 		}
 
-		if($ordercontent->orderstate == 'cancelled' && $orderstatus!=Mage_Sales_Model_Order::STATE_CANCELED) {
-
+		if($ordercontent->orderstate == 'cancelled' && $orderstatus!=Mage_Sales_Model_Order::STATE_CANCELED)
+		{
 			$order->setStatus(Mage_Sales_Model_Order::STATE_CANCELED);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been cancelled");
 		}
 
-		if(($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') && $orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING) {
+		if(($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') &&
+			$ordercontent->paymentstatus == 'complete' &&
+			$orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING)
+		{
 			$order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is in progress");
 		}
 
-		if($ordercontent->orderstate == 'complete' && $orderstatus!=Mage_Sales_Model_Order::STATE_COMPLETE) {
+		if($ordercontent->orderstate == 'complete' &&
+			$orderstatus!=Mage_Sales_Model_Order::STATE_COMPLETE)
+		{
 
 			$order->setData('status', Mage_Sales_Model_Order::STATE_COMPLETE);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
-
 		}
 
 		if(

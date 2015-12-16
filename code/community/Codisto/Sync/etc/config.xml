@@ -68,7 +68,7 @@
 			</Codisto_Sync>
 		</jobs>
 	</crontab>
-	
+
 	<global>
 		<models>
 			<codistosync>
@@ -79,6 +79,10 @@
 				<class>Codisto_Sync_Ebaypayment_Model</class>
 			</ebaypayment>
 		</models>
+
+		<blocks>
+			<codisto><class>Codisto_Sync_Block</class></codisto>
+		</blocks>
 
 		<events>
 			<payment_info_block_prepare_specific_information>
@@ -250,7 +254,7 @@
 				<active>1</active>
 				<model>ebaypayment/paymentmethod</model>
 				<order_status>pending</order_status>
-				<title>Ebay Order</title>
+				<title>eBay Order</title>
 				<allowspecific>0</allowspecific>
 				<group>offline</group>
 			</ebay>
@@ -260,7 +264,7 @@
 				<active>1</active>
 				<model>ebaypayment/paymentmethod</model>
 				<order_status>pending</order_status>
-				<title>Ebay Order</title>
+				<title>eBay Order</title>
 				<allowspecific>0</allowspecific>
 				<group>offline</group>
 			</ebaypayment>
