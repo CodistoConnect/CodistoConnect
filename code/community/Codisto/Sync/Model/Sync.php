@@ -756,8 +756,10 @@ class Codisto_Sync_Model_Sync
 
 						$product->setData($attribute->getAttributeCode(), $AttributeValue);
 
+						try{
 						$AttributeValue = $product->getAttributeText($attribute->getAttributeCode());
-
+						}catch(Exception $e){}
+						
 						break;
 
 					default:

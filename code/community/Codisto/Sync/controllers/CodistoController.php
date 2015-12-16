@@ -20,14 +20,29 @@
 
 class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 {
-
-	public $_publicActions = array('index', 'intro', 'settings');
+	public $_publicActions = array('index', 'intro', 'settings', 'orders');
 
 	public function indexAction()
 	{
 		$url = preg_replace('/\/index\/key\//', '/key/', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
 
 		$this->renderPane($url, 'codisto-bulk-editor');
+	}
+
+	public function ordersAction()
+	{
+		$url = preg_replace('/\/ebaytab\/index\/key\//', '/orders/key/', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
+
+		$action = $this->getRequest()->getQuery('action');
+		if($action)
+			$url = $url . '?action='. $action;
+
+		$this->loadLayout();
+
+		$block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" class="codisto-iframe codisto-bulk-editor" src="'. $url . '" frameborder="0" onmousewheel=""></iframe></div>');
+		$this->_addContent($block);
+
+		$this->renderLayout();
 	}
 
 	public function introAction()
