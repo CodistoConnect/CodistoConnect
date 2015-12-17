@@ -8,10 +8,9 @@ php:
   #- hhvm
 
 before_install:
-   - composer self-update
    - composer install --prefer-source --no-interaction --dev
    - php composer.phar self-update
-	- phpenv rehash
+   - phpenv rehash
 matrix:
   allow_failures:
   - php: 5.6
