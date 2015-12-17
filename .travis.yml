@@ -7,11 +7,8 @@ php:
 #  - 5.6
   #- hhvm
 
-before_install:
-   - composer install --prefer-source --no-interaction
-   - composer self-update
-   - phpenv rehash
 matrix:
+  fast_finish: true
   allow_failures:
   - php: 5.6
   - php: hhvm
@@ -31,6 +28,10 @@ env:
   #- MAGENTO_VERSION=magento-mirror-1.6.2.0
   #- MAGENTO_VERSION=magento-mirror-1.5.1.0
   #- MAGENTO_VERSION=magento-mirror-1.4.2.0
+before_script:
+- composer self-update
+- composer install --prefer-source --no-interaction
+- phpenv rehash
 script:
   - curl -sSL https://raw.githubusercontent.com/CodistoConnect/MageTestStand/master/setup.sh > setup.sh && chmod +x setup.sh && ./setup.sh
 notifications:
