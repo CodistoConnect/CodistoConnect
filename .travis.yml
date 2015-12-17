@@ -31,11 +31,8 @@ env:
 before_script:
 - composer self-update
 - composer install --prefer-dist  --no-interaction
-
 script:
-- curl -sSL https://raw.githubusercontent.com/ffuenf/MageTestStand/master/setup.sh | bash
-#script:
-#  - curl -sSL https://raw.githubusercontent.com/CodistoConnect/MageTestStand/master/setup.sh > setup.sh && chmod +x setup.sh && ./setup.sh
+  - curl -sSL https://raw.githubusercontent.com/CodistoConnect/MageTestStand/master/setup.sh | bash
 notifications:
   email:
     recipients:
