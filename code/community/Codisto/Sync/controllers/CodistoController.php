@@ -60,7 +60,7 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 
 		$this->loadLayout();
 
-		$block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" class="codisto-iframe codisto-category-editor" src="'. $url . '" frameborder="0" onmousewheel=""></iframe></div>');
+		$block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" class="codisto-iframe codisto-bulk-editor" src="'. $url . '" frameborder="0" onmousewheel=""></iframe></div>');
 		$this->_addContent($block);
 
 		$this->renderLayout();
