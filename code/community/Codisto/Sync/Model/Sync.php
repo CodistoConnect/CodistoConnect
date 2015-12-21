@@ -253,8 +253,8 @@ class Codisto_Sync_Model_Sync
 		$insertProduct = $db->prepare('INSERT INTO Product(ExternalReference, Code, Name, Price, ListPrice, TaxClass, Description, Enabled, StockControl, StockLevel, Weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
 		$insertSKU = $db->prepare('INSERT OR IGNORE INTO SKU(ExternalReference, Code, ProductExternalReference, Name, StockControl, StockLevel, Price, Enabled) VALUES(?,?,?,?,?,?,?,?)');
 		$insertSKUMatrix = $db->prepare('INSERT INTO SKUMatrix(SKUExternalReference, Code, OptionName, OptionValue, ProductOptionExternalReference, ProductOptionValueExternalReference) VALUES(?,?,?,?,?,?)');
-		$insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence) VALUES(?,?,?,?)');
-		$insertSKUImage = $db->prepare('INSERT INTO SKUImage(SKUExternalReference, URL, Tag, Sequence) VALUES(?,?,?,?)');
+		$insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
+		$insertSKUImage = $db->prepare('INSERT INTO SKUImage(SKUExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
 		$insertProductOption = $db->prepare('INSERT INTO ProductOption (ExternalReference, Sequence, ProductExternalReference) VALUES (?,?,?)');
 		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence, ProductOptionExternalReference, ProductExternalReference) VALUES (?,?,?,?)');
 		$insertProductHTML = $db->prepare('INSERT OR IGNORE INTO ProductHTML(ProductExternalReference, Tag, HTML) VALUES (?, ?, ?)');
@@ -262,6 +262,8 @@ class Codisto_Sync_Model_Sync
 		$insertAttributeGroup = $db->prepare('INSERT OR IGNORE INTO AttributeGroup(ID, Name) VALUES(?, ?)');
 		$insertAttributeGroupMap = $db->prepare('INSERT OR IGNORE INTO AttributeGroupMap(GroupID, AttributeID) VALUES(?,?)');
 		$insertProductAttribute = $db->prepare('INSERT OR IGNORE INTO ProductAttributeValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
+		$insertProductQuestion = $db->prepare('INSERT OR REPLACE INTO ProductQuestion(ExternalReference, ProductExternalReference, Name, Type, Sequence) VALUES (?, ?, ?, ?, ?)');
+		$insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
 
 		$this->productsProcessed = array();
 
@@ -274,7 +276,7 @@ class Codisto_Sync_Model_Sync
 
 		// Configurable products
 		$configurableProducts = Mage::getModel('catalog/product')->getCollection()
-							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
+							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
 							->addAttributeToFilter('type_id', array('eq' => 'configurable'));
 
 		$sqlCheckStore = '(`e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))';
@@ -284,7 +286,7 @@ class Codisto_Sync_Model_Sync
 
 		// Simple Products not participating as configurable skus
 		$simpleProducts = Mage::getModel('catalog/product')->getCollection()
-							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
+							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
 							->addAttributeToFilter('type_id', array('eq' => 'simple'))
 							->addAttributeToFilter('entity_id', array('in' => $ids));
 
@@ -303,6 +305,8 @@ class Codisto_Sync_Model_Sync
 		$db->exec('DELETE FROM SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
 		$db->exec('DELETE FROM SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
 		$db->exec('DELETE FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).')');
+		$db->exec('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
+		$db->exec('DELETE FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM CategoryProduct WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 
 		Mage::getSingleton('core/resource_iterator')->walk($configurableProducts->getSelect(), array(array($this, 'SyncConfigurableProductData')),
@@ -322,6 +326,8 @@ class Codisto_Sync_Model_Sync
 				'preparedattributegroupStatement' => $insertAttributeGroup,
 				'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 				'preparedproductattributeStatement' => $insertProductAttribute,
+				'preparedproductquestionStatement' => $insertProductQuestion,
+				'preparedproductanswerStatement' => $insertProductAnswer,
 				'store' => $store )
 		);
 
@@ -339,6 +345,8 @@ class Codisto_Sync_Model_Sync
 				'preparedattributegroupStatement' => $insertAttributeGroup,
 				'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 				'preparedproductattributeStatement' => $insertProductAttribute,
+				'preparedproductquestionStatement' => $insertProductQuestion,
+				'preparedproductanswerStatement' => $insertProductAnswer,
 				'store' => $store )
 		);
 
@@ -486,6 +494,8 @@ class Codisto_Sync_Model_Sync
 
 			$imgURL = $product->getMediaConfig()->getMediaUrl($image['file']);
 
+			$enabled = ($image['disabled'] == 0 ? -1 : 0);
+
 			if($image['file'] == $skuData['image'])
 			{
 				$tag = '';
@@ -503,7 +513,7 @@ class Codisto_Sync_Model_Sync
 					$sequence++;
 			}
 
-			$insertImageSQL->execute(array($skuData['entity_id'], $imgURL, $tag, $sequence));
+			$insertImageSQL->execute(array($skuData['entity_id'], $imgURL, $tag, $sequence, $enabled));
 
 			$hasImage = true;
 		}
@@ -587,7 +597,7 @@ class Codisto_Sync_Model_Sync
 		$productOptionValueSequence = array();
 
 		$childProducts = $configurableData->getUsedProductCollection()
-							->addAttributeToSelect(array('name', 'image', 'status', 'price', 'special_price', 'tax_class_id'), 'left');
+							->addAttributeToSelect(array('name', 'image', 'status', 'price', 'special_price', 'special_from_date', 'special_to_date', 'tax_class_id'), 'left');
 
 		Mage::getSingleton('core/resource_iterator')->walk($childProducts->getSelect(), array(array($this, 'SyncSKUData')),
 			array(
@@ -635,6 +645,8 @@ class Codisto_Sync_Model_Sync
 		$insertAttributeGroupSQL = $args['preparedattributegroupStatement'];
 		$insertAttributeGroupMapSQL = $args['preparedattributegroupmapStatement'];
 		$insertProductAttributeSQL = $args['preparedproductattributeStatement'];
+		$insertProductQuestionSQL = $args['preparedproductquestionStatement'];
+		$insertProductAnswerSQL = $args['preparedproductanswerStatement'];
 
 		$price = $this->getExTaxPrice($product, $product->getFinalPrice(), $store);
 		$listPrice = $this->getExTaxPrice($product, $product->getPrice(), $store);
@@ -798,6 +810,8 @@ class Codisto_Sync_Model_Sync
 
 			$imgURL = $product->getMediaConfig()->getMediaUrl($image['file']);
 
+			$enabled = ($image['disabled'] == 0 ? -1 : 0);
+
 			if($image['file'] == $primaryImage)
 			{
 				$tag = '';
@@ -815,9 +829,10 @@ class Codisto_Sync_Model_Sync
 					$sequence++;
 			}
 
-			$insertImageSQL->execute(array($productData['entity_id'], $imgURL, $tag, $sequence));
+			$insertImageSQL->execute(array($productData['entity_id'], $imgURL, $tag, $sequence, $enabled));
 
 			$hasImage = true;
+
 		}
 
 		if($type == 'simple' &&
@@ -836,6 +851,8 @@ class Codisto_Sync_Model_Sync
 				foreach ($groupedProduct->getMediaGallery('images') as $image) {
 
 					$imgURL = $groupedProduct->getMediaConfig()->getMediaUrl($image['file']);
+
+					$enabled = ($image['disabled'] == 0 ? -1 : 0);
 
 					if(!$baseImageFound && ($image['file'] == $groupedProduct->getImage()))
 					{
@@ -859,10 +876,66 @@ class Codisto_Sync_Model_Sync
 						$maxSequence = max($sequence, $maxSequence);
 					}
 
-					$insertImageSQL->execute(array($productData['entity_id'], $imgURL, $tag, $sequence));
+					$insertImageSQL->execute(array($productData['entity_id'], $imgURL, $tag, $sequence, $enabled));
 				}
 
 				$baseSequence = $maxSequence;
+			}
+		}
+
+		// process simple product question/answers
+
+		$db->exec('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference = '.$productData['entity_id'].')');
+		$db->exec('DELETE FROM ProductQuestion WHERE ProductExternalReference = '.$productData['entity_id']);
+
+		$options = $product->getProductOptionsCollection();
+
+		foreach($options as $option)
+		{
+			$optionId = $option->getOptionId();
+			$optionName = $option->getTitle();
+			$optionType = $option->getType();
+			$optionSortOrder = $option->getSortOrder();
+
+			if($optionId && $optionName)
+			{
+				if(!$optionType)
+					$optionType = '';
+
+				if(!$optionSortOrder)
+					$optionSortOrder = 0;
+
+				$insertProductQuestionSQL->execute(array($optionId, $productData['entity_id'], $optionName, $optionType, $optionSortOrder));
+
+				$values = $option->getValuesCollection();
+
+				foreach($values as $value)
+				{
+					$valueName = $value->getTitle();
+					if(!$valueName)
+						$valueName = '';
+
+					$valuePriceModifier = '';
+					if($value->getPriceType() == 'fixed')
+					{
+						$valuePriceModifier = 'Price + '.$value->getPrice();
+					}
+
+					if($value->getPriceType() == 'percent')
+					{
+						$valuePriceModifier = 'Price * '.($value->getPrice() / 100.0);
+					}
+
+					$valueSkuModifier = $value->getSku();
+					if(!$valueSkuModifier)
+						$valueSkuModifier = '';
+
+					$valueSortOrder = $value->getSortOrder();
+					if(!$valueSortOrder)
+						$valueSortOrder = 0;
+
+					$insertProductAnswerSQL->execute(array($optionId, $valueName, $valuePriceModifier, $valueSkuModifier, $valueSortOrder));
+				}
 			}
 		}
 
@@ -901,8 +974,8 @@ class Codisto_Sync_Model_Sync
 		$insertProduct = $db->prepare('INSERT INTO Product(ExternalReference, Code, Name, Price, ListPrice, TaxClass, Description, Enabled, StockControl, StockLevel, Weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
 		$insertSKU = $db->prepare('INSERT OR IGNORE INTO SKU(ExternalReference, Code, ProductExternalReference, Name, StockControl, StockLevel, Price, Enabled) VALUES(?,?,?,?,?,?,?,?)');
 		$insertSKUMatrix = $db->prepare('INSERT INTO SKUMatrix(SKUExternalReference, Code, OptionName, OptionValue, ProductOptionExternalReference, ProductOptionValueExternalReference) VALUES(?,?,?,?,?,?)');
-		$insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence) VALUES(?,?,?,?)');
-		$insertSKUImage = $db->prepare('INSERT INTO SKUImage(SKUExternalReference, URL, Tag, Sequence) VALUES(?,?,?,?)');
+		$insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
+		$insertSKUImage = $db->prepare('INSERT INTO SKUImage(SKUExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
 		$insertProductOption = $db->prepare('INSERT INTO ProductOption (ExternalReference, Sequence, ProductExternalReference) VALUES (?,?,?)');
 		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence, ProductOptionExternalReference, ProductExternalReference) VALUES (?,?,?,?)');
 		$insertProductHTML = $db->prepare('INSERT OR IGNORE INTO ProductHTML(ProductExternalReference, Tag, HTML) VALUES (?, ?, ?)');
@@ -910,6 +983,8 @@ class Codisto_Sync_Model_Sync
 		$insertAttributeGroup = $db->prepare('INSERT OR REPLACE INTO AttributeGroup(ID, Name) VALUES(?, ?)');
 		$insertAttributeGroupMap = $db->prepare('INSERT OR IGNORE INTO AttributeGroupMap(GroupID, AttributeID) VALUES(?,?)');
 		$insertProductAttribute = $db->prepare('INSERT OR IGNORE INTO ProductAttributeValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
+		$insertProductQuestion = $db->prepare('INSERT OR REPLACE INTO ProductQuestion(ExternalReference, ProductExternalReference, Name, Type, Sequence) VALUES (?, ?, ?, ?, ?)');
+		$insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
 		$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber) VALUES (?, ?, ?, ?, ?, ?)');
 
 		// Configuration
@@ -994,7 +1069,7 @@ class Codisto_Sync_Model_Sync
 
 			// Configurable products
 			$configurableProducts = Mage::getModel('catalog/product')->getCollection()
-								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
+								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 								->addAttributeToFilter('entity_id', array('gt' => $this->currentEntityId));
 
@@ -1020,6 +1095,8 @@ class Codisto_Sync_Model_Sync
 					'preparedattributegroupStatement' => $insertAttributeGroup,
 					'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 					'preparedproductattributeStatement' => $insertProductAttribute,
+					'preparedproductquestionStatement' => $insertProductQuestion,
+					'preparedproductanswerStatement' => $insertProductAnswer,
 					'store' => $store )
 			);
 
@@ -1044,7 +1121,7 @@ class Codisto_Sync_Model_Sync
 
 			// Simple Products not participating as configurable skus
 			$simpleProducts = Mage::getModel('catalog/product')->getCollection()
-								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'status', 'tax_class_id', 'weight'), 'left')
+								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'simple'))
 								->addAttributeToFilter('entity_id', array('gt' => $this->currentEntityId));
 
@@ -1066,6 +1143,8 @@ class Codisto_Sync_Model_Sync
 					'preparedattributegroupStatement' => $insertAttributeGroup,
 					'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 					'preparedproductattributeStatement' => $insertProductAttribute,
+					'preparedproductquestionStatement' => $insertProductQuestion,
+					'preparedproductanswerStatement' => $insertProductAnswer,
 					'store' => $store ));
 
 			if(!empty($this->productsProcessed))
@@ -1422,19 +1501,24 @@ class Codisto_Sync_Model_Sync
 					'StockControl bit NOT NULL, StockLevel integer NOT NULL, '.
 					'Weight real NULL)');
 
-		$db->exec('CREATE TABLE IF NOT EXISTS ProductOption (ExternalReference integer NOT NULL, Sequence integer NOT NULL, ProductExternalReference integer NOT NULL)');
+		$db->exec('CREATE TABLE IF NOT EXISTS ProductOption (ExternalReference text NOT NULL, Sequence integer NOT NULL, ProductExternalReference text NOT NULL)');
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_ProductOption_ProductExternalReference ON ProductOption(ProductExternalReference)');
-		$db->exec('CREATE TABLE IF NOT EXISTS ProductOptionValue (ExternalReference integer NOT NULL, Sequence integer NOT NULL, ProductOptionExternalReference integer NOT NULL, ProductExternalReference integer NOT NULL)');
+		$db->exec('CREATE TABLE IF NOT EXISTS ProductOptionValue (ExternalReference text NOT NULL, Sequence integer NOT NULL, ProductOptionExternalReference text NOT NULL, ProductExternalReference integer NOT NULL)');
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_ProductOptionValue_ProductOptionExternalReference ON ProductOptionValue(ProductOptionExternalReference)');
+
+		$db->exec('CREATE TABLE IF NOT EXISTS ProductQuestion (ExternalReference text NOT NULL PRIMARY KEY, ProductExternalReference text NOT NULL, Name text NOT NULL, Type text NOT NULL, Sequence integer NOT NULL)');
+		$db->exec('CREATE INDEX IF NOT EXISTS IX_ProductQuestion_ProductExternalReference ON ProductQuestion(ProductExternalReference)');
+		$db->exec('CREATE TABLE IF NOT EXISTS ProductQuestionAnswer (ProductQuestionExternalReference text NOT NULL, Value text NOT NULL, PriceModifier text NOT NULL, SKUModifier text NOT NULL, Sequence integer NOT NULL)');
+		$db->exec('CREATE INDEX IF NOT EXISTS IX_ProductQuestionAnswer_ProductQuestionExternalReference ON ProductQuestionAnswer(ProductQuestionExternalReference)');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS SKU (ExternalReference text NOT NULL PRIMARY KEY, Code text NULL, ProductExternalReference text NOT NULL, Name text NOT NULL, StockControl bit NOT NULL, StockLevel integer NOT NULL, Price real NOT NULL, Enabled bit NOT NULL)');
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_SKU_ProductExternalReference ON SKU(ProductExternalReference)');
-		$db->exec('CREATE TABLE IF NOT EXISTS SKUMatrix (SKUExternalReference text NOT NULL, Code text NULL, OptionName text NOT NULL, OptionValue text NOT NULL, ProductOptionExternalReference, ProductOptionValueExternalReference)');
+		$db->exec('CREATE TABLE IF NOT EXISTS SKUMatrix (SKUExternalReference text NOT NULL, Code text NULL, OptionName text NOT NULL, OptionValue text NOT NULL, ProductOptionExternalReference text NOT NULL, ProductOptionValueExternalReference text NOT NULL)');
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_SKUMatrix_SKUExternalReference ON SKUMatrix(SKUExternalReference)');
 
-		$db->exec('CREATE TABLE IF NOT EXISTS ProductImage (ProductExternalReference text NOT NULL, URL text NOT NULL, Tag text NOT NULL DEFAULT \'\', Sequence integer NOT NULL)');
+		$db->exec('CREATE TABLE IF NOT EXISTS ProductImage (ProductExternalReference text NOT NULL, URL text NOT NULL, Tag text NOT NULL DEFAULT \'\', Sequence integer NOT NULL, Enabled bit NOT NULL DEFAULT -1)');
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_ProductImage_ProductExternalReference ON ProductImage(ProductExternalReference)');
-		$db->exec('CREATE TABLE IF NOT EXISTS SKUImage (SKUExternalReference text NOT NULL, URL text NOT NULL, Tag text NOT NULL DEFAULT \'\', Sequence integer NOT NULL)');
+		$db->exec('CREATE TABLE IF NOT EXISTS SKUImage (SKUExternalReference text NOT NULL, URL text NOT NULL, Tag text NOT NULL DEFAULT \'\', Sequence integer NOT NULL, Enabled bit NOT NULL DEFAULT -1)');
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_SKUImage_SKUExternalReference ON SKUImage(SKUExternalReference)');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS ProductHTML (ProductExternalReference text NOT NULL, Tag text NOT NULL, HTML text NOT NULL, PRIMARY KEY (ProductExternalReference, Tag))');
@@ -1443,7 +1527,7 @@ class Codisto_Sync_Model_Sync
 		$db->exec('CREATE TABLE IF NOT EXISTS Attribute (ID integer NOT NULL PRIMARY KEY, Code text NOT NULL, Label text NOT NULL, Type text NOT NULL)');
 		$db->exec('CREATE TABLE IF NOT EXISTS AttributeGroupMap (AttributeID integer NOT NULL, GroupID integer NOT NULL, PRIMARY KEY(AttributeID, GroupID))');
 		$db->exec('CREATE TABLE IF NOT EXISTS AttributeGroup (ID integer NOT NULL PRIMARY KEY, Name text NOT NULL)');
-		$db->exec('CREATE TABLE IF NOT EXISTS ProductAttributeValue (ProductExternalReference integer NOT NULL, AttributeID integer NOT NULL, Value any, PRIMARY KEY (ProductExternalReference, AttributeID))');
+		$db->exec('CREATE TABLE IF NOT EXISTS ProductAttributeValue (ProductExternalReference text NOT NULL, AttributeID integer NOT NULL, Value any, PRIMARY KEY (ProductExternalReference, AttributeID))');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS TaxClass (ID integer NOT NULL PRIMARY KEY, Type text NOT NULL, Name text NOT NULL)');
 		$db->exec('CREATE TABLE IF NOT EXISTS TaxCalculation(ID integer NOT NULL PRIMARY KEY, TaxRateID integer NOT NULL, TaxRuleID integer NOT NULL, ProductTaxClassID integer NOT NULL, CustomerTaxClassID integer NOT NULL)');
@@ -1497,6 +1581,24 @@ class Codisto_Sync_Model_Sync
 		catch(Exception $e)
 		{
 
+		}
+
+		try
+		{
+			$db->exec('SELECT 1 FROM ProductImage WHERE Enabled IS NULL LIMIT 1');
+		}
+		catch(Exception $e)
+		{
+			$db->exec('ALTER TABLE ProductImage ADD COLUMN Enabled bit NOT NULL DEFAULT -1');
+		}
+
+		try
+		{
+			$db->exec('SELECT 1 FROM SKUImage WHERE Enabled IS NULL LIMIT 1');
+		}
+		catch(Exception $e)
+		{
+			$db->exec('ALTER TABLE SKUImage ADD COLUMN Enabled bit NOT NULL DEFAULT -1');
 		}
 
 		$db->exec('COMMIT TRANSACTION');
