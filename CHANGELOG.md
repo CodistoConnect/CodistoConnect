@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.60...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.61...HEAD)
+
+**Merged pull requests:**
+
+- Release [\#198](https://github.com/CodistoConnect/CodistoConnect/pull/198) ([bradmccormack](https://github.com/bradmccormack))
+- improve sync [\#197](https://github.com/CodistoConnect/CodistoConnect/pull/197) ([lamery](https://github.com/lamery))
+
+## [1.1.61](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.61) (2015-12-18)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.60...1.1.61)
 
 **Implemented enhancements:**
 
