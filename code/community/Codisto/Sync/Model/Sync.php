@@ -1589,7 +1589,13 @@ class Codisto_Sync_Model_Sync
 		}
 		catch(Exception $e)
 		{
-			$db->exec('ALTER TABLE ProductImage ADD COLUMN Enabled bit NOT NULL DEFAULT -1');
+			try
+			{
+				$db->exec('ALTER TABLE ProductImage ADD COLUMN Enabled bit NOT NULL DEFAULT -1');
+			}
+			catch(Exception $e2)
+			{
+			}
 		}
 
 		try
@@ -1598,7 +1604,13 @@ class Codisto_Sync_Model_Sync
 		}
 		catch(Exception $e)
 		{
-			$db->exec('ALTER TABLE SKUImage ADD COLUMN Enabled bit NOT NULL DEFAULT -1');
+			try
+			{
+				$db->exec('ALTER TABLE SKUImage ADD COLUMN Enabled bit NOT NULL DEFAULT -1');
+			}
+			catch(Exception $e2)
+			{
+			}
 		}
 
 		$db->exec('COMMIT TRANSACTION');
