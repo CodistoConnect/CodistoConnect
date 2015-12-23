@@ -1104,7 +1104,7 @@ class Codisto_Sync_Model_Sync
 
 			$orders = Mage::getModel('sales/order')->getCollection()
 						->addFieldToSelect(array('codisto_orderid', 'status'))
-						->addAttributeToFilter('codisto_orderid', array('gt' => (int)$this->currentEntityId ))
+						->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId ))
 						->addAttributeToFilter('main_table.store_id', array('eq' => $orderStoreId ))
 						->addAttributeToFilter('main_table.updated_at', array('gteq' => date('Y-m-d H:i:s', $ts)));
 			$orders->getSelect()->joinLeft( array('i' => $invoiceName), 'i.order_id = main_table.entity_id AND i.state = 2', array('pay_date' => 'MIN(i.created_at)'));

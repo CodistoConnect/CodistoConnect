@@ -2,7 +2,23 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.59...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.60...HEAD)
+
+**Implemented enhancements:**
+
+- simulate checkout/session during order push [\#191](https://github.com/CodistoConnect/CodistoConnect/pull/191) ([lamery](https://github.com/lamery))
+
+**Fixed bugs:**
+
+- fix potential endless loop on order sync [\#194](https://github.com/CodistoConnect/CodistoConnect/pull/194) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#195](https://github.com/CodistoConnect/CodistoConnect/pull/195) ([bradmccormack](https://github.com/bradmccormack))
+- fix isPickup -\> $isPickup [\#190](https://github.com/CodistoConnect/CodistoConnect/pull/190) ([lamery](https://github.com/lamery))
+
+## [1.1.60](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.60) (2015-12-10)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.59...1.1.60)
 
 **Implemented enhancements:**
 
