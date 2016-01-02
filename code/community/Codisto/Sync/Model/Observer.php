@@ -556,7 +556,7 @@ class Codisto_Sync_Model_Observer
 		};
 		(function() {
 			var s = document.createElement("script");
-			s.src = "https://d31wxntiwn0x96.cloudfront.net/connect/" + window.codisto.merchantid + "/js/app/adminhtml.js?v'.$version.'-5";
+			s.src = "https://d31wxntiwn0x96.cloudfront.net/connect/" + window.codisto.merchantid + "/js/app/adminhtml.js?v'.$version.'-9";
 			document.getElementsByTagName("HEAD")[0].appendChild(s);
 		})();
 		</script>');
