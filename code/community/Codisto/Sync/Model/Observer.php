@@ -239,6 +239,21 @@ class Codisto_Sync_Model_Observer
 
 	}
 
+	public function catalogRuleAfterApply($observer)
+	{
+		try {
+
+			$indexer = Mage::getModel('index/process');
+			$indexer->load('codistoebayindex', 'indexer_code')
+					->changeStatus(Mage_Index_Model_Process::STATUS_REQUIRE_REINDEX)
+					->reindexAll();
+
+		} catch (Exception $e) {
+
+		}
+	}
+
+
 	public function paymentInfoBlockPrepareSpecificInformation($observer)
 	{
 		$transport = $observer->getEvent()->getTransport();

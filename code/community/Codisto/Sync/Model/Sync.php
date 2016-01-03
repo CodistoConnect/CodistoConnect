@@ -29,6 +29,8 @@ class Codisto_Sync_Model_Sync
 	private $taxCalculation;
 	private $rateRequest;
 
+	private $ebayGroupId;
+
 	private $cmsHelper;
 
 	private $groupCache;
@@ -61,6 +63,13 @@ class Codisto_Sync_Model_Sync
 		$this->cmsHelper = Mage::helper('cms');
 
 		$this->groupCache = array();
+
+		$ebayGroup = Mage::getModel('customer/group');
+		$ebayGroup->load('eBay', 'customer_group_code');
+
+		$this->ebayGroupId = $ebayGroup->getId();
+		if(!$this->ebayGroupId)
+			$this->ebayGroupId = Mage_Customer_Model_Group::NOT_LOGGED_IN_ID;
 	}
 
 	private function FilesInDir($dir, $prefix = '')
@@ -413,7 +422,7 @@ class Codisto_Sync_Model_Sync
 		$product = Mage::getModel('catalog/product');
 		$product->setData($skuData)
 				->setStore($store)
-				->setStoreId($store->getId());
+				->setCustomerGroupId($this->ebayGroupId);
 
 		$stockItem = Mage::getModel('cataloginventory/stock_item');
 		$stockItem->setStockId(Mage_CatalogInventory_Model_Stock::DEFAULT_STOCK_ID)
@@ -621,7 +630,7 @@ class Codisto_Sync_Model_Sync
 		$product = Mage::getModel('catalog/product');
 		$product->setData($productData)
 				->setStore($store)
-				->setStoreId($store->getId());
+				->setCustomerGroupId($this->ebayGroupId);
 
 		$stockItem = Mage::getModel('cataloginventory/stock_item');
 		$stockItem->setStockId(Mage_CatalogInventory_Model_Stock::DEFAULT_STOCK_ID)
@@ -759,7 +768,7 @@ class Codisto_Sync_Model_Sync
 						try{
 						$AttributeValue = $product->getAttributeText($attribute->getAttributeCode());
 						}catch(Exception $e){}
-						
+
 						break;
 
 					default:

@@ -95,6 +95,16 @@
 				</observers>
 			</payment_info_block_prepare_specific_information>
 
+			<catalogrule_after_apply>
+				<observers>
+					<codisto>
+						<type>singleton</type>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>catalogRuleAfterApply</method>
+					</codisto>
+				</observers>
+			</catalogrule_after_apply>
+
 			<sales_order_shipment_save_after>
 				<observers>
 					<codisto>
