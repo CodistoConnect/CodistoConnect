@@ -42,20 +42,15 @@
 					<action>adminhtml/codisto/categories</action>
 				</subitem2>
 				<subitem3 translate="title">
-					<title>Manage Attribute Mapping</title>
+					<title>Getting Started</title>
 					<sort_order>4</sort_order>
-					<action>adminhtml/codisto/attributemapping</action>
+					<action>adminhtml/codisto/intro</action>
 				</subitem3>
 				<subitem4 translate="title">
-					<title>Getting Started</title>
-					<sort_order>5</sort_order>
-					<action>adminhtml/codisto/intro</action>
-				</subitem4>
-				<subitem5 translate="title">
 					<title>Settings</title>
-					<sort_order>6</sort_order>
+					<sort_order>5</sort_order>
 					<action>adminhtml/codisto/settings</action>
-				</subitem5>
+				</subitem4>
 			</children>
 		</codisto>
 	</menu>
