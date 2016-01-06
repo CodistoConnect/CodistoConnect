@@ -2,12 +2,21 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.61...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.62...HEAD)
+
+**Merged pull requests:**
+
+- Release [\#202](https://github.com/CodistoConnect/CodistoConnect/pull/202) ([bradmccormack](https://github.com/bradmccormack))
+- order and category management [\#201](https://github.com/CodistoConnect/CodistoConnect/pull/201) ([jlivas](https://github.com/jlivas))
+
+## [1.1.62](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.62) (2015-12-22)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.61...1.1.62)
 
 **Merged pull requests:**
 
 - Release [\#198](https://github.com/CodistoConnect/CodistoConnect/pull/198) ([bradmccormack](https://github.com/bradmccormack))
 - improve sync [\#197](https://github.com/CodistoConnect/CodistoConnect/pull/197) ([lamery](https://github.com/lamery))
+- add manage categories menu item [\#196](https://github.com/CodistoConnect/CodistoConnect/pull/196) ([jlivas](https://github.com/jlivas))
 
 ## [1.1.61](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.61) (2015-12-18)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.60...1.1.61)
@@ -23,6 +32,7 @@
 **Merged pull requests:**
 
 - Release [\#195](https://github.com/CodistoConnect/CodistoConnect/pull/195) ([bradmccormack](https://github.com/bradmccormack))
+- add order management screen [\#192](https://github.com/CodistoConnect/CodistoConnect/pull/192) ([jlivas](https://github.com/jlivas))
 - fix isPickup -\> $isPickup [\#190](https://github.com/CodistoConnect/CodistoConnect/pull/190) ([lamery](https://github.com/lamery))
 
 ## [1.1.60](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.60) (2015-12-10)
