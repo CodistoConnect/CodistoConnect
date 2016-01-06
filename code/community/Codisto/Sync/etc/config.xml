@@ -68,7 +68,7 @@
 			</Codisto_Sync>
 		</jobs>
 	</crontab>
-	
+
 	<global>
 		<models>
 			<codistosync>
@@ -80,6 +80,10 @@
 			</ebaypayment>
 		</models>
 
+		<blocks>
+			<codisto><class>Codisto_Sync_Block</class></codisto>
+		</blocks>
+
 		<events>
 			<payment_info_block_prepare_specific_information>
 				<observers>
@@ -90,6 +94,16 @@
 					</codisto>
 				</observers>
 			</payment_info_block_prepare_specific_information>
+
+			<catalogrule_after_apply>
+				<observers>
+					<codisto>
+						<type>singleton</type>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>catalogRuleAfterApply</method>
+					</codisto>
+				</observers>
+			</catalogrule_after_apply>
 
 			<sales_order_shipment_save_after>
 				<observers>
@@ -250,7 +264,7 @@
 				<active>1</active>
 				<model>ebaypayment/paymentmethod</model>
 				<order_status>pending</order_status>
-				<title>Ebay Order</title>
+				<title>eBay Order</title>
 				<allowspecific>0</allowspecific>
 				<group>offline</group>
 			</ebay>
@@ -260,7 +274,7 @@
 				<active>1</active>
 				<model>ebaypayment/paymentmethod</model>
 				<order_status>pending</order_status>
-				<title>Ebay Order</title>
+				<title>eBay Order</title>
 				<allowspecific>0</allowspecific>
 				<group>offline</group>
 			</ebaypayment>
