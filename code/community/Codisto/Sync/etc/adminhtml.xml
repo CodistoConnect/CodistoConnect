@@ -32,20 +32,30 @@
 					<action>adminhtml/codisto/index</action>
 				</subitem>
 				<subitem1 translate="title">
-					<title>Getting Started</title>
+					<title>Manage Orders</title>
 					<sort_order>2</sort_order>
-					<action>adminhtml/codisto/intro</action>
+					<action>adminhtml/codisto/orders</action>
 				</subitem1>
 				<subitem2 translate="title">
+					<title>Manage Categories</title>
+					<sort_order>4</sort_order>
+					<action>adminhtml/codisto/categories</action>
+				</subitem2>
+				<subitem3 translate="title">
 					<title>Import Listings</title>
 					<sort_order>3</sort_order>
 					<action>adminhtml/codisto/import</action>
-				</subitem2>
-				<subitem3 translate="title">
-					<title>Settings</title>
-					<sort_order>4</sort_order>
-					<action>adminhtml/codisto/settings</action>
 				</subitem3>
+				<subitem4 translate="title">
+					<title>Getting Started</title>
+					<sort_order>5</sort_order>
+					<action>adminhtml/codisto/intro</action>
+				</subitem4>
+				<subitem5 translate="title">
+					<title>Settings</title>
+					<sort_order>6</sort_order>
+					<action>adminhtml/codisto/settings</action>
+				</subitem5>
 			</children>
 		</codisto>
 	</menu>
@@ -60,6 +70,15 @@
 						<children>
 							<subitem>
 								<title>Manage Listings</title>
+							</subitem>
+							<subitem>
+								<title>Import Listings</title>
+							</subitem>
+							<subitem>
+								<title>Manage Orders</title>
+							</subitem>
+							<subitem>
+								<title>Manage Categories</title>
 							</subitem>
 							<subitem>
 								<title>Getting Started</title>
