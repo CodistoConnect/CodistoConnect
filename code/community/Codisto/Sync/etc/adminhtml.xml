@@ -38,12 +38,12 @@
 				</subitem1>
 				<subitem2 translate="title">
 					<title>Manage Categories</title>
-					<sort_order>4</sort_order>
+					<sort_order>3</sort_order>
 					<action>adminhtml/codisto/categories</action>
 				</subitem2>
 				<subitem3 translate="title">
 					<title>Import Listings</title>
-					<sort_order>3</sort_order>
+					<sort_order>4</sort_order>
 					<action>adminhtml/codisto/import</action>
 				</subitem3>
 				<subitem4 translate="title">
