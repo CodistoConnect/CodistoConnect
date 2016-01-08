@@ -2,7 +2,16 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.62...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.63...HEAD)
+
+**Merged pull requests:**
+
+- Release [\#204](https://github.com/CodistoConnect/CodistoConnect/pull/204) ([bradmccormack](https://github.com/bradmccormack))
+- Set order state and status. Read status for logic [\#203](https://github.com/CodistoConnect/CodistoConnect/pull/203) ([jschiller](https://github.com/jschiller))
+- import listing view [\#200](https://github.com/CodistoConnect/CodistoConnect/pull/200) ([jlivas](https://github.com/jlivas))
+
+## [1.1.63](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.63) (2016-01-06)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.62...1.1.63)
 
 **Merged pull requests:**
 
