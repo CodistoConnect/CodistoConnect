@@ -611,21 +611,24 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		/* cancelled, processing, captured, inprogress, complete */
 		if($ordercontent->orderstate == 'cancelled') {
 
+			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED);
 			$order->setStatus(Mage_Sales_Model_Order::STATE_CANCELED);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been cancelled");
 
 		} else if($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') {
 
+			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is in progress");
 
 		} else if ($ordercontent->orderstate == 'complete') {
 
+			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
 
 		} else {
-
+			$order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
 			$order->setStatus(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been captured");
 
@@ -682,7 +685,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 	private function ProcessOrderSync($order, $xml, $productsToReindex, $store)
 	{
-		$orderstatus = $order->getState();
+		$orderstatus = $order->getStatus();
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
 		$ebaysalesrecordnumber = (string)$ordercontent->ebaysalesrecordnumber;
@@ -1002,20 +1005,24 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				$orderstatus!=Mage_Sales_Model_Order::STATE_NEW))
 		{
 
+			$order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
 			$order->setStatus(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is pending payment");
 		}
 
 		if($ordercontent->orderstate == 'cancelled' && $orderstatus!=Mage_Sales_Model_Order::STATE_CANCELED)
 		{
+			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED);
 			$order->setStatus(Mage_Sales_Model_Order::STATE_CANCELED);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been cancelled");
 		}
 
 		if(($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') &&
 			$ordercontent->paymentstatus == 'complete' &&
-			$orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING)
+			$orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING &&
+			$orderstatus!=Mage_Sales_Model_Order::STATE_COMPLETE)
 		{
+			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is in progress");
 		}
@@ -1024,6 +1031,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			$orderstatus!=Mage_Sales_Model_Order::STATE_COMPLETE)
 		{
 
+			$order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
 			$order->setData('status', Mage_Sales_Model_Order::STATE_COMPLETE);
 			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
 		}
