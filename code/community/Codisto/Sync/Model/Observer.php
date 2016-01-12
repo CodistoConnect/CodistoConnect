@@ -260,7 +260,7 @@ class Codisto_Sync_Model_Observer
 		$payment = $observer->getEvent()->getPayment();
 		$paymentmethod = $payment->getMethodInstance()->getTitle();
 
-		if($paymentmethod == "eBay Order" && Mage::getDesign()->getArea() == "adminhtml")
+		if($paymentmethod == 'eBay Order' && Mage::getDesign()->getArea() == 'adminhtml')
 		{
 			$paypaltransactionid = $payment->getLastTransId();
 			$orderid = $payment->getOrder()->getCodistoOrderid();
