@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.63...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.64...HEAD)
+
+**Merged pull requests:**
+
+- Release [\#207](https://github.com/CodistoConnect/CodistoConnect/pull/207) ([bradmccormack](https://github.com/bradmccormack))
+- add region field to address object [\#206](https://github.com/CodistoConnect/CodistoConnect/pull/206) ([jlivas](https://github.com/jlivas))
+
+## [1.1.64](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.64) (2016-01-08)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.63...1.1.64)
 
 **Merged pull requests:**
 
