@@ -1194,6 +1194,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			'fax' => '',
 			'country_id' => (string)$billing_address->countrycode,
 			'region_id' => $regionsel_id, // id from directory_country_region table
+			'region' => (string)$billing_address->division
 		);
 
 		$regionsel_id_ship = 0;
@@ -1220,6 +1221,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 			'fax' => '',
 			'country_id' => (string)$shipping_address->countrycode,
 			'region_id' => $regionsel_id_ship, // id from directory_country_region table
+			'region' => (string)$shipping_address->division
 		);
 
 		$customer = Mage::getModel('customer/customer');
