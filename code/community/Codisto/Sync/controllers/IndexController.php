@@ -918,8 +918,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 						{
 							$stockItem = Mage::getModel('cataloginventory/stock_item');
 							$stockItem->assignProduct($product)
-								->setStoreId($store->getId())
-								->setStockId(1);
+								->setStoreId($store->getId());
 						}
 
 						$typeId = $product->getTypeId();
@@ -1076,8 +1075,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 							{
 								$stockItem = Mage::getModel('cataloginventory/stock_item');
 								$stockItem->assignProduct($product)
-									->setStoreId($store->getId())
-									->setStockId(1);
+									->setStoreId($store->getId());
 							}
 
 							$typeId = $product->getTypeId();
