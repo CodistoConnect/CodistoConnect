@@ -579,8 +579,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 						$stockItem = $product->getStockItem();
 						if(!$stockItem)
 						{
-							$stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productid);
-							$stockItem->setStoreId($store->getId());
+							$stockItem = Mage::getModel('cataloginventory/stock_item')
+											->loadByProduct($product)
+											->setStoreId($store->getId());
 						}
 
 						$typeId = $product->getTypeId();
@@ -916,9 +917,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 						$stockItem = $product->getStockItem();
 						if(!$stockItem)
 						{
-							$stockItem = Mage::getModel('cataloginventory/stock_item');
-							$stockItem->assignProduct($product)
-								->setStoreId($store->getId());
+							$stockItem = Mage::getModel('cataloginventory/stock_item')
+											->loadByProduct($product)
+											->setStoreId($store->getId());
 						}
 
 						$typeId = $product->getTypeId();
@@ -1073,9 +1074,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 							$stockItem = $product->getStockItem();
 							if(!$stockItem)
 							{
-								$stockItem = Mage::getModel('cataloginventory/stock_item');
-								$stockItem->assignProduct($product)
-									->setStoreId($store->getId());
+								$stockItem = Mage::getModel('cataloginventory/stock_item')
+												->loadByProduct($product)
+												->setStoreId($store->getId());
 							}
 
 							$typeId = $product->getTypeId();
