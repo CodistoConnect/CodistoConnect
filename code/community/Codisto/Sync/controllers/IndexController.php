@@ -576,10 +576,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				{
 					if($adjustStock)
 					{
-						$stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productid);
-						$stockItem->setStoreId($store->getId());
+						$stockItem = $product->getStockItem();
+						if(!$stockItem)
+						{
+							$stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productid);
+							$stockItem->setStoreId($store->getId());
+						}
 
-						if (Mage::helper('catalogInventory')->isQty($stockItem->getTypeId()))
+						$typeId = $product->getTypeId();
+						if(!$typeId)
+							$typeId = 'simple';
+
+						if(Mage::helper('catalogInventory')->isQty($typeId))
 						{
 							if($stockItem->canSubtractQty())
 							{
@@ -906,35 +914,43 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					if($adjustStock)
 					{
 						$stockItem = $product->getStockItem();
-						if (!$stockItem) {
+						if(!$stockItem)
+						{
 							$stockItem = Mage::getModel('cataloginventory/stock_item');
 							$stockItem->assignProduct($product)
-								->setData('stock_id', 1)
-								->setData('store_id', $store->getId());
+								->setStoreId($store->getId())
+								->setStockId(1);
 						}
 
-						if($stockItem->canSubtractQty())
+						$typeId = $product->getTypeId();
+						if(!$typeId)
+							$typeId = 'simple';
+
+						if(Mage::helper('catalogInventory')->isQty($typeId))
 						{
-							$stockReserved = isset($orderlineStockReserved[$productid]) ? $orderlineStockReserved[$productid] : 0;
-
-							$stockMovement = $qty - $stockReserved;
-
-							if($stockMovement > 0)
+							if($stockItem->canSubtractQty())
 							{
-								$productsToReindex[$product->getId()] = $product->getId();
+								$stockReserved = isset($orderlineStockReserved[$productid]) ? $orderlineStockReserved[$productid] : 0;
 
-								$stockItem->subtractQty($stockMovement);
+								$stockMovement = $qty - $stockReserved;
+
+								if($stockMovement > 0)
+								{
+									$productsToReindex[$product->getId()] = $product->getId();
+
+									$stockItem->subtractQty($stockMovement);
+									$stockItem->save();
+								}
+								else if($stockMovement < 0)
+								{
+									$productsToReindex[$product->getId()] = $product->getId();
+
+									$stockMovement = abs($stockMovement);
+
+									$stockItem->addQty($stockMovement);
+									$stockItem->save();
+								}
 							}
-							else if($stockMovement < 0)
-							{
-								$productsToReindex[$product->getId()] = $product->getId();
-
-								$stockMovement = abs($stockMovement);
-
-								$stockItem->addQty($stockMovement);
-							}
-
-							$stockItem->save();
 						}
 					}
 				}
@@ -1056,31 +1072,38 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 							$totalquantity += $qty;
 
 							$stockItem = $product->getStockItem();
-
-							if (!$stockItem) {
+							if(!$stockItem)
+							{
 								$stockItem = Mage::getModel('cataloginventory/stock_item');
 								$stockItem->assignProduct($product)
-									->setData('stock_id', 1)
-									->setData('store_id', $store->getId());
+									->setStoreId($store->getId())
+									->setStockId(1);
 							}
 
-							if($stockItem->canSubtractQty())
+							$typeId = $product->getTypeId();
+							if(!$typeId)
+								$typeId = 'simple';
+
+							if(Mage::helper('catalogInventory')->isQty($typeId))
 							{
-								if($ordercontent->orderstate == 'cancelled') {
+								if($stockItem->canSubtractQty())
+								{
+									if($ordercontent->orderstate == 'cancelled') {
 
-									$productsToReindex[$product->getId()] = $product->getId();
+										$productsToReindex[$product->getId()] = $product->getId();
 
-									$stockItem->addQty(intval($qty));
+										$stockItem->addQty(intval($qty));
 
-								} else {
+									} else {
 
-									$productsToReindex[$product->getId()] = $product->getId();
+										$productsToReindex[$product->getId()] = $product->getId();
 
-									$stockItem->subtractQty(intval($qty));
+										$stockItem->subtractQty(intval($qty));
 
+									}
+
+									$stockItem->save();
 								}
-
-								$stockItem->save();
 							}
 						}
 					}
