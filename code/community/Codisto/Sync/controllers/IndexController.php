@@ -370,13 +370,6 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 							}
 							else
 							{
-								if(!$quote)
-								{
-									$connection->rollback();
-									sleep($Retry * 10);
-									continue;
-								}
-
 								$this->ProcessOrderCreate($quote, $xml, $productsToReindex, $store);
 							}
 
