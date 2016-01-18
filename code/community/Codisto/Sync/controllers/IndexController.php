@@ -343,22 +343,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					{
 						$productsToReindex = array();
 
-						$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)->getFirstItem();
-						if(!($order && $order->getId()))
+						try
 						{
-							try
-							{
-								$quote = Mage::getModel('sales/quote');
+							$quote = Mage::getModel('sales/quote');
 
-								$this->ProcessQuote($quote, $xml, $store);
-							}
-							catch(Exception $e)
-							{
-								$response = $this->getResponse();
-								$response->setHeader('Content-Type', 'application/json');
-								$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString())));
-								break;
-							}
+							$this->ProcessQuote($quote, $xml, $store);
+						}
+						catch(Exception $e)
+						{
+							$response = $this->getResponse();
+							$response->setHeader('Content-Type', 'application/json');
+							$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString())));
+							break;
 						}
 
 						$connection->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
@@ -370,17 +366,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 							if($order && $order->getId())
 							{
-								$this->ProcessOrderSync($order, $xml, $productsToReindex, $store);
+								$this->ProcessOrderSync($quote, $order, $xml, $productsToReindex, $store);
 							}
 							else
 							{
-								if(!$quote)
-								{
-									$connection->rollback();
-									sleep($Retry * 10);
-									continue;
-								}
-
 								$this->ProcessOrderCreate($quote, $xml, $productsToReindex, $store);
 							}
 
@@ -471,6 +460,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$order->setPayment($quoteConverter->paymentToOrderPayment($quote->getPayment()));
 		$order->setCodistoOrderid($ordercontent->orderid);
 
+		$quoteItems = $quote->getItemsCollection()->getItems();
+		$quoteIdx = 0;
+
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
 			if($orderline->productcode[0] != 'FREIGHT')
@@ -526,7 +518,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				if($weight == 0)
 					$weight = 1;
 
-				$orderItem = Mage::getModel('sales/order_item');
+				$orderItem = $quoteConverter->itemToOrderItem($quoteItems[$quoteIdx]);
+
+				$quoteIdx++;
+
 				$orderItem->setStoreId($store->getId());
 				$orderItem->setData('product', $product);
 
@@ -576,10 +571,19 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				{
 					if($adjustStock)
 					{
-						$stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productid);
-						$stockItem->setStoreId($store->getId());
+						$stockItem = $product->getStockItem();
+						if(!$stockItem)
+						{
+							$stockItem = Mage::getModel('cataloginventory/stock_item')
+											->loadByProduct($product)
+											->setStoreId($store->getId());
+						}
 
-						if (Mage::helper('catalogInventory')->isQty($stockItem->getTypeId()))
+						$typeId = $product->getTypeId();
+						if(!$typeId)
+							$typeId = 'simple';
+
+						if(Mage::helper('catalogInventory')->isQty($typeId))
 						{
 							if($stockItem->canSubtractQty())
 							{
@@ -683,10 +687,12 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 	}
 
-	private function ProcessOrderSync($order, $xml, $productsToReindex, $store)
+	private function ProcessOrderSync($quote, $order, $xml, $productsToReindex, $store)
 	{
 		$orderstatus = $order->getStatus();
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
+
+		$quoteConverter =  Mage::getModel('sales/convert_quote');
 
 		$ebaysalesrecordnumber = (string)$ordercontent->ebaysalesrecordnumber;
 		if(!$ebaysalesrecordnumber)
@@ -768,6 +774,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		}
 
 		$visited = array();
+
+		$quoteItems = $quote->getItemsCollection()->getItems();
+		$quoteIdx = 0;
 
 		$totalquantity = 0;
 		foreach($ordercontent->orderlines->orderline as $orderline)
@@ -852,7 +861,11 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				}
 
 				if(!$itemFound)
-					$item = Mage::getModel('sales/order_item');
+				{
+					$item = $quoteConverter->itemToOrderItem($quoteItems[$quoteIdx]);
+				}
+
+				$quoteIdx++;
 
 				$item->setStoreId($store->getId());
 
@@ -906,35 +919,42 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					if($adjustStock)
 					{
 						$stockItem = $product->getStockItem();
-						if (!$stockItem) {
-							$stockItem = Mage::getModel('cataloginventory/stock_item');
-							$stockItem->assignProduct($product)
-								->setData('stock_id', 1)
-								->setData('store_id', $store->getId());
+						if(!$stockItem)
+						{
+							$stockItem = Mage::getModel('cataloginventory/stock_item')
+											->loadByProduct($product)
+											->setStoreId($store->getId());
 						}
 
-						if($stockItem->canSubtractQty())
+						$typeId = $product->getTypeId();
+						if(!$typeId)
+							$typeId = 'simple';
+
+						if(Mage::helper('catalogInventory')->isQty($typeId))
 						{
-							$stockReserved = isset($orderlineStockReserved[$productid]) ? $orderlineStockReserved[$productid] : 0;
-
-							$stockMovement = $qty - $stockReserved;
-
-							if($stockMovement > 0)
+							if($stockItem->canSubtractQty())
 							{
-								$productsToReindex[$product->getId()] = $product->getId();
+								$stockReserved = isset($orderlineStockReserved[$productid]) ? $orderlineStockReserved[$productid] : 0;
 
-								$stockItem->subtractQty($stockMovement);
+								$stockMovement = $qty - $stockReserved;
+
+								if($stockMovement > 0)
+								{
+									$productsToReindex[$product->getId()] = $product->getId();
+
+									$stockItem->subtractQty($stockMovement);
+									$stockItem->save();
+								}
+								else if($stockMovement < 0)
+								{
+									$productsToReindex[$product->getId()] = $product->getId();
+
+									$stockMovement = abs($stockMovement);
+
+									$stockItem->addQty($stockMovement);
+									$stockItem->save();
+								}
 							}
-							else if($stockMovement < 0)
-							{
-								$productsToReindex[$product->getId()] = $product->getId();
-
-								$stockMovement = abs($stockMovement);
-
-								$stockItem->addQty($stockMovement);
-							}
-
-							$stockItem->save();
 						}
 					}
 				}
@@ -1056,31 +1076,37 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 							$totalquantity += $qty;
 
 							$stockItem = $product->getStockItem();
-
-							if (!$stockItem) {
-								$stockItem = Mage::getModel('cataloginventory/stock_item');
-								$stockItem->assignProduct($product)
-									->setData('stock_id', 1)
-									->setData('store_id', $store->getId());
+							if(!$stockItem)
+							{
+								$stockItem = Mage::getModel('cataloginventory/stock_item')
+												->loadByProduct($product)
+												->setStoreId($store->getId());
 							}
 
-							if($stockItem->canSubtractQty())
+							$typeId = $product->getTypeId();
+							if(!$typeId)
+								$typeId = 'simple';
+
+							if(Mage::helper('catalogInventory')->isQty($typeId))
 							{
-								if($ordercontent->orderstate == 'cancelled') {
+								if($stockItem->canSubtractQty())
+								{
+									if($ordercontent->orderstate == 'cancelled') {
 
-									$productsToReindex[$product->getId()] = $product->getId();
+										$productsToReindex[$product->getId()] = $product->getId();
 
-									$stockItem->addQty(intval($qty));
+										$stockItem->addQty(intval($qty));
 
-								} else {
+									} else {
 
-									$productsToReindex[$product->getId()] = $product->getId();
+										$productsToReindex[$product->getId()] = $product->getId();
 
-									$stockItem->subtractQty(intval($qty));
+										$stockItem->subtractQty(intval($qty));
 
+									}
+
+									$stockItem->save();
 								}
-
-								$stockItem->save();
 							}
 						}
 					}
