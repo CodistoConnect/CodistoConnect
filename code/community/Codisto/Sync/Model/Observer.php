@@ -258,9 +258,9 @@ class Codisto_Sync_Model_Observer
 	{
 		$transport = $observer->getEvent()->getTransport();
 		$payment = $observer->getEvent()->getPayment();
-		$paymentmethod = $payment->getMethodInstance()->getTitle();
+		$paymentmethod = $payment->getMethodInstance()->getCode();
 
-		if($paymentmethod == 'eBay Order' && Mage::getDesign()->getArea() == 'adminhtml')
+		if($paymentmethod == 'ebay' && Mage::getDesign()->getArea() == 'adminhtml')
 		{
 			$paypaltransactionid = $payment->getLastTransId();
 			$orderid = $payment->getOrder()->getCodistoOrderid();
@@ -277,7 +277,7 @@ class Codisto_Sync_Model_Observer
 				{
 					$transport['eBay Sales Record Number'] = '<a href="'.htmlspecialchars(Mage::getBaseUrl()).'codisto/ebaysale?orderid='.htmlspecialchars($orderid).'" target="codisto!ebaysale" class="codisto-ebay-sales-link">'.htmlspecialchars($additionalInfo['ebaysalesrecordnumber']).'</a>';
 				}
-	
+
 				if(isset($additionalInfo['ebayuser']) &&
 					$additionalInfo['ebayuser'])
 				{
