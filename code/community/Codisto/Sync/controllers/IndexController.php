@@ -343,22 +343,18 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					{
 						$productsToReindex = array();
 
-						$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)->getFirstItem();
-						if(!($order && $order->getId()))
+						try
 						{
-							try
-							{
-								$quote = Mage::getModel('sales/quote');
+							$quote = Mage::getModel('sales/quote');
 
-								$this->ProcessQuote($quote, $xml, $store);
-							}
-							catch(Exception $e)
-							{
-								$response = $this->getResponse();
-								$response->setHeader('Content-Type', 'application/json');
-								$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString())));
-								break;
-							}
+							$this->ProcessQuote($quote, $xml, $store);
+						}
+						catch(Exception $e)
+						{
+							$response = $this->getResponse();
+							$response->setHeader('Content-Type', 'application/json');
+							$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString())));
+							break;
 						}
 
 						$connection->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
@@ -370,7 +366,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 							if($order && $order->getId())
 							{
-								$this->ProcessOrderSync($order, $xml, $productsToReindex, $store);
+								$this->ProcessOrderSync($quote, $order, $xml, $productsToReindex, $store);
 							}
 							else
 							{
@@ -471,6 +467,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$order->setPayment($quoteConverter->paymentToOrderPayment($quote->getPayment()));
 		$order->setCodistoOrderid($ordercontent->orderid);
 
+		$quoteItems = $quote->getItemsCollection()->getItems();
+		$quoteIdx = 0;
+
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
 			if($orderline->productcode[0] != 'FREIGHT')
@@ -526,7 +525,10 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				if($weight == 0)
 					$weight = 1;
 
-				$orderItem = Mage::getModel('sales/order_item');
+				$orderItem = $quoteConverter->itemToOrderItem($quoteItems[$quoteIdx]);
+
+				$quoteIdx++;
+
 				$orderItem->setStoreId($store->getId());
 				$orderItem->setData('product', $product);
 
@@ -683,10 +685,12 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 	}
 
-	private function ProcessOrderSync($order, $xml, $productsToReindex, $store)
+	private function ProcessOrderSync($quote, $order, $xml, $productsToReindex, $store)
 	{
 		$orderstatus = $order->getStatus();
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
+
+		$quoteConverter =  Mage::getModel('sales/convert_quote');
 
 		$ebaysalesrecordnumber = (string)$ordercontent->ebaysalesrecordnumber;
 		if(!$ebaysalesrecordnumber)
@@ -768,6 +772,9 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 		}
 
 		$visited = array();
+
+		$quoteItems = $quote->getItemsCollection()->getItems();
+		$quoteIdx = 0;
 
 		$totalquantity = 0;
 		foreach($ordercontent->orderlines->orderline as $orderline)
@@ -852,7 +859,11 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 				}
 
 				if(!$itemFound)
-					$item = Mage::getModel('sales/order_item');
+				{
+					$item = $quoteConverter->itemToOrderItem($quoteItems[$quoteIdx]);
+				}
+
+				$quoteIdx++;
 
 				$item->setStoreId($store->getId());
 
