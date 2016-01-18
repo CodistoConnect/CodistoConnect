@@ -1,8 +1,20 @@
 # Change Log
 
-## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
+## [1.1.66](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.66) (2016-01-18)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.65...1.1.66)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.64...HEAD)
+**Implemented enhancements:**
+
+- use itemToOrderItem to convert quote lines to order lines to pick up … [\#210](https://github.com/CodistoConnect/CodistoConnect/pull/210) ([lamery](https://github.com/lamery))
+- standardise stock control handling [\#208](https://github.com/CodistoConnect/CodistoConnect/pull/208) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#211](https://github.com/CodistoConnect/CodistoConnect/pull/211) ([bradmccormack](https://github.com/bradmccormack))
+- Only show 'PayPal TransactionID' for eBay orders and only in admin [\#209](https://github.com/CodistoConnect/CodistoConnect/pull/209) ([jschiller](https://github.com/jschiller))
+
+## [1.1.65](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.65) (2016-01-12)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.64...1.1.65)
 
 **Merged pull requests:**
 
