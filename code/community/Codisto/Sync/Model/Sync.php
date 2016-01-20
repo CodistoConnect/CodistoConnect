@@ -486,14 +486,15 @@ class Codisto_Sync_Model_Sync
 		// SKU Matrix
 		foreach($attributes as $attribute)
 		{
+
 			$productAttribute = $attribute->getProductAttribute();
 			$productOptionId = $productAttribute->getId();
 			$productOptionValueId = $product->getData($productAttribute->getAttributeCode());
 
-			$attributeName = $productAttribute->getFrontendLabel();
+			$attributeName = $attribute->getLabel();
 			$attributeValue = $product->getAttributeText($productAttribute->getAttributeCode());
-
 			$insertSKUMatrixSQL->execute(array($skuData['entity_id'], '', $attributeName, $attributeValue, $productOptionId, $productOptionValueId));
+
 		}
 
 		$hasImage = false;
