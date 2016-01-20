@@ -143,14 +143,33 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 				if($storeId != 0)
 				{
-					$defaultMerchantId = (int)Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
-					$storeMerchantId = (int)Mage::getStoreConfig('codisto/merchantid', $storeId);
+					$defaultMerchantId = Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
+					$storeMerchantId = Mage::getStoreConfig('codisto/merchantid', $storeId);
 
 					// if the default Codisto merchantid is different at this store level
 					// explicitly synchronise it as well
 					if($defaultMerchantId != $storeMerchantId)
 					{
 						$syncStores[] = $storeId;
+					}
+				}
+				else
+				{
+					$defaultMerchantId = Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
+
+					$stores = Mage::getModel('core/store')->getCollection();
+
+					foreach($stores as $store)
+					{
+						if($store->getId() != 0)
+						{
+							$storeMerchantId = Mage::getStoreConfig('codisto/merchantid', $store->getId());
+
+							if($defaultMerchantId != $storeMerchantId)
+							{
+								$syncStores[] = $store->getId();
+							}
+						}
 					}
 				}
 
@@ -209,14 +228,33 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 				if($storeId != 0)
 				{
-					$defaultMerchantId = (int)Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
-					$storeMerchantId = (int)Mage::getStoreConfig('codisto/merchantid', $storeId);
+					$defaultMerchantId = Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
+					$storeMerchantId = Mage::getStoreConfig('codisto/merchantid', $storeId);
 
 					// if the default Codisto merchantid is different at this store level
 					// explicitly synchronise it as well
 					if($defaultMerchantId != $storeMerchantId)
 					{
 						$syncStores[] = $storeId;
+					}
+				}
+				else
+				{
+					$defaultMerchantId = Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
+
+					$stores = Mage::getModel('core/store')->getCollection();
+
+					foreach($stores as $store)
+					{
+						if($store->getId() != 0)
+						{
+							$storeMerchantId = Mage::getStoreConfig('codisto/merchantid', $store->getId());
+
+							if($defaultMerchantId != $storeMerchantId)
+							{
+								$syncStores[] = $store->getId();
+							}
+						}
 					}
 				}
 
@@ -289,14 +327,33 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 				if($storeId != 0)
 				{
-					$defaultMerchantId = (int)Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
-					$storeMerchantId = (int)Mage::getStoreConfig('codisto/merchantid', $storeId);
+					$defaultMerchantId = Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
+					$storeMerchantId = Mage::getStoreConfig('codisto/merchantid', $storeId);
 
 					// if the default Codisto merchantid is different at this store level
 					// explicitly synchronise it as well
 					if($defaultMerchantId != $storeMerchantId)
 					{
 						$syncStores[] = $storeId;
+					}
+				}
+				else
+				{
+					$defaultMerchantId = Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
+
+					$stores = Mage::getModel('core/store')->getCollection();
+
+					foreach($stores as $store)
+					{
+						if($store->getId() != 0)
+						{
+							$storeMerchantId = Mage::getStoreConfig('codisto/merchantid', $store->getId());
+
+							if($defaultMerchantId != $storeMerchantId)
+							{
+								$syncStores[] = $store->getId();
+							}
+						}
 					}
 				}
 
