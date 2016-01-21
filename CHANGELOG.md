@@ -1,5 +1,31 @@
 # Change Log
 
+## [1.1.68](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.68) (2016-01-21)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.67...1.1.68)
+
+**Merged pull requests:**
+
+- Release [\#219](https://github.com/CodistoConnect/CodistoConnect/pull/219) ([bradmccormack](https://github.com/bradmccormack))
+- disable visitor logging / who is online tracking [\#218](https://github.com/CodistoConnect/CodistoConnect/pull/218) ([lamery](https://github.com/lamery))
+
+## [1.1.67](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.67) (2016-01-20)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.66...1.1.67)
+
+**Implemented enhancements:**
+
+- standardise timeouts on signal changes [\#216](https://github.com/CodistoConnect/CodistoConnect/pull/216) ([lamery](https://github.com/lamery))
+- signal to multiple storeviews when an edit happens on default store view [\#214](https://github.com/CodistoConnect/CodistoConnect/pull/214) ([lamery](https://github.com/lamery))
+
+**Fixed bugs:**
+
+- signal to multiple storeviews when an edit happens on default store view [\#214](https://github.com/CodistoConnect/CodistoConnect/pull/214) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#217](https://github.com/CodistoConnect/CodistoConnect/pull/217) ([jschiller](https://github.com/jschiller))
+- change label name to match customer facing label [\#215](https://github.com/CodistoConnect/CodistoConnect/pull/215) ([jlivas](https://github.com/jlivas))
+- Use code rather than title [\#213](https://github.com/CodistoConnect/CodistoConnect/pull/213) ([bradmccormack](https://github.com/bradmccormack))
+
 ## [1.1.66](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.66) (2016-01-18)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.65...1.1.66)
 
