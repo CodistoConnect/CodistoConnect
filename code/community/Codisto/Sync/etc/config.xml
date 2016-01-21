@@ -70,6 +70,11 @@
 	</crontab>
 
 	<global>
+
+		<ignore_user_agents>
+			<codisto_connect>CodistoConnect/1.0</codisto_connect>
+		</ignore_user_agents>
+
 		<models>
 			<codistosync>
 				<class>Codisto_Sync_Model</class>
