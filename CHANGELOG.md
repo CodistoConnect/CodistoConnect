@@ -1,5 +1,16 @@
 # Change Log
 
+## [1.1.69](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.69) (2016-01-25)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.68...1.1.69)
+
+**Implemented enhancements:**
+
+- add defaultcountry to support proper tax calc [\#220](https://github.com/CodistoConnect/CodistoConnect/pull/220) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#221](https://github.com/CodistoConnect/CodistoConnect/pull/221) ([bradmccormack](https://github.com/bradmccormack))
+
 ## [1.1.68](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.68) (2016-01-21)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.67...1.1.68)
 
