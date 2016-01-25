@@ -999,50 +999,6 @@ class Codisto_Sync_Model_Sync
 		$insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
 		$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber) VALUES (?, ?, ?, ?, ?, ?)');
 
-		// Configuration
-		$config = array(
-			'baseurl' => Mage::getBaseUrl(),
-			'skinurl' => Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN),
-			'mediaurl' => Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA),
-			'jsurl' => Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS),
-			'storeurl' => Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB),
-			'theme' => Mage::getDesign()->getTheme('frontend')
-		);
-
-		$imagepdf = Mage::getStoreConfig('sales/identity/logo', $store);
-		$imagehtml = Mage::getStoreConfig('sales/identity/logo_html', $store);
-
-		$path = null;
-		if($imagepdf) {
-			$path = Mage::getBaseDir('media') . '/sales/store/logo/' . $imagepdf;
-		}
-		if($imagehtml) {
-			$path = Mage::getBaseDir('media') . '/sales/store/logo_html/' . $imagehtml;
-		}
-
-		if($path) {
-
-			//Invoice and Packing Slip image location isn't accessible from frontend place into DB
-			$data = file_get_contents($path);
-			$base64 = base64_encode($data);
-
-			$config['logobase64'] = $base64;
-			$config['logourl'] = $path; //still stuff url in so we can get the MIME type to determine extra conversion on the other side
-
-		}
-
-		else {
-
-			$package = Mage::getDesign()->getPackageName();
-			$theme = Mage::getDesign()->getTheme('frontend');
-
-			$config['logourl'] = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN) . 'frontend/' .
-				$package . '/' . $theme . '/' . Mage::getStoreConfig('design/header/logo_src', $store);
-
-		}
-
-		$insertConfiguration = $db->prepare('INSERT INTO Configuration(configuration_key, configuration_value) VALUES(?,?)');
-
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
 		$this->currentEntityId = $db->query('SELECT entity_id FROM Progress')->fetchColumn();
@@ -1053,12 +1009,57 @@ class Codisto_Sync_Model_Sync
 
 		if(!$state)
 		{
+			// Configuration
+			$config = array(
+				'baseurl' => Mage::getBaseUrl(),
+				'skinurl' => Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN),
+				'mediaurl' => Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA),
+				'jsurl' => Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS),
+				'storeurl' => Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB),
+				'theme' => Mage::getDesign()->getTheme('frontend')
+			);
+
+			$imagepdf = Mage::getStoreConfig('sales/identity/logo', $store);
+			$imagehtml = Mage::getStoreConfig('sales/identity/logo_html', $store);
+
+			$path = null;
+			if($imagepdf) {
+				$path = Mage::getBaseDir('media') . '/sales/store/logo/' . $imagepdf;
+			}
+			if($imagehtml) {
+				$path = Mage::getBaseDir('media') . '/sales/store/logo_html/' . $imagehtml;
+			}
+
+			if($path) {
+
+				//Invoice and Packing Slip image location isn't accessible from frontend place into DB
+				$data = file_get_contents($path);
+				$base64 = base64_encode($data);
+
+				$config['logobase64'] = $base64;
+				$config['logourl'] = $path; //still stuff url in so we can get the MIME type to determine extra conversion on the other side
+
+			}
+
+			else {
+
+				$package = Mage::getDesign()->getPackageName();
+				$theme = Mage::getDesign()->getTheme('frontend');
+
+				$config['logourl'] = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN) . 'frontend/' .
+					$package . '/' . $theme . '/' . Mage::getStoreConfig('design/header/logo_src', $store);
+
+			}
+
+			$insertConfiguration = $db->prepare('INSERT INTO Configuration(configuration_key, configuration_value) VALUES(?,?)');
+
 			// build configuration table
 			foreach ($config as $key => $value) {
 				$insertConfiguration->execute(array($key, $value));
 			}
 
 			$insertConfiguration->execute(array('currency', $store->getBaseCurrencyCode()));
+			$insertConfiguration->execute(array('defaultcountry', Mage::getStoreConfig('tax/defaults/country', $store)));
 
 			// Categories
 			$categories = Mage::getModel('catalog/category')->getCollection()
