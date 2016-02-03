@@ -21,6 +21,14 @@
 class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 {
 	public $_publicActions = array('index', 'intro', 'settings', 'orders');
+	private $helper;
+
+	function __construct() {
+
+		parent::__construct();
+		$this->helper = Mage::helper('codisto/sync');
+
+ 	}
 
 	public function indexAction()
 	{
@@ -60,7 +68,7 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 
 	public function importAction()
 	{
-		
+
 		$url = preg_replace('/\/index\/key\//', '/importlistings/key/', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'). '?v=2');
 
 		$this->loadLayout();
