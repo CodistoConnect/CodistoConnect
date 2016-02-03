@@ -59,7 +59,7 @@ if(!isset($MerchantID) || !isset($HostKey))
 			$lockRow = $lockQuery->fetch();
 			$timeStamp = $lockRow['id'];
 
-			if($timeStamp + 300000 < microtime(true))
+			if($timeStamp + 30000000 < microtime(true))
 			{
 				$createMerchant = true;
 
