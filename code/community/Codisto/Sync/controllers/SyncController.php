@@ -19,7 +19,7 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Codisto_Sync_SyncController
+class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 {
 	private $defaultSyncTimeout = 10;
 	private $defaultSleep = 100000;

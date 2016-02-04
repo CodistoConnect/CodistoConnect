@@ -32,70 +32,109 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 
 	public function indexAction()
 	{
-		$url = preg_replace('/\/index\/key\//', '/key/', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
+		$re = '/\/ebaytab\/?/';
+		$replace = '/ebaytab/';
+		if(Mage::getStoreConfig('admin/security/use_form_key'))
+		{
+			$re = '/\/ebaytab\/index\/key\//';
+			$replace = '/ebaytab/key/';
+		}
+
+		$url = preg_replace($re, $replace, Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
 
 		$this->renderPane($url, 'codisto-bulk-editor');
 	}
 
 	public function ordersAction()
 	{
-		$url = preg_replace('/\/ebaytab\/index\/key\//', '/orders/key/', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
+		$re = '/\/ebaytab\/?/';
+		$replace = '/orders/';
+		if(Mage::getStoreConfig('admin/security/use_form_key'))
+		{
+			$re = '/\/ebaytab\/index\/key\//';
+			$replace = '/orders/key/';
+		}
+
+		$url = preg_replace($re, $replace, Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
 
 		$action = $this->getRequest()->getQuery('action');
 		if($action)
 			$url = $url . '?action='. $action;
 
-		$this->loadLayout();
-
-		$block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" class="codisto-iframe codisto-bulk-editor" src="'. $url . '" frameborder="0" onmousewheel=""></iframe></div>');
-		$this->_addContent($block);
-
-		$this->renderLayout();
+		$this->renderPane($url, 'codisto-bulk-editor');
 	}
 
 	public function categoriesAction()
 	{
+		$re = '/\/ebaytab\/?/';
+		$replace = '/ebaytab/categories/';
+		if(Mage::getStoreConfig('admin/security/use_form_key'))
+		{
+			$re = '/\/ebaytab\/index\/key\//';
+			$replace = '/ebaytab/categories/key/';
+		}
 
-		$url = preg_replace('/\/index\/key\//', '/categories/key/', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
+		$url = preg_replace($re, $replace, Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
 
-		$this->loadLayout();
-
-		$block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" class="codisto-iframe codisto-bulk-editor" src="'. $url . '" frameborder="0" onmousewheel=""></iframe></div>');
-		$this->_addContent($block);
-
-		$this->renderLayout();
+		$this->renderPane($url, 'codisto-bulk-editor');
 	}
 
 	public function importAction()
 	{
+		$re = '/\/ebaytab\/?/';
+		$replace = '/ebaytab/importlistings/';
+		if(Mage::getStoreConfig('admin/security/use_form_key'))
+		{
+			$re = '/\/ebaytab\/index\/key\//';
+			$replace = '/ebaytab/importlistings/key/';
+		}
 
-		$url = preg_replace('/\/index\/key\//', '/importlistings/key/', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'). '?v=2');
+		$url = preg_replace($re, $replace, Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'). '?v=2');
 
-		$this->loadLayout();
-
-		$block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" class="codisto-iframe codisto-bulk-editor" src="'. $url . '" frameborder="0" onmousewheel=""></iframe></div>');
-		$this->_addContent($block);
-
-		$this->renderLayout();
+		$this->renderPane($url, 'codisto-bulk-editor');
 	}
 
 	public function introAction()
 	{
-		$url = preg_replace('/\/index\/key\//', '/key/', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab')) . '?intro=1';
+		$re = '/\/ebaytab\/?/';
+		$replace = '/ebaytab/';
+		if(Mage::getStoreConfig('admin/security/use_form_key'))
+		{
+			$re = '/\/ebaytab\/index\/key\//';
+			$replace = '/ebaytab/key/';
+		}
+
+		$url = preg_replace($re, $replace, Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab')) . '?intro=1';
 
 		$this->renderPane($url, 'codisto-bulk-editor');
 	}
 
 	public function attributemappingAction()
 	{
-		$url = preg_replace('/\/index\/key\//', '/attributemapping/key/', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
+		$re = '/\/ebaytab\/?/';
+		$replace = '/ebaytab/attributemapping/';
+		if(Mage::getStoreConfig('admin/security/use_form_key'))
+		{
+			$re = '/\/ebaytab\/index\/key\//';
+			$replace = '/ebaytab/attributemapping/key/';
+		}
+
+		$url = preg_replace($re, $replace, Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
 
 		$this->renderPane($url, 'codisto-attributemapping');
 	}
 
 	public function settingsAction()
 	{
-		$url = preg_replace('/\/ebaytab\/index\/key\//', '/settings/key/', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
+		$re = '/\/ebaytab\/?/';
+		$replace = '/settings/';
+		if(Mage::getStoreConfig('admin/security/use_form_key'))
+		{
+			$re = '/\/ebaytab\/index\/key\//';
+			$replace = '/settings/key/';
+		}
+
+		$url = preg_replace($re, $replace, Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
 
 		$this->renderPane($url, 'codisto-settings');
 	}
