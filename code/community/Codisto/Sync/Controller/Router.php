@@ -25,7 +25,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 	function __construct() {
 
 		parent::__construct();
-		$this->helper = Mage::helper('codisto/data);
+		$this->helper = Mage::helper('codisto/data');
 
 	}
 

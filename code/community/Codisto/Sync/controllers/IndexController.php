@@ -25,7 +25,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 	function __construct() {
 
 		parent::__construct();
-		$this->helper = Mage::helper('codisto/data);
+		$this->helper = Mage::helper('codisto/data');
 
  	}
 

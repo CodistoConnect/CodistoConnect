@@ -25,7 +25,7 @@ class Codisto_Sync_Model_Observer
 	function __construct() {
 
 		parent::__construct();
-		$this->helper = Mage::helper('codisto/data);
+		$this->helper = Mage::helper('codisto/data');
 
  	}
 
