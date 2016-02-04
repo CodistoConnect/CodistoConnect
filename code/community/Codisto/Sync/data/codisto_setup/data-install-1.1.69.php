@@ -173,7 +173,13 @@ if(!isset($MerchantID) || !isset($HostKey))
 								Mage::getModel("core/config")->saveConfig("codisto/merchantid", $data['merchantid']);
 								Mage::getModel("core/config")->saveConfig("codisto/hostkey", $data['hostkey']);
 
+								Mage::app()->removeCache('config_store_data');
+								                                        Mage::app()->getCacheInstance()->cleanType('config');
+								                                        Mage::dispatchEvent('adminhtml_cache_refresh_type', array('type' => 'config'));
+								                                        Mage::app()->reinitStores();
+
 								$reindexRequired = true;
+
 
 								$MerchantID = $data['merchantid'];
 								$HostKey = $data['hostkey'];
