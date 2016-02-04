@@ -206,9 +206,9 @@
 		</fieldsets>
 
 		<helpers>
-			<codisto-sync>
+			<codistosync>
 				<class>Codisto_Sync_Helper</class>
-			</codisto-sync>
+			</codistosync>
 		</helpers>
 
 		<resources>

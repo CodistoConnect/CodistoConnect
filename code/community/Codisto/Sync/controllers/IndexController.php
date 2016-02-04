@@ -18,8 +18,9 @@
  * @license	 http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseController
+class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 {
+
 	public function calcAction()
 	{
 		set_time_limit(0);
@@ -285,7 +286,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 
 				$storeId = @count($ordercontent->storeid) ? (int)$ordercontent->storeid : 0;
 
-				if(!$this->getConfig($storeId))
+				if(!Mage::helper('codistosync')->getConfig($storeId))
 				{
 					//@codingStandardsIgnoreStart
 					if(function_exists('http_response_code'))
@@ -301,7 +302,7 @@ class Codisto_Sync_IndexController extends Codisto_Sync_Controller_BaseControlle
 					return;
 				}
 
-				if($this->checkHash($this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+				if(Mage::helper('codistosync')->checkHash($response, Mage::getStoreConfig('codisto/hostkey', $storeId), $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 				{
 					$productsToReindex = array();
 
