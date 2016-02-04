@@ -186,7 +186,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 									$storename = Mage::getStoreConfig('general/store_information/name', 0);
 									$storecurrency = Mage::app()->getStore(0)->getBaseCurrencyCode();
 									$email = $user->getEmail();
-									$codistoversion = Codisto_Sync_Helper_Data::getCodistoVersion();
+									$codistoversion = Mage::helper('codistosync')->getCodistoVersion();
 
 									$remoteResponse = $client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
 									'url' => $url, 'email' => $email, 'storename' => $storename, 'storecurrency' => $storecurrency, 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)))->request('POST');
@@ -278,7 +278,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						{
 							$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . $request->getServer('REQUEST_URI');
 							$magentoversion = Mage::getVersion();
-							$codistoversion = Codisto_Sync_Helper_Data::getCodistoVersion();
+							$codistoversion = Mage::helper('codistosync')->getCodistoVersion();
 
 							$logEntry = Zend_Json::encode(array(
 									'url' => $url,

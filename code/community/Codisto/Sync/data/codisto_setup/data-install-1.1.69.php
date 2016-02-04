@@ -80,7 +80,7 @@ if(!isset($MerchantID) || !isset($HostKey))
 				{
 					$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . $request->getServer('REQUEST_URI');
 					$magentoversion = Mage::getVersion();
-					$codistoversion = Codisto_Sync_Helper_Data::getCodistoVersion();
+					$codistoversion = Mage::helper('codistosync')->getCodistoVersion();
 
 					$logEntry = Zend_Json::encode(array(
 						'url' => $url,
@@ -143,7 +143,7 @@ if(!isset($MerchantID) || !isset($HostKey))
 						$version = Mage::getVersion();
 						$storename = Mage::getStoreConfig('general/store_information/name', 0);
 						$email = $user->getEmail();
-						$codistoversion = Codisto_Sync_Helper_Data::getCodistoVersion();
+						$codistoversion = Mage::helper('codistosync')->getCodistoVersion();
 
 						$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
 						if($ResellerKey)

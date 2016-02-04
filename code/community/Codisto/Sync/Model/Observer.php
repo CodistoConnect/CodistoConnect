@@ -20,6 +20,7 @@
 
 class Codisto_Sync_Model_Observer
 {
+
 	public function cronSync($synctype)
 	{
 		$SyncTimeout = 600;
@@ -549,7 +550,7 @@ class Codisto_Sync_Model_Observer
 
 	public function addScript($observer)
 	{
-		$version = (string)Mage::getConfig()->getModuleConfig('Codisto_Sync')->version;
+		$version = Mage::helper('codistosync')->getCodistoVersion();
 
 		$merchantlist = Mage::getStoreConfig('codisto/merchantid', 0);
 		if($merchantlist)
