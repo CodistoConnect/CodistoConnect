@@ -21,15 +21,7 @@
 class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 {
 	public $_publicActions = array('index', 'intro', 'settings', 'orders');
-	private $helper;
-
-	function __construct() {
-
-		parent::__construct();
-		$this->helper = Mage::helper('codisto/sync');
-
- 	}
-
+	
 	public function indexAction()
 	{
 		$re = '/\/ebaytab\/?/';
