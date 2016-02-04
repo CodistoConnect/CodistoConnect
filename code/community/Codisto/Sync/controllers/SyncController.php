@@ -25,15 +25,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	private $defaultSleep = 100000;
 	private $defaultConfigurableCount = 6;
 	private $defaultSimpleCount = 250;
-	private $helper;
-
-	function __construct() {
-
-		parent::__construct();
-		$this->helper = Mage::helper('codisto-sync');
-
- 	}
-
 
 	public function indexAction()
 	{
@@ -52,7 +43,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
 
-		if(!$helper->getConfig($storeId))
+		if(!Mage::helper('codistosync')->getConfig($storeId))
 		{
 			//@codingStandardsIgnoreStart
 			if(function_exists('http_response_code'))
@@ -81,7 +72,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 				case 'GET':
 
-					if ($helper->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if (Mage::helper('codistosync')->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 					{
 						try
 						{
@@ -213,7 +204,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 				case 'EXECUTECHUNK':
 
-					if ($helper->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if (Mage::helper('codistosync')->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 					{
 						try
 						{
@@ -313,7 +304,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					die;
 
 				case 'PRODUCTCOUNT':
-					if ($helper->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if (Mage::helper('codistosync')->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 					{
 						$syncObject = Mage::getModel('codistosync/sync');
 						$totals = $syncObject->ProductTotals($storeId);
@@ -343,7 +334,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 				case 'EXECUTEFIRST':
 
-					if ($helper->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if (Mage::helper('codistosync')->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 					{
 						try
 						{
@@ -433,7 +424,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 				case 'PULL':
 
-					if ($helper->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if (Mage::helper('codistosync')->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 					{
 						try
 						{
@@ -520,7 +511,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 				case 'TAX':
 
-					if ($helper->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if (Mage::helper('codistosync')->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 					{
 						try
 						{
@@ -592,7 +583,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 				case 'STOREVIEW':
 
-					if ($helper->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if (Mage::helper('codistosync')->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 					{
 						try
 						{
@@ -661,7 +652,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 				case 'ORDERS':
 
-					if ($helper->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if (Mage::helper('codistosync')->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 					{
 						try
 						{
@@ -737,7 +728,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 				case 'TEMPLATE':
 
-					if ($helper->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+					if (Mage::helper('codistosync')->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 					{
 						try
 						{
@@ -920,7 +911,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
 
-		if(!$helper->getConfig($storeId))
+		if(!Mage::helper('codistosync')->getConfig($storeId))
 		{
 			//@codingStandardsIgnoreStart
 			if(function_exists('http_response_code'))
@@ -940,9 +931,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 		$response->setHeader('Pragma', 'no-cache', true);
 
-		if($helper->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+		if(Mage::helper('codistosync')->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 		{
-			$version = $helper->getCodistoVersion();
+			$version = Mage::helper('codistosync')->getCodistoVersion();
 			$response->setHeader('X-Codisto-Version', $version, true);
 			$response->setBody('OK');
 		}
@@ -971,7 +962,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
 
-		if(!$helper->getConfig($storeId))
+		if(!Mage::helper('codistosync')->getConfig($storeId))
 		{
 			//@codingStandardsIgnoreStart
 			if(function_exists('http_response_code'))
@@ -1006,7 +997,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
 
-		if(!$helper->getConfig($storeId))
+		if(!Mage::helper('codistosync')->getConfig($storeId))
 		{
 			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
@@ -1016,7 +1007,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			return;
 		}
 
-		if($helper->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+		if(Mage::helper('codistosync')->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 		{
 			$config = Mage::getConfig();
 
@@ -1063,7 +1054,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
 
-		if(!$helper->getConfig($storeId))
+		if(!Mage::helper('codistosync')->getConfig($storeId))
 		{
 			//@codingStandardsIgnoreStart
 			if(function_exists('http_response_code'))
@@ -1079,7 +1070,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			return;
 		}
 
-		if($helper->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+		if(Mage::helper('codistosync')->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 		{
 			$MerchantID = Zend_Json::decode($this->config['MerchantID']);
 			if(!is_array($MerchantID))

@@ -20,14 +20,6 @@
 
 class Codisto_Sync_Model_Observer
 {
-	private $helper;
-
-	function __construct() {
-
-		parent::__construct();
-		$this->helper = Mage::helper('codisto-sync');
-
- 	}
 
 	public function cronSync($synctype)
 	{
@@ -558,7 +550,7 @@ class Codisto_Sync_Model_Observer
 
 	public function addScript($observer)
 	{
-		$version = $helper->getCodistoVersion();
+		$version = Mage::helper('codistosync')->getCodistoVersion();
 
 		$merchantlist = Mage::getStoreConfig('codisto/merchantid', 0);
 		if($merchantlist)

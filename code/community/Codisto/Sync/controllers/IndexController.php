@@ -20,14 +20,6 @@
 
 class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 {
-	private $helper;
-
-	function __construct() {
-
-		parent::__construct();
-		$this->helper = Mage::helper('codisto-sync');
-
- 	}
 
 	public function calcAction()
 	{
@@ -294,7 +286,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				$storeId = @count($ordercontent->storeid) ? (int)$ordercontent->storeid : 0;
 
-				if(!$helper->getConfig($storeId))
+				if(!Mage::helper('codistosync')->getConfig($storeId))
 				{
 					//@codingStandardsIgnoreStart
 					if(function_exists('http_response_code'))

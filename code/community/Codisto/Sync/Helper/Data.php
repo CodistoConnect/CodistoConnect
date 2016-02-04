@@ -48,5 +48,5 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		$hostKey = Mage::getStoreConfig('codisto/hostkey', $storeId);
 
 		return isset($merchantID) && $merchantID != ""	&&	isset($hostKey) && $hostKey != "";
-
+	}
 }

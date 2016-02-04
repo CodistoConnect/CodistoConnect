@@ -21,7 +21,7 @@
 class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 {
 	public $_publicActions = array('index', 'intro', 'settings', 'orders');
-	
+
 	public function indexAction()
 	{
 		$re = '/\/ebaytab\/?/';

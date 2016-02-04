@@ -17,7 +17,7 @@
  * @copyright   Copyright (c) 2015 On Technology Pty. Ltd. (http://codisto.com/)
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
-$helper = Mage::helper('codisto-sync');
+
 $MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
 $HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 
@@ -77,7 +77,7 @@ if(!isset($MerchantID) || !isset($HostKey))
 			{
 				$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . $request->getServer('REQUEST_URI');
 				$magentoversion = Mage::getVersion();
-				$codistoversion = $helper->getCodistoVersion();
+				$codistoversion = Mage::helper('codistosync')->getCodistoVersion();
 
 				$logEntry = Zend_Json::encode(array(
 						'url' => $url,
@@ -138,7 +138,7 @@ if(!isset($MerchantID) || !isset($HostKey))
 					$version = Mage::getVersion();
 					$storename = Mage::getStoreConfig('general/store_information/name', 0);
 					$email = $user->getEmail();
-					$codistoversion = $helper->getCodistoVersion();
+					$codistoversion = Mage::helper('codistosync')->getCodistoVersion();
 
 					$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
 					if($ResellerKey)
