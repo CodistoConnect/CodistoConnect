@@ -17,7 +17,7 @@
  * @copyright   Copyright (c) 2015 On Technology Pty. Ltd. (http://codisto.com/)
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
-$helper = Mage::helper('codisto/data');
+$helper = Mage::helper('codisto-sync');
 $MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
 $HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 
