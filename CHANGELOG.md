@@ -1,5 +1,25 @@
 # Change Log
 
+## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
+
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.69...HEAD)
+
+**Implemented enhancements:**
+
+- Lock and configuration improvements for installation [\#225](https://github.com/CodistoConnect/CodistoConnect/pull/225) ([bradmccormack](https://github.com/bradmccormack))
+- better cleaner handling of no admin key setting [\#223](https://github.com/CodistoConnect/CodistoConnect/pull/223) ([lamery](https://github.com/lamery))
+- deal with no admin keys setting [\#222](https://github.com/CodistoConnect/CodistoConnect/pull/222) ([lamery](https://github.com/lamery))
+
+**Fixed bugs:**
+
+- deal with no admin keys setting [\#222](https://github.com/CodistoConnect/CodistoConnect/pull/222) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- release [\#228](https://github.com/CodistoConnect/CodistoConnect/pull/228) ([lamery](https://github.com/lamery))
+- - Correct helper name node in config [\#227](https://github.com/CodistoConnect/CodistoConnect/pull/227) ([bradmccormack](https://github.com/bradmccormack))
+- Refactor to not extend Base controller etc which were causing problems in some situations with autoload [\#226](https://github.com/CodistoConnect/CodistoConnect/pull/226) ([bradmccormack](https://github.com/bradmccormack))
+
 ## [1.1.69](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.69) (2016-01-25)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.68...1.1.69)
 
