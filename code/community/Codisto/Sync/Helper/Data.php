@@ -35,7 +35,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 			$base = hash('sha256', $r, true);
 			$checkHash = base64_encode($base);
 
-			$hashOK = $Hash = $checkHash;
+			$hashOK = $Hash == $checkHash;
 		}
 
 		return $hashOK;
