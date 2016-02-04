@@ -302,8 +302,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					return;
 				}
 
-				if(
-				->checkHash($response, $this->config['HostKey'], $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+				if(Mage::helper('codistosync')->checkHash($response, Mage::getStoreConfig('codisto/hostkey', $storeId), $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 				{
 					$productsToReindex = array();
 
