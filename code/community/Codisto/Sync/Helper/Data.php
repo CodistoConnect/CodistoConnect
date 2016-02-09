@@ -101,31 +101,31 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 	//Determine if we can create a new merchant. Prevent multiple requests from being able to complete signups
 	public function createMerchantwithLock()
 	{
-			$createMerchant = false;
-			$lockFile = Mage::getBaseDir('var') . '/codisto-lock';
+		$createMerchant = false;
+		$lockFile = Mage::getBaseDir('var') . '/codisto-lock';
 
-			$lockDb = new PDO('sqlite:' . $lockFile);
-			$lockDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-			$lockDb->setAttribute(PDO::ATTR_TIMEOUT, 1);
-			$lockDb->exec('BEGIN EXCLUSIVE TRANSACTION');
-			$lockDb->exec('CREATE TABLE IF NOT EXISTS Lock (id real NOT NULL)');
+		$lockDb = new PDO('sqlite:' . $lockFile);
+		$lockDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		$lockDb->setAttribute(PDO::ATTR_TIMEOUT, 1);
+		$lockDb->exec('BEGIN EXCLUSIVE TRANSACTION');
+		$lockDb->exec('CREATE TABLE IF NOT EXISTS Lock (id real NOT NULL)');
 
-			$lockQuery = $lockDb->query('SELECT id FROM Lock UNION SELECT 0 WHERE NOT EXISTS(SELECT 1 FROM Lock)');
-			$lockQuery->execute();
-			$lockRow = $lockQuery->fetch();
-			$timeStamp = $lockRow['id'];
+		$lockQuery = $lockDb->query('SELECT id FROM Lock UNION SELECT 0 WHERE NOT EXISTS(SELECT 1 FROM Lock)');
+		$lockQuery->execute();
+		$lockRow = $lockQuery->fetch();
+		$timeStamp = $lockRow['id'];
 
-			if($timeStamp + 5000000 < microtime(true))
-			{
-				$createMerchant = true;
+		if($timeStamp + 5000000 < microtime(true))
+		{
+			$createMerchant = true;
 
-				$lockDb->exec('DELETE FROM Lock');
-				$lockDb->exec('INSERT INTO Lock (id) VALUES('. microtime(true) .')');
-			}
+			$lockDb->exec('DELETE FROM Lock');
+			$lockDb->exec('INSERT INTO Lock (id) VALUES('. microtime(true) .')');
+		}
 
-			$lockDb->exec('COMMIT TRANSACTION');
-			$lockDb = null;
-			return $createMerchant;
+		$lockDb->exec('COMMIT TRANSACTION');
+		$lockDb = null;
+		return $createMerchant;
 	}
 
 	//Register a new merchant with Codisto
@@ -322,7 +322,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 			}
 			catch (Exception $e)
 			{
-					Mage::log($e->getMessage());
+				Mage::log($e->getMessage());
 			}
 		}
 	}
