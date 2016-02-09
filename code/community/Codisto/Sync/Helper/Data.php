@@ -180,7 +180,18 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 					$ResellerKey = '0';
 				}
 
-				$client = new Zend_Http_Client("https://ui.codisto.com/create", array( 'keepalive' => true, 'maxredirects' => 0 ));
+				$curlOptions = array(CURLOPT_TIMEOUT => 60, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0);
+
+				$client = new Zend_Http_Client("https://ui.codisto.com/create", array(
+					'adapter' => 'Zend_Http_Client_Adapter_Curl',
+					'curloptions' => $curlOptions,
+					'keepalive' => true,
+					'strict' => false,
+					'strictredirects' => true,
+					'maxredirects' => 0,
+					'timeout' => 30
+				));
+
 				$client->setHeaders('Content-Type', 'application/json');
 				for($retry = 0; ; $retry++)
 				{
