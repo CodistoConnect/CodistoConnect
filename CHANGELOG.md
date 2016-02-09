@@ -1,5 +1,13 @@
 # Change Log
 
+## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
+
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.70...HEAD)
+
+**Merged pull requests:**
+
+- Jl remove test failed [\#229](https://github.com/CodistoConnect/CodistoConnect/pull/229) ([jlivas](https://github.com/jlivas))
+
 ## [1.1.70](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.70) (2016-02-04)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.69...1.1.70)
 
