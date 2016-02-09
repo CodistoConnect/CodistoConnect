@@ -933,6 +933,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		if(Mage::helper('codistosync')->checkHash($response, Mage::getStoreConfig('codisto/hostkey', $storeId), $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 		{
+			$extSyncFailed = Mage::getBaseDir('var') . '/codisto-external-sync-failed';
+			if(file_exists($extSyncFailed))
+				unlink($extSyncFailed);
+			$extTestFailed = Mage::getBaseDir('var') . '/codisto-external-test-failed';
+			if(file_exists($extTestFailed))
+				unlink($extTestFailed);
+
 			$version = Mage::helper('codistosync')->getCodistoVersion();
 			$response->setHeader('X-Codisto-Version', $version, true);
 			$response->setBody('OK');
