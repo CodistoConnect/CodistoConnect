@@ -1,8 +1,18 @@
 # Change Log
 
-## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
+## [1.1.72](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.72) (2016-02-09)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.71...1.1.72)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.70...HEAD)
+**Fixed bugs:**
+
+- ensure we only collect order data for codisto orders [\#230](https://github.com/CodistoConnect/CodistoConnect/pull/230) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#231](https://github.com/CodistoConnect/CodistoConnect/pull/231) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.71](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.71) (2016-02-09)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.70...1.1.71)
 
 **Merged pull requests:**
 
