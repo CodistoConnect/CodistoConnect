@@ -272,6 +272,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		ignore_user_abort(false);
 
 		$request = $this->getRequest();
+		$response = $this->getResponse();
 		$method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
 		$contenttype = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : '';
 		$server = $request->getServer();
