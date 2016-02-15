@@ -25,43 +25,43 @@ if (!function_exists('hash_equals')) {
 	{
 
 		/**
-		 * This file is part of the hash_equals library
-		 *
-		 * For the full copyright and license information, please view the LICENSE
-		 * file that was distributed with this source code.
-		 *
-		 * @copyright Copyright (c) 2013-2014 Rouven Weßling <http://rouvenwessling.de>
-		 * @license http://opensource.org/licenses/MIT MIT
-		 */
+		* This file is part of the hash_equals library
+		*
+		* For the full copyright and license information, please view the LICENSE
+		* file that was distributed with this source code.
+		*
+		* @copyright Copyright (c) 2013-2014 Rouven Weßling <http://rouvenwessling.de>
+		* @license http://opensource.org/licenses/MIT MIT
+		*/
 
 		// We jump trough some hoops to match the internals errors as closely as possible
 		$argc = func_num_args();
-        $params = func_get_args();
+		$params = func_get_args();
 
-        if ($argc < 2) {
-            trigger_error("hash_equals() expects at least 2 parameters, {$argc} given", E_USER_WARNING);
-            return null;
-        }
+		if ($argc < 2) {
+			trigger_error("hash_equals() expects at least 2 parameters, {$argc} given", E_USER_WARNING);
+			return null;
+		}
 
-        if (!is_string($known_string)) {
-        	trigger_error("hash_equals(): Expected known_string to be a string, " . gettype($known_string) . " given", E_USER_WARNING);
-            return false;
-        }
-        if (!is_string($user_string)) {
-        	trigger_error("hash_equals(): Expected user_string to be a string, " . gettype($user_string) . " given", E_USER_WARNING);
-            return false;
-        }
+		if (!is_string($known_string)) {
+			trigger_error("hash_equals(): Expected known_string to be a string, " . gettype($known_string) . " given", E_USER_WARNING);
+			return false;
+		}
+		if (!is_string($user_string)) {
+			trigger_error("hash_equals(): Expected user_string to be a string, " . gettype($user_string) . " given", E_USER_WARNING);
+			return false;
+		}
 
-        if (strlen($known_string) !== strlen($user_string)) {
-        	return false;
-        }
+		if (strlen($known_string) !== strlen($user_string)) {
+			return false;
+		}
 		$len = strlen($known_string);
 		$result = 0;
-        for ($i = 0; $i < $len; $i++) {
-            $result |= (ord($known_string[$i]) ^ ord($user_string[$i]));
-        }
-        // They are only identical strings if $result is exactly 0...
-        return 0 === $result;
+		for ($i = 0; $i < $len; $i++) {
+			$result |= (ord($known_string[$i]) ^ ord($user_string[$i]));
+		}
+		// They are only identical strings if $result is exactly 0...
+		return 0 === $result;
 	}
 }
 
@@ -97,4 +97,243 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 		return isset($merchantID) && $merchantID != ""	&&	isset($hostKey) && $hostKey != "";
 	}
-}
+
+	//Determine if we can create a new merchant. Prevent multiple requests from being able to complete signups
+	public function createMerchantwithLock()
+	{
+		$createMerchant = false;
+		$lockFile = Mage::getBaseDir('var') . '/codisto-lock';
+
+		$lockDb = new PDO('sqlite:' . $lockFile);
+		$lockDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		$lockDb->setAttribute(PDO::ATTR_TIMEOUT, 1);
+		$lockDb->exec('BEGIN EXCLUSIVE TRANSACTION');
+		$lockDb->exec('CREATE TABLE IF NOT EXISTS Lock (id real NOT NULL)');
+
+		$lockQuery = $lockDb->query('SELECT id FROM Lock UNION SELECT 0 WHERE NOT EXISTS(SELECT 1 FROM Lock)');
+		$lockQuery->execute();
+		$lockRow = $lockQuery->fetch();
+		$timeStamp = $lockRow['id'];
+
+		if($timeStamp + 5000000 < microtime(true))
+		{
+			$createMerchant = true;
+
+			$lockDb->exec('DELETE FROM Lock');
+			$lockDb->exec('INSERT INTO Lock (id) VALUES('. microtime(true) .')');
+		}
+
+		$lockDb->exec('COMMIT TRANSACTION');
+		$lockDb = null;
+		return $createMerchant;
+	}
+
+	//Register a new merchant with Codisto
+	public function registerMerchant()
+	{
+
+		try
+		{
+
+			$MerchantID  = null;
+			$HostKey = null;
+
+			// Load admin/user so that cookie deserialize will work properly
+			Mage::getModel("admin/user");
+
+			// Get the admin session
+			$session = Mage::getSingleton('admin/session');
+
+			// Get the user object from the session
+			$user = $session->getUser();
+			if(!$user)
+			{
+				$user = Mage::getModel('admin/user')->getCollection()->getFirstItem();
+			}
+
+			$createLockFile = Mage::getBaseDir('var') . '/codisto-create-lock';
+
+			$createLockDb = new PDO('sqlite:' . $createLockFile);
+			$createLockDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+			$createLockDb->setAttribute(PDO::ATTR_TIMEOUT, 60);
+			$createLockDb->exec('BEGIN EXCLUSIVE TRANSACTION');
+
+			Mage::app()->getStore(0)->resetConfig();
+
+			$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
+
+			if(!isset($MerchantID) || !isset($HostKey))
+			{
+				$url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
+				$version = Mage::getVersion();
+				$storename = Mage::getStoreConfig('general/store_information/name', 0);
+				$email = $user->getEmail();
+				$codistoversion = $this->getCodistoVersion();
+				$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
+				if($ResellerKey)
+				{
+					$ResellerKey = intval(trim((string)$ResellerKey));
+				}
+				else
+				{
+					$ResellerKey = '0';
+				}
+
+				$curlOptions = array(CURLOPT_TIMEOUT => 60, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0);
+
+				$client = new Zend_Http_Client("https://ui.codisto.com/create", array(
+					'adapter' => 'Zend_Http_Client_Adapter_Curl',
+					'curloptions' => $curlOptions,
+					'keepalive' => true,
+					'strict' => false,
+					'strictredirects' => true,
+					'maxredirects' => 0,
+					'timeout' => 30
+				));
+
+				$client->setHeaders('Content-Type', 'application/json');
+				for($retry = 0; ; $retry++)
+				{
+					try
+					{
+						$remoteResponse = $client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
+						'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)))->request('POST');
+
+						if(!$remoteResponse->isSuccessful())
+						{
+							throw new Exception('Error Creating Account');
+						}
+
+						// @codingStandardsIgnoreStart
+						$data = Zend_Json::decode($remoteResponse->getRawBody(), true);
+						// @codingStandardsIgnoreEnd
+
+						//If the merchantid and hostkey was present in response body
+						if(isset($data['merchantid']) && $data['merchantid'] &&	isset($data['hostkey']) && $data['hostkey'])
+						{
+							$MerchantID = $data['merchantid'];
+							$HostKey = $data['hostkey'];
+
+							Mage::getModel("core/config")->saveConfig("codisto/merchantid",  $MerchantID);
+							Mage::getModel("core/config")->saveConfig("codisto/hostkey", $HostKey);
+
+							Mage::app()->removeCache('config_store_data');
+							Mage::app()->getCacheInstance()->cleanType('config');
+							Mage::dispatchEvent('adminhtml_cache_refresh_type', array('type' => 'config'));
+							Mage::app()->reinitStores();
+
+							//See if Codisto can reach this server. If not, then attempt to schedule Magento cron entries
+							try
+							{
+
+								$h = new Zend_Http_Client();
+								$h->setConfig(array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 20 ));
+								$h->setStream();
+								$h->setUri('https://ui.codisto.com/'.$MerchantID.'/testendpoint/');
+								$h->setHeaders('X-HostKey', $HostKey);
+								$testResponse = $h->request('GET');
+								$testdata = Zend_Json::decode($testResponse->getRawBody(), true);
+
+								if(isset($testdata['ack']) && $testdata['ack'] == "FAILED") {
+
+									//Endpoint Unreachable - Turn on cron fallback
+									$file = new Varien_Io_File();
+									$file->open(array('path' => Mage::getBaseDir('var')));
+									$file->write('codisto-external-sync-failed', '0');
+									$file->close();
+
+								}
+
+							}
+							//Codisto can't reach this url so register with Magento cron to pull
+							catch (Exception $e) {
+
+								//Check in cron
+								$file = new Varien_Io_File();
+								$file->open(array('path' => Mage::getBaseDir('var')));
+								$file->write('codisto-external-test-failed', '0');
+								$file->close();
+
+								Mage::log('Error testing endpoint and writing failed sync file. Message: ' . $e->getMessage() . ' on line: ' . $e->getLine());
+
+							}
+						}
+					}
+					//Attempt to retry register
+					catch(Exception $e)
+					{
+						Mage::log($e->getMessage());
+						//Attempt again to register if we
+						if($retry < 3)
+						{
+							usleep(1000000);
+							continue;
+						}
+						//Give in , we can't register at the moment
+						throw $e;
+					}
+
+					break;
+				}
+			}
+
+			$createLockDb->exec('COMMIT TRANSACTION');
+			$createLockDb = null;
+		}
+		catch(Exception $e)
+		{
+			// remove lock file immediately if any error during account creation
+			@unlink($lockFile);
+		}
+		return $MerchantID;
+	}
+
+	public function logExceptionCodisto(Zend_Controller_Request_Http $request, Exception $e, $endpoint)
+	{
+		try
+		{
+
+			$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . $request->getServer('REQUEST_URI');
+			$magentoversion = Mage::getVersion();
+			$codistoversion = $this->getCodistoVersion();
+
+			$logEntry = Zend_Json::encode(array(
+				'url' => $url,
+				'magento_version' => $magentoversion,
+				'codisto_version' => $codistoversion,
+				'message' => $e->getMessage(),
+				'code' => $e->getCode(),
+				'file' => $e->getFile(),
+				'line' => $e->getLine()));
+
+				Mage::log('CodistoConnect '.$logEntry);
+
+				$client = new Zend_Http_Client($endpoint, array( 'adapter' => 'Zend_Http_Client_Adapter_Curl', 'curloptions' => array(CURLOPT_SSL_VERIFYPEER => false), 'keepalive' => false, 'maxredirects' => 0 ));
+				$client->setHeaders('Content-Type', 'application/json');
+				$client->setRawData($logEntry);
+				$client->request('POST');
+			}
+			catch(Exception $e2)
+			{
+				Mage::log("Couldn't notify " . $endpoint . " endpoint of install error. Exception details " . $e->getMessage() . " on line: " . $e->getLine());
+			}
+		}
+
+		public function eBayReIndex()
+		{
+			try
+			{
+
+				$indexer = Mage::getModel('index/process');
+				$indexer->load('codistoebayindex', 'indexer_code')
+				->changeStatus(Mage_Index_Model_Process::STATUS_REQUIRE_REINDEX)
+				->reindexAll();
+
+			}
+			catch (Exception $e)
+			{
+				Mage::log($e->getMessage());
+			}
+		}
+	}
