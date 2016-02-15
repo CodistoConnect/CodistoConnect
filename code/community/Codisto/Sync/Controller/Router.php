@@ -196,6 +196,15 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					}
 				}
 
+				if($MerchantID == null)
+				{
+					$response->setBody('<!DOCTYPE html><html><head></head><body><h1>Unable to Register</h1><p>Sorry, we were unable to register your Codisto account,
+					please contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p></body></html>');
+
+					return true;
+				}
+
+
 				if(is_array($MerchantID))
 				{
 					$merchantmatch = array();
