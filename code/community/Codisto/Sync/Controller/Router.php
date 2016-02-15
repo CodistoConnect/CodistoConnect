@@ -270,7 +270,9 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 				$curlOptions = array(CURLOPT_TIMEOUT => 60, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0);
 				$acceptEncoding = $request->getHeader('Accept-Encoding');
-				if(!$acceptEncoding)
+				$zlibEnabled = strtoupper(ini_get('zlib.output_compression'));
+
+				if(!$acceptEncoding || ($zlibEnabled == 1 || $zlibEnabled == 'ON'))
 				$curlOptions[CURLOPT_ENCODING] = '';
 
 				// proxy request

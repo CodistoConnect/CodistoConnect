@@ -1,5 +1,23 @@
 # Change Log
 
+## [1.1.74](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.74) (2016-02-11)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.73...1.1.74)
+
+**Fixed bugs:**
+
+- - Fix variable not in scope [\#236](https://github.com/CodistoConnect/CodistoConnect/pull/236) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.73](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.73) (2016-02-11)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.72...1.1.73)
+
+**Implemented enhancements:**
+
+- - Detect if zlib output compression is enabled. This fixes cases wher… [\#234](https://github.com/CodistoConnect/CodistoConnect/pull/234) ([bradmccormack](https://github.com/bradmccormack))
+
+**Merged pull requests:**
+
+- Release [\#235](https://github.com/CodistoConnect/CodistoConnect/pull/235) ([bradmccormack](https://github.com/bradmccormack))
+
 ## [1.1.72](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.72) (2016-02-09)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.71...1.1.72)
 

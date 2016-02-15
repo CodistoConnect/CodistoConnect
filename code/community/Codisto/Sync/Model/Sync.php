@@ -1084,7 +1084,7 @@ class Codisto_Sync_Model_Sync
 			$configurableProducts = Mage::getModel('catalog/product')->getCollection()
 								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'configurable'))
-								->addAttributeToFilter('entity_id', array('gt' => $this->currentEntityId));
+								->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId));
 
 			$sqlCheckStore = '(`e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))';
 
@@ -1136,7 +1136,7 @@ class Codisto_Sync_Model_Sync
 			$simpleProducts = Mage::getModel('catalog/product')->getCollection()
 								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'simple'))
-								->addAttributeToFilter('entity_id', array('gt' => $this->currentEntityId));
+								->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId));
 
 			$sqlCheckStore = '(`e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))';
 			$sqlCheckSimple = '(`e`.entity_id NOT IN (SELECT product_id FROM `'.$superLinkName.'` WHERE parent_id IN (SELECT entity_id FROM `'.$catalogEntityName.'` WHERE type_id = \'configurable\' AND entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))))';
