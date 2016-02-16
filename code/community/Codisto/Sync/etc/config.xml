@@ -251,6 +251,13 @@
 					</modules>
 				</args>
 			</adminhtml>
+			<codisto-sync>
+				<use>admin</use>
+				<args>
+					<module>Codisto_Sync</module>
+					<frontName>codisto-sync</frontName>
+				</args>
+			</codisto-sync>
 		</routers>
 	</admin>
 
