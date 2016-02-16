@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.1.75](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.75) (2016-02-16)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.74...1.1.75)
+
+**Fixed bugs:**
+
+- ensure comparison on entity id is integer not string [\#237](https://github.com/CodistoConnect/CodistoConnect/pull/237) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#241](https://github.com/CodistoConnect/CodistoConnect/pull/241) ([bradmccormack](https://github.com/bradmccormack))
+- - Make Merchant registration consistent. [\#232](https://github.com/CodistoConnect/CodistoConnect/pull/232) ([bradmccormack](https://github.com/bradmccormack))
+
 ## [1.1.74](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.74) (2016-02-11)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.73...1.1.74)
 
