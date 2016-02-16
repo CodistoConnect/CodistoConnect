@@ -1,5 +1,24 @@
 # Change Log
 
+## [1.1.76](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.76) (2016-02-16)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.75...1.1.76)
+
+**Implemented enhancements:**
+
+- add admin router to cover different admin base url case [\#244](https://github.com/CodistoConnect/CodistoConnect/pull/244) ([lamery](https://github.com/lamery))
+
+**Fixed bugs:**
+
+- add admin router to cover different admin base url case [\#244](https://github.com/CodistoConnect/CodistoConnect/pull/244) ([lamery](https://github.com/lamery))
+
+**Closed issues:**
+
+- Installer fails on PHP7 [\#239](https://github.com/CodistoConnect/CodistoConnect/issues/239)
+
+**Merged pull requests:**
+
+- Release [\#245](https://github.com/CodistoConnect/CodistoConnect/pull/245) ([bradmccormack](https://github.com/bradmccormack))
+
 ## [1.1.75](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.75) (2016-02-16)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.74...1.1.75)
 
