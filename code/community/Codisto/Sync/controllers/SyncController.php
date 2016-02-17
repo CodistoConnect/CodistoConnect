@@ -51,9 +51,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 										->addFieldToFilter('store_id', array('gt' => 0))
 										->setOrder('store_id', 'ASC');
 
-			$firstStore = $stores->getFirstItem();
-			if(is_object($firstStore) && $firstStore->getId())
-				$storeId = $firstStore->getId();
+			if($stores->getSize() == 1)
+			{
+				$firstStore = $stores->getFirstItem();
+				if(is_object($firstStore) && $firstStore->getId())
+					$storeId = $firstStore->getId();
+			}
 		}
 
 		if(!Mage::helper('codistosync')->getConfig($storeId))
