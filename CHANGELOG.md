@@ -1,5 +1,72 @@
 # Change Log
 
+## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
+
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.76...HEAD)
+
+**Fixed bugs:**
+
+- fix servermage typo [\#247](https://github.com/CodistoConnect/CodistoConnect/pull/247) ([lamery](https://github.com/lamery))
+
+**Closed issues:**
+
+- Routing when Admin base URL differs [\#238](https://github.com/CodistoConnect/CodistoConnect/issues/238)
+
+**Merged pull requests:**
+
+- Release [\#248](https://github.com/CodistoConnect/CodistoConnect/pull/248) ([bradmccormack](https://github.com/bradmccormack))
+- comment regarding appsec1034 [\#246](https://github.com/CodistoConnect/CodistoConnect/pull/246) ([lamery](https://github.com/lamery))
+- - Bump Magento Community version - Tested OK [\#242](https://github.com/CodistoConnect/CodistoConnect/pull/242) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.76](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.76) (2016-02-16)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.75...1.1.76)
+
+**Implemented enhancements:**
+
+- add admin router to cover different admin base url case [\#244](https://github.com/CodistoConnect/CodistoConnect/pull/244) ([lamery](https://github.com/lamery))
+
+**Fixed bugs:**
+
+- add admin router to cover different admin base url case [\#244](https://github.com/CodistoConnect/CodistoConnect/pull/244) ([lamery](https://github.com/lamery))
+
+**Closed issues:**
+
+- Installer fails on PHP7 [\#239](https://github.com/CodistoConnect/CodistoConnect/issues/239)
+
+**Merged pull requests:**
+
+- Release [\#245](https://github.com/CodistoConnect/CodistoConnect/pull/245) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.75](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.75) (2016-02-16)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.74...1.1.75)
+
+**Fixed bugs:**
+
+- ensure comparison on entity id is integer not string [\#237](https://github.com/CodistoConnect/CodistoConnect/pull/237) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#241](https://github.com/CodistoConnect/CodistoConnect/pull/241) ([bradmccormack](https://github.com/bradmccormack))
+- - Make Merchant registration consistent. [\#232](https://github.com/CodistoConnect/CodistoConnect/pull/232) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.74](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.74) (2016-02-11)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.73...1.1.74)
+
+**Fixed bugs:**
+
+- - Fix variable not in scope [\#236](https://github.com/CodistoConnect/CodistoConnect/pull/236) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.73](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.73) (2016-02-11)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.72...1.1.73)
+
+**Implemented enhancements:**
+
+- - Detect if zlib output compression is enabled. This fixes cases wher… [\#234](https://github.com/CodistoConnect/CodistoConnect/pull/234) ([bradmccormack](https://github.com/bradmccormack))
+
+**Merged pull requests:**
+
+- Release [\#235](https://github.com/CodistoConnect/CodistoConnect/pull/235) ([bradmccormack](https://github.com/bradmccormack))
+
 ## [1.1.72](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.72) (2016-02-09)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.71...1.1.72)
 

@@ -1,24 +1,72 @@
 <?php
 /**
- * Codisto eBay Sync Extension
- *
- * NOTICE OF LICENSE
- *
- * This source file is subject to the Open Software License (OSL 3.0)
- * that is bundled with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://opensource.org/licenses/osl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magentocommerce.com so we can send you a copy immediately.
- *
- * @category    Codisto
- * @package     Codisto_Sync
- * @copyright   Copyright (c) 2015 On Technology Pty. Ltd. (http://codisto.com/)
- * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
- */
+* Codisto eBay Sync Extension
+*
+* NOTICE OF LICENSE
+*
+* This source file is subject to the Open Software License (OSL 3.0)
+* that is bundled with this package in the file LICENSE.txt.
+* It is also available through the world-wide-web at this URL:
+* http://opensource.org/licenses/osl-3.0.php
+* If you did not receive a copy of the license and are unable to
+* obtain it through the world-wide-web, please send an email
+* to license@magentocommerce.com so we can send you a copy immediately.
+*
+* @category    Codisto
+* @package     Codisto_Sync
+* @copyright   Copyright (c) 2015 On Technology Pty. Ltd. (http://codisto.com/)
+* @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+*/
 
 class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_Admin {
+
+	private function registerMerchant(Zend_Controller_Request_Http $request)
+	{
+		$merchantID = null;
+		$createMerchant = false;
+
+		try
+		{
+			if(!extension_loaded('pdo'))
+			{
+				throw new Exception('(PHP Data Objects) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>', 999);
+			}
+
+			if(!in_array("sqlite",PDO::getAvailableDrivers(), TRUE))
+			{
+				throw new PDOException('(sqlite PDO Driver) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>', 999);
+			}
+
+			//Can this request create a new merchant ?
+			$createMerchant  = Mage::helper('codistosync')->createMerchantwithLock();
+		}
+
+		//Something else happened such as PDO related exception
+		catch(Exception $e)
+		{
+
+			//If competing requests are coming in as the extension is installed the lock above will be held ... don't report this back to Codisto .
+			if($e->getCode() != "HY000")
+			{
+				//Otherwise report  other exception details to Codisto regarding register
+				Mage::helper('codistosync')->logExceptionCodisto($request, $e, "https://ui.codisto.com/installed");
+			}
+			throw $e;
+		}
+
+		if($createMerchant)
+		{
+			$merchantID = Mage::helper('codistosync')->registerMerchant($request);
+		}
+
+		if($merchantID)
+		{
+			$merchantID = Zend_Json::decode($merchantID);
+		}
+
+		return $merchantID;
+	}
+
 
 	public function match(Zend_Controller_Request_Http $request)
 	{
@@ -36,7 +84,6 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 			$front = $this->getFront();
 			$response = $front->getResponse();
-
 			$response->clearAllHeaders();
 
 			// redirect to product page
@@ -69,9 +116,9 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 			// unlock session
 			if(class_exists('Zend_Session', false) && Zend_Session::isStarted())
-				Zend_Session::writeClose();
+			Zend_Session::writeClose();
 			if(isset($_SESSION))
-				session_write_close();
+			session_write_close();
 
 			// determine logged in state
 			$loggedIn = false;
@@ -129,182 +176,10 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				{
 					try
 					{
-
-						if(!extension_loaded('pdo'))
-						{
-							throw new Exception('(PHP Data Objects) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>', 999);
-						}
-
-						if(!in_array("sqlite",PDO::getAvailableDrivers(), TRUE))
-						{
-							throw new PDOException('(sqlite PDO Driver) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>', 999);
-						}
-
-						$createLockFile = Mage::getBaseDir('var') . '/codisto-create-lock';
-
-						$createLockDb = new PDO('sqlite:' . $createLockFile);
-						$createLockDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-						$createLockDb->setAttribute(PDO::ATTR_TIMEOUT, 60);
-						$createLockDb->exec('BEGIN EXCLUSIVE TRANSACTION');
-
-						Mage::app()->getStore(0)->resetConfig();
-
-						$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
-						$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
-
-						if(!isset($MerchantID) || !isset($HostKey))
-						{
-
-							$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
-							if($ResellerKey)
-							{
-								$ResellerKey = intval(trim((string)$ResellerKey));
-							}
-							else
-							{
-								$ResellerKey = '0';
-							}
-
-							$client = new Zend_Http_Client('https://ui.codisto.com/create', array( 'keepalive' => true, 'maxredirects' => 0 ));
-							$client->setHeaders('Content-Type', 'application/json');
-
-							for($retry = 0; ; $retry++)
-							{
-								try
-								{
-									Mage::getModel("admin/user");
-									$session = Mage::getSingleton('admin/session');
-
-									$user = $session->getUser();
-									if(!$user)
-									{
-										$user = Mage::getModel('admin/user')->getCollection()->getFirstItem();
-									}
-
-									$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . substr($path, 0, strpos($path, 'codisto'));
-									$version = Mage::getVersion();
-									$storename = Mage::getStoreConfig('general/store_information/name', 0);
-									$storecurrency = Mage::app()->getStore(0)->getBaseCurrencyCode();
-									$email = $user->getEmail();
-									$codistoversion = Mage::helper('codistosync')->getCodistoVersion();
-
-									$remoteResponse = $client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
-									'url' => $url, 'email' => $email, 'storename' => $storename, 'storecurrency' => $storecurrency, 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)))->request('POST');
-
-									if(!$remoteResponse->isSuccessful())
-										throw new Exception('Error Creating Account');
-
-									$data = Zend_Json::decode($remoteResponse->getRawBody(), true);
-
-									if(isset($data['merchantid']) && $data['merchantid'] &&
-										isset($data['hostkey']) && $data['hostkey'])
-									{
-										Mage::getModel('core/config')->saveConfig('codisto/merchantid', $data['merchantid']);
-										Mage::getModel('core/config')->saveConfig('codisto/hostkey', $data['hostkey']);
-
-										$MerchantID = $data['merchantid'];
-										$HostKey = $data['hostkey'];
-
-										Mage::app()->removeCache('config_store_data');
-										Mage::app()->getCacheInstance()->cleanType('config');
-										Mage::dispatchEvent('adminhtml_cache_refresh_type', array('type' => 'config'));
-										Mage::app()->reinitStores();
-
-										try {
-
-											$h = new Zend_Http_Client();
-											$h->setConfig(array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 20 ));
-											$h->setStream();
-											$h->setUri('https://ui.codisto.com/'.$MerchantID.'/testendpoint/');
-											$h->setHeaders('X-HostKey', $HostKey);
-											$testResponse = $h->request('GET');
-
-											$testdata = Zend_Json::decode($testResponse->getRawBody(), true);
-
-											if(isset($testdata['ack']) && $testdata['ack'] == "FAILED") {
-
-												//Endpoint Unreachable - Turn on cron fallback
-												$file = new Varien_Io_File();
-												$file->open(array('path' => Mage::getBaseDir('var')));
-												$file->write('codisto-external-sync-failed', '0');
-												$file->close();
-
-											}
-
-										} catch (Exception $e) {
-
-											Mage::log('Error testing endpoint and writing failed sync file. Message: ' . $e->getMessage() . ' on line: ' . $e->getLine());
-
-											try
-											{
-												//Check in cron
-
-												$file = new Varien_Io_File();
-												$file->open(array('path' => Mage::getBaseDir('var')));
-												$file->write('codisto-external-test-failed', '0');
-												$file->close();
-											}
-											catch (Exception $e2)
-											{
-
-											}
-
-										}
-									}
-
-								}
-								catch(Exception $e)
-								{
-									if($retry < 3)
-									{
-										usleep(1000000);
-										continue;
-									}
-
-									throw $e;
-								}
-
-								break;
-							}
-						}
-
-						$createLockDb->exec('COMMIT TRANSACTION');
-						$createLockDb = null;
+						$MerchantID = $this->registerMerchant($request);
 					}
-
 					catch(Exception $e)
 					{
-						try
-						{
-							$url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . $request->getServer('REQUEST_URI');
-							$magentoversion = Mage::getVersion();
-							$codistoversion = Mage::helper('codistosync')->getCodistoVersion();
-
-							$logEntry = Zend_Json::encode(array(
-									'url' => $url,
-									'magento_version' => $magentoversion,
-									'codisto_version' => $codistoversion,
-									'message' => $e->getMessage(),
-									'code' => $e->getCode(),
-									'file' => $e->getFile(),
-									'line' => $e->getLine()));
-
-							Mage::log('CodistoConnect '.$logEntry);
-
-							$client = new Zend_Http_Client("https://ui.codisto.com/installed", array( 'adapter' => 'Zend_Http_Client_Adapter_Curl', 'curloptions' => array(CURLOPT_SSL_VERIFYPEER => false), 'keepalive' => false, 'maxredirects' => 0 ));
-							$client->setHeaders('Content-Type', 'application/json');
-							$client->setRawData($logEntry);
-							$client->request('POST');
-						}
-						catch(Exception $e2)
-						{
-
-						}
-
-						$response->setHttpResponseCode(500);
-						$response->setHeader('Pragma', 'no-cache', true);
-						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-
 						if($e->getCode() == 999)
 						{
 							$response->setBody('<!DOCTYPE html><html><head></head><body><h1>Unable to Register</h1><p>Sorry, we were unable to register your Codisto account,
@@ -321,8 +196,15 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					}
 				}
 
-				// get actual merchant id value from request context
-				$MerchantID = Zend_Json::decode($MerchantID);
+				if($MerchantID == null)
+				{
+					$response->setBody('<!DOCTYPE html><html><head></head><body><h1>Unable to Register</h1><p>Sorry, we were unable to register your Codisto account,
+					please contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p></body></html>');
+
+					return true;
+				}
+
+
 				if(is_array($MerchantID))
 				{
 					$merchantmatch = array();
@@ -383,7 +265,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 					$querystring .= urlencode($k);
 					if($v)
-						$querystring .= '='.urlencode($v);
+					$querystring .= '='.urlencode($v);
 					$querystring .= '&';
 
 				}
@@ -397,19 +279,21 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 				$curlOptions = array(CURLOPT_TIMEOUT => 60, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0);
 				$acceptEncoding = $request->getHeader('Accept-Encoding');
-				if(!$acceptEncoding)
-					$curlOptions[CURLOPT_ENCODING] = '';
+				$zlibEnabled = strtoupper(ini_get('zlib.output_compression'));
+
+				if(!$acceptEncoding || ($zlibEnabled == 1 || $zlibEnabled == 'ON'))
+				$curlOptions[CURLOPT_ENCODING] = '';
 
 				// proxy request
 				$client = new Zend_Http_Client($remoteUrl, array(
-																				'adapter' => 'Zend_Http_Client_Adapter_Curl',
-																				'curloptions' => $curlOptions,
-																				'keepalive' => false,
-																				'strict' => false,
-																				'strictredirects' => true,
-																				'maxredirects' => 0,
-																				'timeout' => 10
-																			));
+					'adapter' => 'Zend_Http_Client_Adapter_Curl',
+					'curloptions' => $curlOptions,
+					'keepalive' => false,
+					'strict' => false,
+					'strictredirects' => true,
+					'maxredirects' => 0,
+					'timeout' => 10
+				));
 
 				$adminBasePort = $request->getServer('SERVER_PORT');
 				$adminBasePort = $adminBasePort = '' || $adminBasePort == '80' || $adminBasePort == '443' ? '' : ':'.$adminBasePort;
@@ -424,14 +308,14 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				foreach($this->getAllHeaders() as $k=>$v)
 				{
 					if(strtolower($k) != 'host')
-						$client->setHeaders($k, $v);
+					$client->setHeaders($k, $v);
 				}
 
 				$client->setHeaders(array('X-HostKey' => $HostKey));
 
 				$requestBody = $request->getRawBody();
 				if($requestBody)
-					$client->setRawData($requestBody);
+				$client->setRawData($requestBody);
 
 				for($retry = 0; ; $retry++)
 				{
@@ -444,7 +328,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						if($remoteResponse->isError())
 						{
 							if((microtime(true) - $starttime < 10.0) &&
-									$retry < 3)
+							$retry < 3)
 							{
 								usleep(500000);
 								continue;
@@ -454,7 +338,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					catch(Exception $exception)
 					{
 						if((microtime(true) - $starttime < 10.0) &&
-								$retry < 3)
+						$retry < 3)
 						{
 							usleep(500000);
 							continue;
@@ -477,7 +361,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 					$filterHeaders = array('server', 'content-length', 'transfer-encoding', 'date', 'connection', 'x-storeviewmap');
 					if(!$acceptEncoding)
-						$filterHeaders[] = 'content-encoding';
+					$filterHeaders[] = 'content-encoding';
 
 					foreach($remoteResponse->getHeaders() as $k => $v)
 					{
@@ -546,11 +430,12 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				return true;
 			}
 		}
-
 		return false;
 	}
 
-	private function getAllHeaders($extra = false) {
+	private function getAllHeaders($extra = false)
+	{
+
 		foreach ($_SERVER as $name => $value)
 		{
 			if (substr($name, 0, 5) == 'HTTP_')
@@ -563,8 +448,11 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				$headers['Content-Length'] = $value;
 			}
 		}
+
 		if($extra)
+		{
 			$headers = array_merge($headers, $extra);
+		}
 		return $headers;
 	}
 }

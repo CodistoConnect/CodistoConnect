@@ -23,7 +23,7 @@
 <config>
 	<modules>
 		<Codisto_Sync>
-			<version>1.1.72</version>
+			<version>1.1.77</version>
 			<depends>
 				<Mage_Payment/>
 			</depends>
@@ -251,6 +251,15 @@
 					</modules>
 				</args>
 			</adminhtml>
+			<codisto-sync>
+				<!-- does not leak admin url re: APPSEC-1034 -->
+				<!-- required to allow alternate admin base url to work -->
+				<use>admin</use>
+				<args>
+					<module>Codisto_Sync</module>
+					<frontName>codisto-sync</frontName>
+				</args>
+			</codisto-sync>
 		</routers>
 	</admin>
 
