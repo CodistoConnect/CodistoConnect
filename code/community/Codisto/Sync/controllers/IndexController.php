@@ -460,6 +460,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setBillingAddress($quoteConverter->addressToOrderAddress($quote->getBillingAddress()));
 		$order->setShippingAddress($quoteConverter->addressToOrderAddress($quote->getShippingAddress()));
 		$order->setPayment($quoteConverter->paymentToOrderPayment($quote->getPayment()));
+		$order->setCustomer($quote->getCustomer());
 		$order->setCodistoOrderid($ordercontent->orderid);
 
 		$quoteItems = $quote->getItemsCollection()->getItems();
@@ -703,6 +704,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
 		$quoteConverter =  Mage::getModel('sales/convert_quote');
+
+		$order->setCustomer($quote->getCustomer());
 
 		$ebaysalesrecordnumber = (string)$ordercontent->ebaysalesrecordnumber;
 		if(!$ebaysalesrecordnumber)
