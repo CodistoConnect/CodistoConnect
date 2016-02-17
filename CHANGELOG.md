@@ -1,5 +1,22 @@
 # Change Log
 
+## [1.1.77](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.77) (2016-02-17)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.76...1.1.77)
+
+**Fixed bugs:**
+
+- fix servermage typo [\#247](https://github.com/CodistoConnect/CodistoConnect/pull/247) ([lamery](https://github.com/lamery))
+
+**Closed issues:**
+
+- Routing when Admin base URL differs [\#238](https://github.com/CodistoConnect/CodistoConnect/issues/238)
+
+**Merged pull requests:**
+
+- Release [\#248](https://github.com/CodistoConnect/CodistoConnect/pull/248) ([bradmccormack](https://github.com/bradmccormack))
+- comment regarding appsec1034 [\#246](https://github.com/CodistoConnect/CodistoConnect/pull/246) ([lamery](https://github.com/lamery))
+- - Bump Magento Community version - Tested OK [\#242](https://github.com/CodistoConnect/CodistoConnect/pull/242) ([bradmccormack](https://github.com/bradmccormack))
+
 ## [1.1.76](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.76) (2016-02-16)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.75...1.1.76)
 
