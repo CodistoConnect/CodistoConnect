@@ -252,6 +252,8 @@
 				</args>
 			</adminhtml>
 			<codisto-sync>
+				<!-- does not leak admin url re: APPSEC-1034 -->
+				<!-- required to allow alternate admin base url to work -->
 				<use>admin</use>
 				<args>
 					<module>Codisto_Sync</module>
