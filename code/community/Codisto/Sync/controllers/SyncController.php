@@ -942,7 +942,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$response->setHeader('Pragma', 'no-cache', true);
 
 		if(isset($server['HTTP_X_NONCE'], $server['HTTP_X_HASH']) &&
-			$serverMage::helper('codistosync')->checkHash($response, Mage::getStoreConfig('codisto/hostkey', $storeId), $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+			Mage::helper('codistosync')->checkHash($response, Mage::getStoreConfig('codisto/hostkey', $storeId), $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 		{
 			$extSyncFailed = Mage::getBaseDir('var') . '/codisto-external-sync-failed';
 			if(file_exists($extSyncFailed))
