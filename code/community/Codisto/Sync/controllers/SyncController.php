@@ -28,6 +28,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	public function indexAction()
 	{
+
 		set_time_limit(0);
 
 		@ini_set('zlib.output_compression', 'Off');
@@ -149,7 +150,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									$db->exec('CREATE TABLE SKUMatrix AS SELECT * FROM SyncDb.SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU)');
 									$db->exec('CREATE TABLE SKUImage AS SELECT * FROM SyncDb.SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU)');
 									$db->exec('CREATE TABLE ProductOption AS SELECT * FROM SyncDb.ProductOption WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
-									$db->exec('CREATE TABLE ProductOptionValue AS SELECT * FROM SyncDb.ProductOptionValue WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+									$db->exec('CREATE TABLE ProductOptionValue AS SELECT * FROM SyncDb.ProductOptionValue WHERE ExternalReference IN (SELECT ProductOptionValueExternalReference FROM SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU))');
 									$db->exec('CREATE TABLE ProductHTML AS SELECT * FROM SyncDb.ProductHTML WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 									$db->exec('CREATE TABLE Attribute AS SELECT * FROM SyncDb.Attribute');
 									$db->exec('CREATE TABLE AttributeGroup AS SELECT * FROM SyncDb.AttributeGroup');
