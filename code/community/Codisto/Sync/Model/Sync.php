@@ -265,7 +265,7 @@ class Codisto_Sync_Model_Sync
 		$insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
 		$insertSKUImage = $db->prepare('INSERT INTO SKUImage(SKUExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
 		$insertProductOption = $db->prepare('INSERT INTO ProductOption (ExternalReference, Sequence, ProductExternalReference) VALUES (?,?,?)');
-		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence, ProductOptionExternalReference, ProductExternalReference) VALUES (?,?,?,?)');
+		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence) VALUES (?,?)');
 		$insertProductHTML = $db->prepare('INSERT OR IGNORE INTO ProductHTML(ProductExternalReference, Tag, HTML) VALUES (?, ?, ?)');
 		$insertAttribute = $db->prepare('INSERT OR REPLACE INTO Attribute(ID, Code, Label, Type) VALUES (?, ?, ?, ?)');
 		$insertAttributeGroup = $db->prepare('INSERT OR IGNORE INTO AttributeGroup(ID, Name) VALUES(?, ?)');
@@ -309,7 +309,7 @@ class Codisto_Sync_Model_Sync
 		$db->exec('DELETE FROM Product WHERE ExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM ProductImage WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM ProductOption WHERE ProductExternalReference IN ('.implode(',', $ids).')');
-		$db->exec('DELETE FROM ProductOptionValue WHERE ProductExternalReference IN ('.implode(',', $ids).')');
+		$db->exec('DELETE FROM ProductOptionValue WHERE ExternalReference IN (SELECT ProductOptionValueExternalReference FROM SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).')))');
 		$db->exec('DELETE FROM ProductHTML WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
 		$db->exec('DELETE FROM SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
@@ -359,6 +359,18 @@ class Codisto_Sync_Model_Sync
 				'store' => $store )
 		);
 
+		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence) VALUES (?,?)');
+
+		$options = Mage::getResourceModel('eav/entity_attribute_option_collection')
+					->setPositionOrder('asc', true)
+					->load();
+
+		foreach($options as $opt){
+			$sequence = $opt->getSortOrder();
+			$optId = $opt->getId();
+			$insertProductOptionValue->execute(array($optId, $sequence));
+		}
+
 		$db->exec('COMMIT TRANSACTION');
 	}
 
@@ -373,7 +385,7 @@ class Codisto_Sync_Model_Sync
 					'DELETE FROM Product WHERE ExternalReference = '.$id.';'.
 					'DELETE FROM ProductImage WHERE ProductExternalReference = '.$id.';'.
 					'DELETE FROM ProductOption WHERE ProductExternalReference = '.$id.';'.
-					'DELETE FROM ProductOptionValue WHERE ProductExternalReference = '.$id.';'.
+					'DELETE FROM ProductOptionValue WHERE ExternalReference IN (SELECT ProductOptionValueExternalReference FROM SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference = '.$id.'));'.
 					'DELETE FROM ProductHTML WHERE ProductExternalReference = '.$id.';'.
 					'DELETE FROM SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference = '.$id.');'.
 					'DELETE FROM SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference = '.$id.');'.
@@ -541,6 +553,10 @@ class Codisto_Sync_Model_Sync
 		$insertImageSQL = $args['preparedskuimageStatement'];
 		$insertSKUMatrixSQL = $args['preparedskumatrixStatement'];
 		$insertProductOptionSQL = $args['preparedproductoptionStatement'];
+		$insertProductOptionValueSQL = null;
+
+		if(in_array('preparedproductoptionvalueStatement', $args, true))
+			$insertProductOptionValueSQL = $args['preparedproductoptionvalueStatement'];
 
 		$productData['sku'] = null;
 
@@ -589,6 +605,20 @@ class Codisto_Sync_Model_Sync
 			$pid = $attribute->getProductId();
 
 			$insertProductOptionSQL->execute(array($attributeid, $position, $pid));
+
+			if($insertProductOptionValueSQL) {
+
+				$options = Mage::getResourceModel('eav/entity_attribute_option_collection')
+				->setAttributeFilter($attributeid)
+				->setPositionOrder('asc', true)
+				->load();
+
+				foreach($options as $opt){
+					$sequence = $opt->getSortOrder();
+					$optId = $opt->getId();
+					$insertProductOptionValueSQL->execute(array($optId, $sequence));
+				}
+			}
 
 		}
 
@@ -1090,7 +1120,6 @@ class Codisto_Sync_Model_Sync
 					'preparedimageStatement' => $insertImage,
 					'preparedskuimageStatement' => $insertSKUImage,
 					'preparedproductoptionStatement' => $insertProductOption,
-					'preparedproductoptionvalueStatement' => $insertProductOptionValue,
 					'preparedproducthtmlStatement' => $insertProductHTML,
 					'preparedattributeStatement' => $insertAttribute,
 					'preparedattributegroupStatement' => $insertAttributeGroup,
@@ -1202,7 +1231,9 @@ class Codisto_Sync_Model_Sync
 
 			$db->exec('INSERT OR REPLACE INTO Progress (Sentinel, State, entity_id) VALUES (1, \'orders\', '.$this->currentEntityId.')');
 
-			$state = 'productoption';
+			if(empty($this->ordersProcessed)){
+				$state = 'productoption';
+			}
 		}
 
 		if($state == 'productoption')
