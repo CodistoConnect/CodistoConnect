@@ -1663,6 +1663,22 @@ class Codisto_Sync_Model_Sync
 			}
 		}
 
+		try
+		{
+			$db->exec('SELECT ProductExternalReference FROM ProductOptionValue LIMIT 1');
+
+			$db->exec('CREATE TABLE IF NOT EXISTS TmpProductOptionValue (ExternalReference text NOT NULL, Sequence integer NOT NULL)');
+			$db->exec('CREATE INDEX IF NOT EXISTS IX_ProductOptionValue_ExternalReference_Sequence ON ProductOptionValue(ExternalReference, Sequence)');
+			$db->exec('INSERT INTO TmpProductOptionValue (ExternalReference, Sequence) SELECT DISTINCT ExternalReference, Sequence FROM ProductOptionValue');
+			$db->exec('DROP TABLE ProductOptionValue');
+			$db->exec('ALTER TABLE TmpProductOptionValue RENAME TO ProductOptionValue');
+			$db->exec('CREATE INDEX IF NOT EXISTS IX_ProductOptionValue_ExternalReference ON ProductOptionValue(ExternalReference)');
+		}
+		catch (Exception $e)
+		{
+
+		}
+
 		$db->exec('COMMIT TRANSACTION');
 
 		return $db;
