@@ -460,6 +460,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setBillingAddress($quoteConverter->addressToOrderAddress($quote->getBillingAddress()));
 		$order->setShippingAddress($quoteConverter->addressToOrderAddress($quote->getShippingAddress()));
 		$order->setPayment($quoteConverter->paymentToOrderPayment($quote->getPayment()));
+		$order->setCustomer($quote->getCustomer());
 		$order->setCodistoOrderid($ordercontent->orderid);
 
 		$quoteItems = $quote->getItemsCollection()->getItems();
@@ -665,9 +666,16 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 		$payment->setAdditionalInformation('ebaysalesrecordnumber', $ebaysalesrecordnumber);
 		$payment->setAdditionalInformation('ebayuser', $ebayusername);
+
+		Mage::dispatchEvent('sales_model_service_quote_submit_before', array('order'=>$order, 'quote'=>$quote));
+
 		$payment->save();
 
+		Mage::dispatchEvent('sales_model_service_quote_submit_success', array('order'=>$order, 'quote'=>$quote));
+
 		$order->save();
+
+		Mage::dispatchEvent('sales_model_service_quote_submit_after', array('order'=>$order, 'quote'=>$quote));
 
 		$quote->setIsActive(false)->save();
 
@@ -681,6 +689,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$invoice->register();
 			}
 			$invoice->save();
+			Mage::dispatchEvent('sales_order_payment_pay', array('payment' => $payment, 'invoice' => $invoice));
 		}
 
 		$response = $this->getResponse();
@@ -695,6 +704,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
 		$quoteConverter =  Mage::getModel('sales/convert_quote');
+
+		$order->setCustomer($quote->getCustomer());
 
 		$ebaysalesrecordnumber = (string)$ordercontent->ebaysalesrecordnumber;
 		if(!$ebaysalesrecordnumber)
@@ -1117,6 +1128,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 		}
 
+		Mage::dispatchEvent('sales_model_service_quote_submit_before', array('order'=>$order, 'quote'=>$quote));
+
 		if($ordercontent->paymentstatus == 'complete')
 		{
 			$order->setBaseTotalPaid($ordertotal);
@@ -1139,7 +1152,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$payment->save();
 		}
 
+		Mage::dispatchEvent('sales_model_service_quote_submit_success', array('order'=>$order, 'quote'=>$quote));
+
 		$order->save();
+
+		Mage::dispatchEvent('sales_model_service_quote_submit_after', array('order'=>$order, 'quote'=>$quote));
 
 		if(!$order->hasInvoices())
 		{
@@ -1153,6 +1170,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					$invoice->register();
 				}
 				$invoice->save();
+				Mage::dispatchEvent('sales_order_payment_pay', array('payment' => $payment, 'invoice' => $invoice));
 			}
 		}
 
