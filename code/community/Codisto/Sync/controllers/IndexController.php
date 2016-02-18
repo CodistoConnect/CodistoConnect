@@ -415,7 +415,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					try
 					{
 
-						if(count($productsToReindex) > 0)
+						if(!empty($productsToReindex))
 						{
 							Mage::getResourceSingleton('cataloginventory/indexer_stock')->reindexProducts($productsToReindex);
 							Mage::getResourceSingleton('catalog/product_indexer_price')->reindexProductIds($productsToReindex);
@@ -450,7 +450,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 	}
 
-	private function ProcessOrderCreate($quote, $xml, $productsToReindex, $orderids, $store)
+	private function ProcessOrderCreate($quote, $xml, &$productsToReindex, &$orderids, $store)
 	{
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
@@ -714,7 +714,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$orderids[] = $order->getId();
 	}
 
-	private function ProcessOrderSync($quote, $order, $xml, $productsToReindex, $orderids, $store)
+	private function ProcessOrderSync($quote, $order, $xml, &$productsToReindex, &$orderids, $store)
 	{
 		$orderstatus = $order->getStatus();
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
