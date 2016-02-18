@@ -402,7 +402,10 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 					try
 					{
-						Mage::getResourceModel('sales/order')->updateGridRecords($ordersProcessed);
+						if(!empty($ordersProcessed))
+						{
+							Mage::getResourceModel('sales/order')->updateGridRecords($ordersProcessed);
+						}
 					}
 					catch (Exception $e)
 					{
@@ -698,7 +701,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$response->setHeader('Content-Type', 'application/json');
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 
-		$orderids[] = $order->getId();
+		if(!in_array($order->getId(), $orderids))
+			$orderids[] = $order->getId();
 	}
 
 	private function ProcessOrderSync($quote, $order, $xml, $productsToReindex, $orderids, $store)
@@ -1172,7 +1176,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$response->setHeader('Content-Type', 'application/json');
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 
-		$orderids[] = $order->getId();
+		if(!in_array($order->getId(), $orderids))
+			$orderids[] = $order->getId();
 	}
 
 	private function ProcessQuote($quote, $xml, $store)
