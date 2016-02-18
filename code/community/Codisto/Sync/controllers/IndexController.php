@@ -369,11 +369,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 							if($order && $order->getId())
 							{
-								$this->ProcessOrderSync($quote, $order, $xml, $productsToReindex, $store, $ordersProcessed);
+								$this->ProcessOrderSync($quote, $order, $xml, $productsToReindex, $ordersProcessed, $store);
 							}
 							else
 							{
-								$this->ProcessOrderCreate($quote, $xml, $productsToReindex, $store, $ordersProcessed);
+								$this->ProcessOrderCreate($quote, $xml, $productsToReindex, $ordersProcessed, $store);
 							}
 
 							$connection->commit();
@@ -447,7 +447,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 	}
 
-	private function ProcessOrderCreate($quote, $xml, $productsToReindex, $store, $orderids)
+	private function ProcessOrderCreate($quote, $xml, $productsToReindex, $orderids, $store)
 	{
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
@@ -701,7 +701,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$orderids[] = $order->getId();
 	}
 
-	private function ProcessOrderSync($quote, $order, $xml, $productsToReindex, $store, $orderids)
+	private function ProcessOrderSync($quote, $order, $xml, $productsToReindex, $orderids, $store)
 	{
 		$orderstatus = $order->getStatus();
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
