@@ -253,8 +253,12 @@ class Codisto_Sync_Model_Observer
 			try {
 
 				$resource = Mage::getSingleton('core/resource');
+				$tableName = $resource->getTableName('catalogrule/affected_product');
+
 				$readConnection = $resource->getConnection('core_read');
-				$query = 'SELECT * FROM catalogrule_affected_product';
+
+				$query = 'SELECT product_id FROM '.$tableName;
+
 				$results = $readConnection->fetchAll($query);
 
 				if(sizeOf($results) == 1){
