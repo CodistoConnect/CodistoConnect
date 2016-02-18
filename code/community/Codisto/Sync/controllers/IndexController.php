@@ -306,6 +306,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				if(Mage::helper('codistosync')->checkHash($response, Mage::getStoreConfig('codisto/hostkey', $storeId), $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 				{
 					$productsToReindex = array();
+					$ordersProcessed = array();
 
 					$connection = Mage::getSingleton('core/resource')->getConnection('core_write');
 
@@ -368,11 +369,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 							if($order && $order->getId())
 							{
-								$this->ProcessOrderSync($quote, $order, $xml, $productsToReindex, $store);
+								$this->ProcessOrderSync($quote, $order, $xml, $productsToReindex, $store, $ordersProcessed);
 							}
 							else
 							{
-								$this->ProcessOrderCreate($quote, $xml, $productsToReindex, $store);
+								$this->ProcessOrderCreate($quote, $xml, $productsToReindex, $store, $ordersProcessed);
 							}
 
 							$connection->commit();
@@ -397,6 +398,15 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 							$connection->rollback();
 							break;
 						}
+					}
+
+					try
+					{
+						Mage::getResourceModel('sales/order')->updateGridRecords($ordersProcessed);
+					}
+					catch (Exception $e)
+					{
+
 					}
 
 					try
@@ -437,7 +447,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 	}
 
-	private function ProcessOrderCreate($quote, $xml, $productsToReindex, $store)
+	private function ProcessOrderCreate($quote, $xml, $productsToReindex, $store, $orderids)
 	{
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
@@ -687,9 +697,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$response->setHeader('Content-Type', 'application/json');
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+
+		$orderids[] = $order->getId();
 	}
 
-	private function ProcessOrderSync($quote, $order, $xml, $productsToReindex, $store)
+	private function ProcessOrderSync($quote, $order, $xml, $productsToReindex, $store, $orderids)
 	{
 		$orderstatus = $order->getStatus();
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
@@ -1159,6 +1171,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$response = $this->getResponse();
 		$response->setHeader('Content-Type', 'application/json');
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+
+		$orderids[] = $order->getId();
 	}
 
 	private function ProcessQuote($quote, $xml, $store)
