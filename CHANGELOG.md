@@ -1,5 +1,26 @@
 # Change Log
 
+## [1.1.78](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.78) (2016-02-19)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.77...1.1.78)
+
+**Implemented enhancements:**
+
+- attribute map menu entry [\#252](https://github.com/CodistoConnect/CodistoConnect/pull/252) ([lamery](https://github.com/lamery))
+- add updateGridRecords to keep order list fresh [\#251](https://github.com/CodistoConnect/CodistoConnect/pull/251) ([lamery](https://github.com/lamery))
+- better caching by using a non varying url for bulk editor \(strip xsrf… [\#250](https://github.com/CodistoConnect/CodistoConnect/pull/250) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- always send all product option values, use distinct to avoid sending … [\#258](https://github.com/CodistoConnect/CodistoConnect/pull/258) ([lamery](https://github.com/lamery))
+- no need to delete product option values during product deletes [\#257](https://github.com/CodistoConnect/CodistoConnect/pull/257) ([lamery](https://github.com/lamery))
+- fix catalogrule affected product table name hard coding [\#256](https://github.com/CodistoConnect/CodistoConnect/pull/256) ([lamery](https://github.com/lamery))
+- Release [\#255](https://github.com/CodistoConnect/CodistoConnect/pull/255) ([bradmccormack](https://github.com/bradmccormack))
+- alter the sync db productoptionvalue to match new logic [\#254](https://github.com/CodistoConnect/CodistoConnect/pull/254) ([lamery](https://github.com/lamery))
+- pass by reference fix [\#253](https://github.com/CodistoConnect/CodistoConnect/pull/253) ([lamery](https://github.com/lamery))
+- change storeid to first non-admin store if there is only a single sto… [\#249](https://github.com/CodistoConnect/CodistoConnect/pull/249) ([lamery](https://github.com/lamery))
+- add event dispatch to order create and sync [\#243](https://github.com/CodistoConnect/CodistoConnect/pull/243) ([jlivas](https://github.com/jlivas))
+- sync product option value sequence globally [\#240](https://github.com/CodistoConnect/CodistoConnect/pull/240) ([jlivas](https://github.com/jlivas))
+
 ## [1.1.77](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.77) (2016-02-17)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.76...1.1.77)
 
