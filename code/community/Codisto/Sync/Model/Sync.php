@@ -309,7 +309,6 @@ class Codisto_Sync_Model_Sync
 		$db->exec('DELETE FROM Product WHERE ExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM ProductImage WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM ProductOption WHERE ProductExternalReference IN ('.implode(',', $ids).')');
-		$db->exec('DELETE FROM ProductOptionValue WHERE ExternalReference IN (SELECT ProductOptionValueExternalReference FROM SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).')))');
 		$db->exec('DELETE FROM ProductHTML WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
 		$db->exec('DELETE FROM SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
@@ -385,7 +384,6 @@ class Codisto_Sync_Model_Sync
 					'DELETE FROM Product WHERE ExternalReference = '.$id.';'.
 					'DELETE FROM ProductImage WHERE ProductExternalReference = '.$id.';'.
 					'DELETE FROM ProductOption WHERE ProductExternalReference = '.$id.';'.
-					'DELETE FROM ProductOptionValue WHERE ExternalReference IN (SELECT ProductOptionValueExternalReference FROM SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference = '.$id.'));'.
 					'DELETE FROM ProductHTML WHERE ProductExternalReference = '.$id.';'.
 					'DELETE FROM SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference = '.$id.');'.
 					'DELETE FROM SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference = '.$id.');'.
@@ -1238,6 +1236,8 @@ class Codisto_Sync_Model_Sync
 
 		if($state == 'productoption')
 		{
+			$db->exec('DELETE FROM ProductOptionValue');
+
 			$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence) VALUES (?,?)');
 
 			$options = Mage::getResourceModel('eav/entity_attribute_option_collection')
