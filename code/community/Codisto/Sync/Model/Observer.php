@@ -90,9 +90,10 @@ class Codisto_Sync_Model_Observer
 					$data = Zend_Json::decode($remoteResponse->getRawBody(), true);
 
 					if(isset($testdata['ack']) && $testdata['ack'] == "SUCCESS") {
-						if(file_exists($extSyncFailed))
+						if(file_exists($extSyncFailed)) {
 							unlink($extSyncFailed);
 							unlink($extTestFailed);
+						}
 						break;
 					}
 
@@ -242,18 +243,78 @@ class Codisto_Sync_Model_Observer
 
 	public function catalogRuleAfterApply($observer)
 	{
-		try {
 
-			$indexer = Mage::getModel('index/process');
-			$indexer->load('codistoebayindex', 'indexer_code')
+		$productId = null;
+		if(property_exists($observer , 'product'))
+			$productId = $observer->getEvent()->getProduct()->getId();
+
+		if(!$productId) {
+
+			try {
+
+				$resource = Mage::getSingleton('core/resource');
+				$tableName = $resource->getTableName('catalogrule/affected_product');
+
+				$readConnection = $resource->getConnection('core_read');
+
+				$query = 'SELECT product_id FROM '.$tableName;
+
+				$results = $readConnection->fetchAll($query);
+
+				if(sizeOf($results) == 1){
+
+					$productId = intval($results[0]['product_id']);
+
+				} else if ($results && sizeOf($results) > 1) {
+
+					$indexer = Mage::getModel('index/process');
+					$indexer->load('codistoebayindex', 'indexer_code')
 					->changeStatus(Mage_Index_Model_Process::STATUS_REQUIRE_REINDEX)
 					->reindexAll();
 
-		} catch (Exception $e) {
+				}
+
+			} catch (Exception $e) {
+
+			}
+
 
 		}
-	}
 
+		if($productId) {
+
+			$merchants = $this->getMerchants();
+
+			$syncObject = Mage::getModel('codistosync/sync');
+
+			$client = new Zend_Http_Client();
+			$client->setConfig(array( 'keepalive' => true, 'maxredirects' => 0, 'timeout' => 2 ));
+			$client->setStream();
+
+			foreach($merchants as $merchant)
+			{
+				$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$merchant['storeid'].'.db';
+				$syncObject->UpdateProducts($syncDb, array($productId), $merchant['storeid']);
+
+				try
+				{
+					$client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
+					$client->setHeaders('X-HostKey', $merchant['hostkey']);
+
+
+					$client->setRawData('action=sync&productid='.$productId)->request('POST');
+				}
+				catch(Exception $e)
+				{
+
+				}
+			}
+
+		}
+
+		return;
+
+	}
 
 	public function paymentInfoBlockPrepareSpecificInformation($observer)
 	{
@@ -651,6 +712,43 @@ class Codisto_Sync_Model_Observer
 		}
 
 		return $this;
+	}
+
+	private function getMerchants() {
+
+		$merchants = array();
+		$visited = array();
+
+		$stores = Mage::getModel('core/store')->getCollection();
+
+		foreach($stores as $store)
+		{
+			$merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
+			if($merchantlist)
+			{
+				if(!is_array($merchantlist))
+					$merchantlist = array($merchantlist);
+
+				foreach($merchantlist as $merchantId)
+				{
+					if(!in_array($merchantId, $visited, true))
+					{
+						$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $store->getConfig('codisto/hostkey'), 'storeid' => $store->getId() );
+						$visited[] = $merchantId;
+					}
+				}
+			}
+		}
+
+		$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+		$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
+		if(!in_array($MerchantID, $visited, true))
+			$merchants[] = array( 'merchantid' => $MerchantID, 'hostkey' => $HostKey, 'storeid' => 0);
+
+		unset($visited);
+
+		return $merchants;
+
 	}
 
 	private function signalStockChange($stockItems)

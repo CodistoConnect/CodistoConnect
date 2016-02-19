@@ -306,6 +306,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				if(Mage::helper('codistosync')->checkHash($response, Mage::getStoreConfig('codisto/hostkey', $storeId), $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 				{
 					$productsToReindex = array();
+					$ordersProcessed = array();
 
 					$connection = Mage::getSingleton('core/resource')->getConnection('core_write');
 
@@ -368,11 +369,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 							if($order && $order->getId())
 							{
-								$this->ProcessOrderSync($quote, $order, $xml, $productsToReindex, $store);
+								$this->ProcessOrderSync($quote, $order, $xml, $productsToReindex, $ordersProcessed, $store);
 							}
 							else
 							{
-								$this->ProcessOrderCreate($quote, $xml, $productsToReindex, $store);
+								$this->ProcessOrderCreate($quote, $xml, $productsToReindex, $ordersProcessed, $store);
 							}
 
 							$connection->commit();
@@ -401,8 +402,20 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 					try
 					{
+						if(!empty($ordersProcessed))
+						{
+							Mage::getResourceModel('sales/order')->updateGridRecords($ordersProcessed);
+						}
+					}
+					catch (Exception $e)
+					{
 
-						if(count($productsToReindex) > 0)
+					}
+
+					try
+					{
+
+						if(!empty($productsToReindex))
 						{
 							Mage::getResourceSingleton('cataloginventory/indexer_stock')->reindexProducts($productsToReindex);
 							Mage::getResourceSingleton('catalog/product_indexer_price')->reindexProductIds($productsToReindex);
@@ -437,7 +450,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 	}
 
-	private function ProcessOrderCreate($quote, $xml, $productsToReindex, $store)
+	private function ProcessOrderCreate($quote, $xml, &$productsToReindex, &$orderids, $store)
 	{
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
@@ -460,6 +473,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setBillingAddress($quoteConverter->addressToOrderAddress($quote->getBillingAddress()));
 		$order->setShippingAddress($quoteConverter->addressToOrderAddress($quote->getShippingAddress()));
 		$order->setPayment($quoteConverter->paymentToOrderPayment($quote->getPayment()));
+		$order->setCustomer($quote->getCustomer());
 		$order->setCodistoOrderid($ordercontent->orderid);
 
 		$quoteItems = $quote->getItemsCollection()->getItems();
@@ -665,9 +679,16 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 		$payment->setAdditionalInformation('ebaysalesrecordnumber', $ebaysalesrecordnumber);
 		$payment->setAdditionalInformation('ebayuser', $ebayusername);
+
+		Mage::dispatchEvent('sales_model_service_quote_submit_before', array('order'=>$order, 'quote'=>$quote));
+
 		$payment->save();
 
+		Mage::dispatchEvent('sales_model_service_quote_submit_success', array('order'=>$order, 'quote'=>$quote));
+
 		$order->save();
+
+		Mage::dispatchEvent('sales_model_service_quote_submit_after', array('order'=>$order, 'quote'=>$quote));
 
 		$quote->setIsActive(false)->save();
 
@@ -681,20 +702,26 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$invoice->register();
 			}
 			$invoice->save();
+			Mage::dispatchEvent('sales_order_payment_pay', array('payment' => $payment, 'invoice' => $invoice));
 		}
 
 		$response = $this->getResponse();
 
 		$response->setHeader('Content-Type', 'application/json');
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+
+		if(!in_array($order->getId(), $orderids))
+			$orderids[] = $order->getId();
 	}
 
-	private function ProcessOrderSync($quote, $order, $xml, $productsToReindex, $store)
+	private function ProcessOrderSync($quote, $order, $xml, &$productsToReindex, &$orderids, $store)
 	{
 		$orderstatus = $order->getStatus();
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
 		$quoteConverter =  Mage::getModel('sales/convert_quote');
+
+		$order->setCustomer($quote->getCustomer());
 
 		$ebaysalesrecordnumber = (string)$ordercontent->ebaysalesrecordnumber;
 		if(!$ebaysalesrecordnumber)
@@ -1117,6 +1144,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 		}
 
+		Mage::dispatchEvent('sales_model_service_quote_submit_before', array('order'=>$order, 'quote'=>$quote));
+
 		if($ordercontent->paymentstatus == 'complete')
 		{
 			$order->setBaseTotalPaid($ordertotal);
@@ -1139,7 +1168,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$payment->save();
 		}
 
+		Mage::dispatchEvent('sales_model_service_quote_submit_success', array('order'=>$order, 'quote'=>$quote));
+
 		$order->save();
+
+		Mage::dispatchEvent('sales_model_service_quote_submit_after', array('order'=>$order, 'quote'=>$quote));
 
 		if(!$order->hasInvoices())
 		{
@@ -1153,12 +1186,16 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					$invoice->register();
 				}
 				$invoice->save();
+				Mage::dispatchEvent('sales_order_payment_pay', array('payment' => $payment, 'invoice' => $invoice));
 			}
 		}
 
 		$response = $this->getResponse();
 		$response->setHeader('Content-Type', 'application/json');
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
+
+		if(!in_array($order->getId(), $orderids))
+			$orderids[] = $order->getId();
 	}
 
 	private function ProcessQuote($quote, $xml, $store)
