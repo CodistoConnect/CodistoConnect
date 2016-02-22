@@ -381,7 +381,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 			{
 				$file = $dir.DIRECTORY_SEPARATOR.$fileName.$extension;
 
-				if(is_file($file) && ('\\' === DIRECTORY_SEPARATOR || is_executable($file)))
+				if(@is_file($file) && ('\\' === DIRECTORY_SEPARATOR || @is_executable($file)))
 				{
 					if(function_exists('proc_open'))
 					{
@@ -418,7 +418,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 				if($file)
 				{
 					$file = trim($file);
-					if(is_file($file) && ('\\' === DIRECTORY_SEPARATOR || is_executable($file)))
+					if(@is_file($file) && ('\\' === DIRECTORY_SEPARATOR || @is_executable($file)))
 					{
 						if(function_exists('proc_open'))
 						{
@@ -453,7 +453,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return null;
 	}
 
-	private function runProcess($script, $args)
+	private function runProcessBackground($script, $args)
 	{
 		if(function_exists('proc_open'))
 		{
@@ -496,9 +496,10 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return false;
 	}
 
-	public function processCmsContent($content)
+	function runProcess($script, $args)
 	{
-		if(function_exists('proc_open'))
+		if(function_exists('proc_open')
+			&& function_exists('proc_close'))
 		{
 			$interpreter = $this->phpPath();
 			if($interpreter)
@@ -521,9 +522,6 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 					$curl_cainfo = $_ENV['SSL_CERT_FILE'];
 				}
 
-				$script = '/app/code/community/Codisto/Sync/Helper/CmsContent.php';
-				$args = array(base64_encode($content));
-
 				$cmdline = '';
 				foreach($args as $arg)
 				{
@@ -544,12 +542,21 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 			}
 		}
 
+		return null;
+	}
+
+	public function processCmsContent($content)
+	{
+		$result = $this->runProcess('/app/code/community/Codisto/Sync/Helper/CmsContent.php', array(base64_encode($content)));
+		if($result != null)
+			return $result;
+
 		return Mage::helper('cms')->getBlockTemplateProcessor()->filter(preg_replace('/^\s+|\s+$/', '', $content));
 	}
 
 	public function signal($merchants, $msg)
 	{
-		$backgroundSignal = $this->runProcess('/app/code/community/Codisto/Sync/Helper/Signal.php', array(serialize($merchants), $msg));
+		$backgroundSignal = $this->runProcessBackground('/app/code/community/Codisto/Sync/Helper/Signal.php', array(serialize($merchants), $msg));
 		if($backgroundSignal)
 			return;
 
@@ -567,7 +574,6 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 				$this->client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
 				$this->client->setHeaders('X-HostKey', $merchant['hostkey']);
 				$this->client->setRawData($msg)->request('POST');
-syslog(LOG_INFO, getmypid().' OLD SKOOL https://api.codisto.com/'.$merchant['merchantid'].' '.$msg);
 			}
 			catch(Exception $e)
 			{
