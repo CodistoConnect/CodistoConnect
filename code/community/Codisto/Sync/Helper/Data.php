@@ -492,12 +492,13 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 				if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN')
 				{
-					$process = proc_open('start /b '.$interpreter.' -n "'.Mage::getBaseDir('base').$script.'" '.$cmdline, array(), $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
+					$process = proc_open('start /b '.$interpreter.' -n "'.$script.'" '.$cmdline, array(), $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
 				}
 				else
 				{
-					$process = proc_open($interpreter.' -n "'.Mage::getBaseDir('base').$script.'" '.$cmdline.' &', array(), $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
+					$process = proc_open($interpreter.' -n "'.$script.'" '.$cmdline.' &', array(), $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
 				}
+				
 				if(is_resource($process))
 				{
 					proc_close($process);
@@ -509,7 +510,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return false;
 	}
 
-	function runProcess($script, $args)
+	function runProcess($script, $args, $stdin)
 	{
 		if(function_exists('proc_open')
 			&& function_exists('proc_close'))
@@ -536,16 +537,41 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 				}
 
 				$cmdline = '';
-				foreach($args as $arg)
+				if(is_array($cmdline))
 				{
-					$cmdline .= '\''.$arg.'\' ';
+					foreach($args as $arg)
+					{
+						$cmdline .= '\''.$arg.'\' ';
+					}
 				}
 
-				$process = proc_open($interpreter.' -n "'.Mage::getBaseDir('base').$script.'" '.$cmdline.'', array(
-					1 => array('pipe', 'w')
-				), $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
+				$descriptors = array(
+						1 => array('pipe', 'w')
+				);
+
+				if(is_string($stdin))
+				{
+					$descriptors[0] = array('pipe', 'r');
+				}
+
+				$process = proc_open($interpreter.' -n "'.$script.'" '.$cmdline,
+							$descriptors, $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
 				if(is_resource($process))
 				{
+					if(is_string($stdin))
+					{
+						for($written = 0; $written < strlen($stdin); )
+						{
+							$writecount = fwrite($pipes[0], substr($stdin, $written));
+							if($writecount === false)
+								break;
+
+							$written += $writecount;
+						}
+
+						fclose($pipes[0]);
+					}
+
 					$result = stream_get_contents($pipes[1]);
 					fclose($pipes[1]);
 
@@ -560,7 +586,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 	public function processCmsContent($content)
 	{
-		$result = $this->runProcess('/app/code/community/Codisto/Sync/Helper/CmsContent.php', array(base64_encode($content)));
+		$result = $this->runProcess('app/code/community/Codisto/Sync/Helper/CmsContent.php', null, $content);
 		if($result != null)
 			return $result;
 
@@ -569,7 +595,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 	public function signal($merchants, $msg)
 	{
-		$backgroundSignal = $this->runProcessBackground('/app/code/community/Codisto/Sync/Helper/Signal.php', array(serialize($merchants), $msg));
+		$backgroundSignal = $this->runProcessBackground('app/code/community/Codisto/Sync/Helper/Signal.php', array(serialize($merchants), $msg));
 		if($backgroundSignal)
 			return;
 
