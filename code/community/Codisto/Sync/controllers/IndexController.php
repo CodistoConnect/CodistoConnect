@@ -20,7 +20,6 @@
 
 class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 {
-
 	public function calcAction()
 	{
 		set_time_limit(0);

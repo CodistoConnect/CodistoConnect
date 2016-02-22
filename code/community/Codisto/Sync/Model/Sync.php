@@ -31,8 +31,6 @@ class Codisto_Sync_Model_Sync
 
 	private $ebayGroupId;
 
-	private $cmsHelper;
-
 	private $groupCache;
 
 	public function __construct()
@@ -59,8 +57,6 @@ class Codisto_Sync_Model_Sync
 		{
 			$this->taxCalculation = Mage::getModel('tax/calculation');
 		}
-
-		$this->cmsHelper = Mage::helper('cms');
 
 		$this->groupCache = array();
 
@@ -695,7 +691,7 @@ class Codisto_Sync_Model_Sync
 			$description = $productData['description'];
 		}
 
-		$description = $this->cmsHelper->getBlockTemplateProcessor()->filter(preg_replace('/^\s+|\s+$/', '', $description));
+		$description = Mage::helper('codistosync')->processCmsContent($description);
 		if($type == 'simple' &&
 			$description == '')
 		{
@@ -708,7 +704,7 @@ class Codisto_Sync_Model_Sync
 				{
 					$groupedParent = Mage::getModel('catalog/product')->load($groupedParentId);
 					if($groupedParent)
-						$description = $this->cmsHelper->getBlockTemplateProcessor()->filter(preg_replace('/^\s+|\s+$/', '', $groupedParent->description));
+						$description = Mage::helper('codistosync')->processCmsContent($groupedParent->description);
 				}
 			}
 
@@ -746,7 +742,7 @@ class Codisto_Sync_Model_Sync
 
 		if(isset($productData['short_description']) && strlen($productData['short_description']) > 0)
 		{
-			$shortDescription = $this->cmsHelper->getBlockTemplateProcessor()->filter(preg_replace('/^\s+|\s+$/', '', $productData['short_description']));
+			$shortDescription = Mage::helper('codistosync')->processCmsContent($productData['short_description']);
 
 			$insertHTMLSQL->execute(array($productData['entity_id'], 'Short Description', $shortDescription));
 		}
@@ -1299,7 +1295,7 @@ class Codisto_Sync_Model_Sync
 			$BlockID = $block->getId();
 			$Title = $block->getTitle();
 			$Identifier = $block->getIdentifier();
-			$Content = $this->cmsHelper->getBlockTemplateProcessor()->filter(preg_replace('/^\s+|\s+$/', '', $block->getContent()));
+			$Content = Mage::helper('codistosync')->processCmsContent($block->getContent());
 
 			$insertStaticBlock->bindParam(1, $BlockID);
 			$insertStaticBlock->bindParam(2, $Title);
