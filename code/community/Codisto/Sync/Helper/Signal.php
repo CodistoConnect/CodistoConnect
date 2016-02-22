@@ -22,13 +22,10 @@ foreach($merchants as $merchant)
 		$client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
 		$client->setHeaders('X-HostKey', $merchant['hostkey']);
 		$client->setRawData($msg)->request('POST');
-
-syslog(LOG_INFO, getmypid().' NEW SKOOL https://api.codisto.com/'.$merchant['merchantid'].' '.$msg);
-
 	}
 	catch(Exception $e)
 	{
-syslog(LOG_INFO, $e->getMessage());
+
 	}
 }
 
