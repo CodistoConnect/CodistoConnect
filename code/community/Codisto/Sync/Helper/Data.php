@@ -492,7 +492,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 				if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN')
 				{
-					$process = proc_open('start /b '$interpreter.' -n "'.Mage::getBaseDir('base').$script.'" '.$cmdline, array(), $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
+					$process = proc_open('start /b '.$interpreter.' -n "'.Mage::getBaseDir('base').$script.'" '.$cmdline, array(), $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
 				}
 				else
 				{
