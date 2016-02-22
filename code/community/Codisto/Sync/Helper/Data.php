@@ -399,6 +399,9 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 						proc_close($process);
 
+						if(!preg_match('/^\d+\.\d+\.\d+/', $php_version))
+							continue;
+
 						if(version_compare($php_version, '5.0.0', 'lt'))
 							continue;
 					}
@@ -435,6 +438,9 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 							fclose($pipes[1]);
 
 							proc_close($process);
+
+							if(!preg_match('/^\d+\.\d+\.\d+/', $php_version))
+								continue;
 
 							if(version_compare($php_version, '5.0.0', 'lt'))
 								continue;
