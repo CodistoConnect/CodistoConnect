@@ -1170,7 +1170,11 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		header('Expires: Thu, 01 Jan 1970 00:00:00 GMT'); // Date in the past
 		header('Content-Type: application/octet-stream');
 		header('Content-Disposition: attachment; filename=' . basename($syncDb));
-		header('Content-Length: ' . filesize($syncDb));
+
+		if(strtolower(ini_get('zlib.output_compression')) == 'off')
+		{
+			header('Content-Length: ' . filesize($syncDb));
+		}
 
 		while(ob_get_level() > 0)
 		{

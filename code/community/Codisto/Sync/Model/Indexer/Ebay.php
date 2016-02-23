@@ -493,12 +493,12 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 				Mage::helper('codistosync')->signal($merchants, 'action=syncstores');
 			}
 		}
-/*
+
 		if(isset($data['codisto_sync_category']))
 		{
 			$this->reindexAll();
 		}
-*/
+
 	}
 
 	public function reindexAll()
