@@ -467,19 +467,19 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 			if($interpreter)
 			{
 				$curl_cainfo = ini_get('curl.cainfo');
-				if(!$curl_cainfo)
+				if(!$curl_cainfo && isset($_SERVER['CURL_CA_BUNDLE']))
 				{
 					$curl_cainfo = $_SERVER['CURL_CA_BUNDLE'];
 				}
-				if(!$curl_cainfo)
+				if(!$curl_cainfo && isset($_SERVER['SSL_CERT_FILE']))
 				{
 					$curl_cainfo = $_SERVER['SSL_CERT_FILE'];
 				}
-				if(!$curl_cainfo)
+				if(!$curl_cainfo && isset($_SERVER['CURL_CA_BUNDLE']))
 				{
 					$curl_cainfo = $_ENV['CURL_CA_BUNDLE'];
 				}
-				if(!$curl_cainfo)
+				if(!$curl_cainfo && isset($_ENV['SSL_CERT_FILE']))
 				{
 					$curl_cainfo = $_ENV['SSL_CERT_FILE'];
 				}
@@ -492,13 +492,13 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 				if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN')
 				{
-					$process = proc_open('start /b '.$interpreter.' -n "'.$script.'" '.$cmdline, array(), $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
+					$process = proc_open('start /b '.$interpreter.' "'.$script.'" '.$cmdline, array(), $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
 				}
 				else
 				{
-					$process = proc_open($interpreter.' -n "'.$script.'" '.$cmdline.' &', array(), $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
+					$process = proc_open($interpreter.' "'.$script.'" '.$cmdline.' &', array(), $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
 				}
-				
+
 				if(is_resource($process))
 				{
 					proc_close($process);
@@ -519,19 +519,19 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 			if($interpreter)
 			{
 				$curl_cainfo = ini_get('curl.cainfo');
-				if(!$curl_cainfo)
+				if(!$curl_cainfo && isset($_SERVER['CURL_CA_BUNDLE']))
 				{
 					$curl_cainfo = $_SERVER['CURL_CA_BUNDLE'];
 				}
-				if(!$curl_cainfo)
+				if(!$curl_cainfo && isset($_SERVER['SSL_CERT_FILE']))
 				{
 					$curl_cainfo = $_SERVER['SSL_CERT_FILE'];
 				}
-				if(!$curl_cainfo)
+				if(!$curl_cainfo && isset($_ENV['CURL_CA_BUNDLE']))
 				{
 					$curl_cainfo = $_ENV['CURL_CA_BUNDLE'];
 				}
-				if(!$curl_cainfo)
+				if(!$curl_cainfo && isset($_ENV['SSL_CERT_FILE']))
 				{
 					$curl_cainfo = $_ENV['SSL_CERT_FILE'];
 				}
@@ -554,7 +554,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 					$descriptors[0] = array('pipe', 'r');
 				}
 
-				$process = proc_open($interpreter.' -n "'.$script.'" '.$cmdline,
+				$process = proc_open($interpreter.' "'.$script.'" '.$cmdline,
 							$descriptors, $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
 				if(is_resource($process))
 				{
