@@ -504,7 +504,7 @@ class Codisto_Sync_Model_Sync
 		$this->calcQuote->setStoreId($store->getId());
 
 		$this->calcQuote->addProductAdvanced($productParent, $params, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
-		$this->calcQuote->collectTotals();
+		$this->calcQuote->getShippingAddress()->collectTotals();
 
 		$quoteItems = $this->calcQuote->getAllItems();
 
@@ -772,7 +772,7 @@ class Codisto_Sync_Model_Sync
   			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nonnominal');
 
 			$this->calcQuote->removeAllItems();
-			
+
 			$this->calcQuote->setTotalsCollectedFlag(false);
 		}
 
@@ -783,7 +783,7 @@ class Codisto_Sync_Model_Sync
 		$this->calcQuote->setStoreId($store->getId());
 
 		$this->calcQuote->addProductAdvanced($product, $config, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
-		$this->calcQuote->collectTotals();
+		$this->calcQuote->getShippingAddress()->collectTotals();
 
 		$quoteItems = $this->calcQuote->getAllItems();
 
