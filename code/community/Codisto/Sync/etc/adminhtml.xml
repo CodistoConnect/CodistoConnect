@@ -41,11 +41,11 @@
 					<sort_order>3</sort_order>
 					<action>adminhtml/codisto/categories</action>
 				</categories>
-				<attributes translate="title">
+				<!-- attributes translate="title">
 					<title>Manage Attributes</title>
 					<sort_order>4</sort_order>
 					<action>adminhtml/codisto/attributemapping</action>
-				</attributes>
+				</attributes -->
 				<import translate="title">
 					<title>Import Listings</title>
 					<sort_order>5</sort_order>
@@ -85,10 +85,10 @@
 								<title>Manage Categories</title>
 								<sort_order>3</sort_order>
 							</categories>
-							<attributes>
+							<!-- attributes>
 								<title>Manage Attributes</title>
 								<sort_order>4</sort_order>
-							</attributes>
+							</attributes -->
 							<import>
 								<title>Import Listings</title>
 								<sort_order>5</sort_order>
