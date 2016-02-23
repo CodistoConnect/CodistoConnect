@@ -29,6 +29,9 @@ class Codisto_Sync_Model_Sync
 	private $taxCalculation;
 	private $rateRequest;
 
+	private $codistoStore;
+	private $calcQuote;
+
 	private $ebayGroupId;
 
 	private $groupCache;
@@ -66,6 +69,8 @@ class Codisto_Sync_Model_Sync
 		$this->ebayGroupId = $ebayGroup->getId();
 		if(!$this->ebayGroupId)
 			$this->ebayGroupId = Mage_Customer_Model_Group::NOT_LOGGED_IN_ID;
+
+		$this->codistoStore = new Codisto_Core_Model_Store();
 	}
 
 	private function FilesInDir($dir, $prefix = '')
@@ -423,14 +428,15 @@ class Codisto_Sync_Model_Sync
 
 		$attributes = $args['attributes'];
 		$pricesByAttributeValues = $args['prices'];
+		$options = array();
 
 		foreach ($attributes as $attribute) {
 
 			$productAttribute = $attribute->getProductAttribute();
 
-			$attributeOptionId = Mage::getResourceModel('catalog/product')->getAttributeRawValue($skuData['entity_id'], $productAttribute->getAttributeCode(), $store->getId());
+			$attributeOptionValue = Mage::getResourceModel('catalog/product')->getAttributeRawValue($skuData['entity_id'], $productAttribute->getAttributeCode(), $store->getId());
 
-			$skuData[$productAttribute->getAttributeCode()] = $attributeOptionId;
+			$skuData[$productAttribute->getAttributeCode()] = $attributeOptionValue;
 		}
 
 		$product = Mage::getModel('catalog/product');
@@ -447,7 +453,10 @@ class Codisto_Sync_Model_Sync
 		$insertImageSQL = $args['preparedimageStatement'];
 		$insertSKUMatrixSQL = $args['preparedskumatrixStatement'];
 
-		$totalPrice = $args['baseprice'];
+		$productParent = $args['parent_product'];
+		$productParent->setIsSuperMode(true);
+
+		$options = array();
 
 		foreach ($attributes as $attribute) {
 
@@ -455,13 +464,84 @@ class Codisto_Sync_Model_Sync
 
 			$attributeOptionId = $product->getData($productAttribute->getAttributeCode());
 
-			//add the price adjustment to the total price of the simple product
-			if (isset($pricesByAttributeValues[$attributeOptionId])) {
-				$totalPrice += $pricesByAttributeValues[$attributeOptionId];
+			$options[$productAttribute->getId()] = $attributeOptionId;
+
+		}
+
+		$params = new Varien_Object();
+		$params->setData(array(
+			'product' => $productParent->getId(),
+			'qty' => 1,
+			'super_attribute' => $options
+		));
+
+		$this->codistoStore->cloneStore($store);
+		Mage::app()->setCurrentStore($this->codistoStore);
+
+		if(!isset($this->calcQuote))
+		{
+			$this->calcQuote = Mage::getModel('sales/quote');
+			$this->calcQuote->setIsSuperMode(true);
+			$this->calcQuote->getShippingAddress();
+			$this->calcQuote->getBillingAddress();
+			$this->calcQuote->setCustomer(Mage::getSingleton('customer/session')->getCustomer());
+		}
+		else
+		{
+			$this->calcQuote->getShippingAddress()->unsetData('cached_items_all');
+  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nominal');
+  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nonnominal');
+			$this->calcQuote->getBillingAddress()->unsetData('cached_items_all');
+  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nominal');
+  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nonnominal');
+
+			$this->calcQuote->removeAllItems();
+
+			$this->calcQuote->setTotalsCollectedFlag(false);
+		}
+
+		$this->calcQuote->setStore($store);
+		$this->calcQuote->setStoreId($store->getId());
+
+		$this->calcQuote->addProductAdvanced($productParent, $params, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
+		$this->calcQuote->collectTotals();
+
+		$quoteItems = $this->calcQuote->getAllItems();
+
+		Mage::app()->setCurrentStore($store);
+
+		$price = null;
+		if(is_array($quoteItems))
+		{
+			foreach ($quoteItems as $quoteItem)
+			{
+				if($quoteItem->getProductId() == $productParent->getId())
+				{
+					$price = $quoteItem->getPrice();
+					break;
+				}
 			}
 		}
 
-		$price = $this->getExTaxPrice($product, $totalPrice, $store);
+		if(!is_numeric($price))
+		{
+			$totalPrice = $args['baseprice'];
+
+			foreach ($attributes as $attribute) {
+
+				$productAttribute = $attribute->getProductAttribute();
+
+				$attributeOptionId = $product->getData($productAttribute->getAttributeCode());
+
+				//add the price adjustment to the total price of the simple product
+				if (isset($pricesByAttributeValues[$attributeOptionId])) {
+					$totalPrice += $pricesByAttributeValues[$attributeOptionId];
+				}
+			}
+
+			$price = $this->getExTaxPrice($product, $totalPrice, $store);
+		}
+
 		$qty = $stockItem->getQty();
 		if(!is_numeric($qty))
 			$qty = 0;
@@ -469,8 +549,6 @@ class Codisto_Sync_Model_Sync
 		$skuName = $skuData['name'];
 		if(!$skuName)
 			$skuName = '';
-
-
 
 		$data = array();
 		$data[] = $skuData['entity_id'];
@@ -624,6 +702,7 @@ class Codisto_Sync_Model_Sync
 		Mage::getSingleton('core/resource_iterator')->walk($childProducts->getSelect(), array(array($this, 'SyncSKUData')),
 			array(
 				'parent_id' => $productData['entity_id'],
+				'parent_product' => $product,
 				'attributes' => $configurableAttributes,
 				'baseprice' => $basePrice,
 				'prices' => $pricesByAttributeValues,
@@ -670,9 +749,66 @@ class Codisto_Sync_Model_Sync
 		$insertProductQuestionSQL = $args['preparedproductquestionStatement'];
 		$insertProductAnswerSQL = $args['preparedproductanswerStatement'];
 
-		$price = $this->getExTaxPrice($product, $product->getFinalPrice(), $store);
+		$product->setIsSuperMode(true);
+
+		$this->codistoStore->cloneStore($store);
+		Mage::app()->setCurrentStore($this->codistoStore);
+
+		if(!isset($this->calcQuote))
+		{
+			$this->calcQuote = Mage::getModel('sales/quote');
+			$this->calcQuote->setIsSuperMode(true);
+			$this->calcQuote->getShippingAddress();
+			$this->calcQuote->getBillingAddress();
+			$this->calcQuote->setCustomer(Mage::getSingleton('customer/session')->getCustomer());
+		}
+		else
+		{
+			$this->calcQuote->getShippingAddress()->unsetData('cached_items_all');
+  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nominal');
+  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nonnominal');
+			$this->calcQuote->getBillingAddress()->unsetData('cached_items_all');
+  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nominal');
+  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nonnominal');
+
+			$this->calcQuote->removeAllItems();
+			
+			$this->calcQuote->setTotalsCollectedFlag(false);
+		}
+
+		$config = new Varien_Object();
+		$config->setQty(1);
+
+		$this->calcQuote->setStore($store);
+		$this->calcQuote->setStoreId($store->getId());
+
+		$this->calcQuote->addProductAdvanced($product, $config, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
+		$this->calcQuote->collectTotals();
+
+		$quoteItems = $this->calcQuote->getAllItems();
+
+		Mage::app()->setCurrentStore($store);
+
+		$price = null;
+		if(is_array($quoteItems))
+		{
+			foreach ($quoteItems as $quoteItem)
+			{
+				if($quoteItem->getProductId() == $product->getId())
+				{
+					$price = $quoteItem->getPrice();
+					break;
+				}
+			}
+		}
+
+		if(!is_numeric($price))
+		{
+			$price = $this->getExTaxPrice($product, $product->getFinalPrice(), $store);
+		}
+
 		$listPrice = $this->getExTaxPrice($product, $product->getPrice(), $store);
-		if($listPrice == null)
+		if(!is_numeric($listPrice))
 			$listPrice = $price;
 
 		$qty = $stockItem->getQty();
@@ -1718,5 +1854,43 @@ class Codisto_Sync_Model_Sync
 		}
 
 		return $price;
+	}
+}
+
+class Codisto_Core_Model_Store extends Mage_Core_Model_Store
+{
+	public function _construct()
+	{
+
+	}
+
+	public function cloneStore($store)
+	{
+		$this->_eventPrefix = $store->_eventPrefix;
+		$this->_eventObject = $store->_eventObject;
+		$this->_resourceName = $store->_resourceName;
+		$this->_resource = $store->_resource;
+		$this->_resourceCollectionName = $store->_resourceCollectionName;
+		$this->_cacheTag = $store->_cacheTag;
+		$this->_dataSaveAllowed = $store->_dataSaveAllowed;
+		$this->_isObjectNew = $store->_isObjectNew;
+		$this->_priceFilter = $store->_priceFilter;
+		$this->_website = $store->_website;
+		$this->_group = $store->_group;
+		$this->_configCache = $store->_configCache;
+		$this->_configCacheBaseNodes = $store->_configCacheBaseNodes;
+		$this->_dirCache = $store->_dirCache;
+		$this->_urlCache = $store->_urlCache;
+		$this->_baseUrlCache = $store->_baseUrlCache;
+		$this->_session = $store->_session;
+		$this->_isAdminSecure = $store->_isAdminSecure;
+		$this->_isFrontSecure = $store->_isFrontSecure;
+		$this->_frontendName = $store->_frontendName;
+		$this->_isReadOnly = $store->_isReadOnly;
+	}
+
+	public function roundPrice($price)
+	{
+		return round($price, 4);
 	}
 }
