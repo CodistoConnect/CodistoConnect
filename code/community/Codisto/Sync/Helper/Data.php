@@ -68,6 +68,9 @@ if (!function_exists('hash_equals')) {
 
 class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 {
+	private $client;
+	private $phpInterpreter;
+
 	public function getCodistoVersion()
 	{
 		return (string) Mage::getConfig()->getNode()->modules->Codisto_Sync->version;
@@ -313,27 +316,308 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 				$client->setHeaders('Content-Type', 'application/json');
 				$client->setRawData($logEntry);
 				$client->request('POST');
-			}
-			catch(Exception $e2)
+		}
+		catch(Exception $e2)
+		{
+			Mage::log("Couldn't notify " . $endpoint . " endpoint of install error. Exception details " . $e->getMessage() . " on line: " . $e->getLine());
+		}
+	}
+
+	public function eBayReIndex()
+	{
+		try
+		{
+
+			$indexer = Mage::getModel('index/process');
+			$indexer->load('codistoebayindex', 'indexer_code')
+			->changeStatus(Mage_Index_Model_Process::STATUS_REQUIRE_REINDEX)
+			->reindexAll();
+
+		}
+		catch (Exception $e)
+		{
+			Mage::log($e->getMessage());
+		}
+	}
+
+	private function phpPath()
+	{
+		if(isset($this->phpInterpreter))
+			return $this->phpInterpreter;
+
+		$interpreterName = array( 'php', 'php5', 'php-cli', 'hhvm' );
+		$extension = '';
+		if('\\' === DIRECTORY_SEPARATOR)
+		{
+			$extension = '.exe';
+		}
+
+		$dirs = array(PHP_BINDIR);
+		if ('\\' === DIRECTORY_SEPARATOR)
+		{
+			$dirs[] = getenv('SYSTEMDRIVE').'\\xampp\\php\\';
+		}
+
+		$open_basedir = ini_get('open_basedir');
+		if($open_basedir)
+		{
+			$basedirs = explode(PATH_SEPARATOR, ini_get('open_basedir'));
+			foreach($basedirs as $dir)
 			{
-				Mage::log("Couldn't notify " . $endpoint . " endpoint of install error. Exception details " . $e->getMessage() . " on line: " . $e->getLine());
+				if(@is_dir($dir))
+				{
+					$dirs[] = $dir;
+				}
+			}
+		}
+		else
+		{
+			$dirs = array_merge(explode(PATH_SEPARATOR, getenv('PATH')), $dirs);
+		}
+
+		foreach ($dirs as $dir)
+		{
+			foreach ($interpreterName as $fileName)
+			{
+				$file = $dir.DIRECTORY_SEPARATOR.$fileName.$extension;
+
+				if(@is_file($file) && ('\\' === DIRECTORY_SEPARATOR || @is_executable($file)))
+				{
+					if(function_exists('proc_open'))
+					{
+						$process = proc_open($file.' -n', array(
+							array('pipe', 'r'),
+							array('pipe', 'w')
+						), $pipes);
+
+						fwrite($pipes[0], '<?php echo phpversion();');
+						fclose($pipes[0]);
+
+						$php_version = stream_get_contents($pipes[1]);
+
+						fclose($pipes[1]);
+
+						proc_close($process);
+
+						if(!preg_match('/^\d+\.\d+\.\d+/', $php_version))
+							continue;
+
+						if(version_compare($php_version, '5.0.0', 'lt'))
+							continue;
+					}
+
+					$this->phpInterpreter = $file;
+
+					return $file;
+				}
 			}
 		}
 
-		public function eBayReIndex()
+		if(function_exists('shell_exec'))
+		{
+			foreach ($interpreterName as $fileName)
+			{
+				$file = shell_exec('which '.$fileName.$extension);
+				if($file)
+				{
+					$file = trim($file);
+					if(@is_file($file) && ('\\' === DIRECTORY_SEPARATOR || @is_executable($file)))
+					{
+						if(function_exists('proc_open'))
+						{
+							$process = proc_open($file.' -n', array(
+								array('pipe', 'r'),
+								array('pipe', 'w')
+							), $pipes);
+
+							fwrite($pipes[0], '<?php echo phpversion();');
+							fclose($pipes[0]);
+
+							$php_version = stream_get_contents($pipes[1]);
+
+							fclose($pipes[1]);
+
+							proc_close($process);
+
+							if(!preg_match('/^\d+\.\d+\.\d+/', $php_version))
+								continue;
+
+							if(version_compare($php_version, '5.0.0', 'lt'))
+								continue;
+						}
+
+						$this->phpInterpreter = $file;
+
+						return $file;
+					}
+				}
+			}
+		}
+
+		$this->phpInterpreter = null;
+
+		return null;
+	}
+
+	private function runProcessBackground($script, $args)
+	{
+		if(function_exists('proc_open'))
+		{
+			$interpreter = $this->phpPath();
+			if($interpreter)
+			{
+				$curl_cainfo = ini_get('curl.cainfo');
+				if(!$curl_cainfo)
+				{
+					$curl_cainfo = $_SERVER['CURL_CA_BUNDLE'];
+				}
+				if(!$curl_cainfo)
+				{
+					$curl_cainfo = $_SERVER['SSL_CERT_FILE'];
+				}
+				if(!$curl_cainfo)
+				{
+					$curl_cainfo = $_ENV['CURL_CA_BUNDLE'];
+				}
+				if(!$curl_cainfo)
+				{
+					$curl_cainfo = $_ENV['SSL_CERT_FILE'];
+				}
+
+				$cmdline = '';
+				foreach($args as $arg)
+				{
+					$cmdline .= '\''.$arg.'\' ';
+				}
+
+				if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN')
+				{
+					$process = proc_open('start /b '.$interpreter.' -n "'.$script.'" '.$cmdline, array(), $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
+				}
+				else
+				{
+					$process = proc_open($interpreter.' -n "'.$script.'" '.$cmdline.' &', array(), $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
+				}
+				
+				if(is_resource($process))
+				{
+					proc_close($process);
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	function runProcess($script, $args, $stdin)
+	{
+		if(function_exists('proc_open')
+			&& function_exists('proc_close'))
+		{
+			$interpreter = $this->phpPath();
+			if($interpreter)
+			{
+				$curl_cainfo = ini_get('curl.cainfo');
+				if(!$curl_cainfo)
+				{
+					$curl_cainfo = $_SERVER['CURL_CA_BUNDLE'];
+				}
+				if(!$curl_cainfo)
+				{
+					$curl_cainfo = $_SERVER['SSL_CERT_FILE'];
+				}
+				if(!$curl_cainfo)
+				{
+					$curl_cainfo = $_ENV['CURL_CA_BUNDLE'];
+				}
+				if(!$curl_cainfo)
+				{
+					$curl_cainfo = $_ENV['SSL_CERT_FILE'];
+				}
+
+				$cmdline = '';
+				if(is_array($cmdline))
+				{
+					foreach($args as $arg)
+					{
+						$cmdline .= '\''.$arg.'\' ';
+					}
+				}
+
+				$descriptors = array(
+						1 => array('pipe', 'w')
+				);
+
+				if(is_string($stdin))
+				{
+					$descriptors[0] = array('pipe', 'r');
+				}
+
+				$process = proc_open($interpreter.' -n "'.$script.'" '.$cmdline,
+							$descriptors, $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
+				if(is_resource($process))
+				{
+					if(is_string($stdin))
+					{
+						for($written = 0; $written < strlen($stdin); )
+						{
+							$writecount = fwrite($pipes[0], substr($stdin, $written));
+							if($writecount === false)
+								break;
+
+							$written += $writecount;
+						}
+
+						fclose($pipes[0]);
+					}
+
+					$result = stream_get_contents($pipes[1]);
+					fclose($pipes[1]);
+
+					proc_close($process);
+					return $result;
+				}
+			}
+		}
+
+		return null;
+	}
+
+	public function processCmsContent($content)
+	{
+		$result = $this->runProcess('app/code/community/Codisto/Sync/Helper/CmsContent.php', null, $content);
+		if($result != null)
+			return $result;
+
+		return Mage::helper('cms')->getBlockTemplateProcessor()->filter(preg_replace('/^\s+|\s+$/', '', $content));
+	}
+
+	public function signal($merchants, $msg)
+	{
+		$backgroundSignal = $this->runProcessBackground('app/code/community/Codisto/Sync/Helper/Signal.php', array(serialize($merchants), $msg));
+		if($backgroundSignal)
+			return;
+
+		if(!$this->client)
+		{
+			$this->client = new Zend_Http_Client();
+			$this->client->setConfig(array( 'adapter' => 'Zend_Http_Client_Adapter_Curl', 'curloptions' => array(CURLOPT_TIMEOUT => 4, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0), 'keepalive' => true, 'maxredirects' => 0 ));
+			$this->client->setStream();
+		}
+
+		foreach($merchants as $merchant)
 		{
 			try
 			{
-
-				$indexer = Mage::getModel('index/process');
-				$indexer->load('codistoebayindex', 'indexer_code')
-				->changeStatus(Mage_Index_Model_Process::STATUS_REQUIRE_REINDEX)
-				->reindexAll();
-
+				$this->client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
+				$this->client->setHeaders('X-HostKey', $merchant['hostkey']);
+				$this->client->setRawData($msg)->request('POST');
 			}
-			catch (Exception $e)
+			catch(Exception $e)
 			{
-				Mage::log($e->getMessage());
+
 			}
 		}
 	}
+}
