@@ -734,27 +734,7 @@ class Codisto_Sync_Model_Observer
 			{
 				$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$merchant['storeid'].'.db';
 
-				foreach($stockItems as $productId)
-				{
-					$syncObject->UpdateProducts($syncDb, array($productId), $merchant['storeid']);
-				}
-
-				try
-				{
-					$client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
-					$client->setHeaders('X-HostKey', $merchant['hostkey']);
-
-					if(count($stockItems) == 1)
-						$productids = $stockItems[0];
-					else
-						$productids = '['.implode(',', $stockItems).']';
-
-					$client->setRawData('action=sync&productid='.$productids)->request('POST');
-				}
-				catch(Exception $e)
-				{
-
-				}
+				$syncObject->UpdateProducts($syncDb, $stockItems, $merchant['storeid']);
 			}
 
 			$syncedProducts = Mage::registry('codisto_synced_products');
@@ -778,7 +758,7 @@ class Codisto_Sync_Model_Observer
 				Mage::unregister('codisto_synced_products');
 				Mage::register('codisto_synced_products', $syncedProducts);
 
-				if(count($stockItems) == 1)
+				if(count($syncIds) == 1)
 					$productids = $syncIds[0];
 				else
 					$productids = '['.implode(',', $syncIds).']';
