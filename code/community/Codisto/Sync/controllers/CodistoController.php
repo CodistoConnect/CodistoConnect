@@ -84,4 +84,9 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 
 		$this->renderLayout();
 	}
+
+	protected function _isAllowed()
+	{
+		return Mage::getSingleton('admin/session')->isAllowed('codisto');
+	}
 }
