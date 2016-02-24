@@ -69,8 +69,6 @@ class Codisto_Sync_Model_Sync
 		$this->ebayGroupId = $ebayGroup->getId();
 		if(!$this->ebayGroupId)
 			$this->ebayGroupId = Mage_Customer_Model_Group::NOT_LOGGED_IN_ID;
-
-		$this->codistoStore = new Codisto_Core_Model_Store();
 	}
 
 	private function FilesInDir($dir, $prefix = '')
@@ -475,53 +473,66 @@ class Codisto_Sync_Model_Sync
 			'super_attribute' => $options
 		));
 
+		if(!isset($this->codistoStore))
+		{
+			$this->codistoStore = new Codisto_Core_Model_Store();
+		}
+
 		$this->codistoStore->cloneStore($store);
 		Mage::app()->setCurrentStore($this->codistoStore);
 
-		if(!isset($this->calcQuote))
-		{
-			$this->calcQuote = Mage::getModel('sales/quote');
-			$this->calcQuote->setIsSuperMode(true);
-			$this->calcQuote->getShippingAddress();
-			$this->calcQuote->getBillingAddress();
-			$this->calcQuote->setCustomer(Mage::getSingleton('customer/session')->getCustomer());
-		}
-		else
-		{
-			$this->calcQuote->getShippingAddress()->unsetData('cached_items_all');
-  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nominal');
-  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nonnominal');
-			$this->calcQuote->getBillingAddress()->unsetData('cached_items_all');
-  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nominal');
-  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nonnominal');
-
-			$this->calcQuote->removeAllItems();
-
-			$this->calcQuote->setTotalsCollectedFlag(false);
-		}
-
-		$this->calcQuote->setStore($store);
-		$this->calcQuote->setStoreId($store->getId());
-
-		$this->calcQuote->addProductAdvanced($productParent, $params, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
-		$this->calcQuote->getShippingAddress()->collectTotals();
-
-		$quoteItems = $this->calcQuote->getAllItems();
-
-		Mage::app()->setCurrentStore($store);
-
 		$price = null;
-		if(is_array($quoteItems))
+
+		try
 		{
-			foreach ($quoteItems as $quoteItem)
+			if(!isset($this->calcQuote))
 			{
-				if($quoteItem->getProductId() == $productParent->getId())
+				$this->calcQuote = Mage::getModel('sales/quote');
+				$this->calcQuote->setIsSuperMode(true);
+				$this->calcQuote->getShippingAddress();
+				$this->calcQuote->getBillingAddress();
+				$this->calcQuote->setCustomer(Mage::getSingleton('customer/session')->getCustomer());
+			}
+			else
+			{
+				$this->calcQuote->getShippingAddress()->unsetData('cached_items_all');
+	  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nominal');
+	  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nonnominal');
+				$this->calcQuote->getBillingAddress()->unsetData('cached_items_all');
+	  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nominal');
+	  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nonnominal');
+
+				$this->calcQuote->removeAllItems();
+
+				$this->calcQuote->setTotalsCollectedFlag(false);
+			}
+
+			$this->calcQuote->setStore($store);
+			$this->calcQuote->setStoreId($store->getId());
+
+			$this->calcQuote->addProductAdvanced($productParent, $params, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
+			$this->calcQuote->getShippingAddress()->collectTotals();
+
+			$quoteItems = $this->calcQuote->getAllItems();
+
+			if(is_array($quoteItems))
+			{
+				foreach ($quoteItems as $quoteItem)
 				{
-					$price = $quoteItem->getPrice();
-					break;
+					if($quoteItem->getProductId() == $productParent->getId())
+					{
+						$price = $quoteItem->getPrice();
+						break;
+					}
 				}
 			}
 		}
+		catch(Exception $e)
+		{
+
+		}
+
+		Mage::app()->setCurrentStore($store);
 
 		if(!is_numeric($price))
 		{
@@ -751,56 +762,69 @@ class Codisto_Sync_Model_Sync
 
 		$product->setIsSuperMode(true);
 
+		if(!isset($this->codistoStore))
+		{
+			$this->codistoStore = new Codisto_Core_Model_Store();
+		}
+
 		$this->codistoStore->cloneStore($store);
 		Mage::app()->setCurrentStore($this->codistoStore);
 
-		if(!isset($this->calcQuote))
-		{
-			$this->calcQuote = Mage::getModel('sales/quote');
-			$this->calcQuote->setIsSuperMode(true);
-			$this->calcQuote->getShippingAddress();
-			$this->calcQuote->getBillingAddress();
-			$this->calcQuote->setCustomer(Mage::getSingleton('customer/session')->getCustomer());
-		}
-		else
-		{
-			$this->calcQuote->getShippingAddress()->unsetData('cached_items_all');
-  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nominal');
-  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nonnominal');
-			$this->calcQuote->getBillingAddress()->unsetData('cached_items_all');
-  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nominal');
-  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nonnominal');
-
-			$this->calcQuote->removeAllItems();
-
-			$this->calcQuote->setTotalsCollectedFlag(false);
-		}
-
-		$config = new Varien_Object();
-		$config->setQty(1);
-
-		$this->calcQuote->setStore($store);
-		$this->calcQuote->setStoreId($store->getId());
-
-		$this->calcQuote->addProductAdvanced($product, $config, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
-		$this->calcQuote->getShippingAddress()->collectTotals();
-
-		$quoteItems = $this->calcQuote->getAllItems();
-
-		Mage::app()->setCurrentStore($store);
-
 		$price = null;
-		if(is_array($quoteItems))
+
+		try
 		{
-			foreach ($quoteItems as $quoteItem)
+			if(!isset($this->calcQuote))
 			{
-				if($quoteItem->getProductId() == $product->getId())
+				$this->calcQuote = Mage::getModel('sales/quote');
+				$this->calcQuote->setIsSuperMode(true);
+				$this->calcQuote->getShippingAddress();
+				$this->calcQuote->getBillingAddress();
+				$this->calcQuote->setCustomer(Mage::getSingleton('customer/session')->getCustomer());
+			}
+			else
+			{
+				$this->calcQuote->getShippingAddress()->unsetData('cached_items_all');
+	  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nominal');
+	  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nonnominal');
+				$this->calcQuote->getBillingAddress()->unsetData('cached_items_all');
+	  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nominal');
+	  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nonnominal');
+
+				$this->calcQuote->removeAllItems();
+
+				$this->calcQuote->setTotalsCollectedFlag(false);
+			}
+
+			$config = new Varien_Object();
+			$config->setQty(1);
+
+			$this->calcQuote->setStore($store);
+			$this->calcQuote->setStoreId($store->getId());
+
+			$this->calcQuote->addProductAdvanced($product, $config, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
+			$this->calcQuote->getShippingAddress()->collectTotals();
+
+			$quoteItems = $this->calcQuote->getAllItems();
+
+			if(is_array($quoteItems))
+			{
+				foreach ($quoteItems as $quoteItem)
 				{
-					$price = $quoteItem->getPrice();
-					break;
+					if($quoteItem->getProductId() == $product->getId())
+					{
+						$price = $quoteItem->getPrice();
+						break;
+					}
 				}
 			}
 		}
+		catch(Exception $e)
+		{
+
+		}
+
+		Mage::app()->setCurrentStore($store);
 
 		if(!is_numeric($price))
 		{
