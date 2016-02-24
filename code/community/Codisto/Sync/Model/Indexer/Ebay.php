@@ -418,7 +418,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 					else
 						$productIds = '['.implode(',', $syncIds).']';
 
-					$merchants = [];
+					$merchants = array();
 					$merchantSignalled = array();
 
 					foreach($syncStores as $storeId)
