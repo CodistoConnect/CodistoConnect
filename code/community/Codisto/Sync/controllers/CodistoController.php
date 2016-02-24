@@ -24,7 +24,7 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 
 	public function indexAction()
 	{
-		$url = preg_replace('/\/key\/[0-9a-zA-Z]{32}\//', '/', preg_replace('/\/ebaytab(?:\/index)?(\/key\/)?/', '/ebaytab$1', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab')));
+		$url = preg_replace('/\/ebaytab(?:\/index)?(\/key\/)?/', '/ebaytab$1', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
 
 		$this->renderPane($url, 'codisto-bulk-editor');
 	}
