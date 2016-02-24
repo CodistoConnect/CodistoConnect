@@ -1,5 +1,22 @@
 # Change Log
 
+## [1.1.79](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.79) (2016-02-24)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.78...1.1.79)
+
+**Implemented enhancements:**
+
+- switch observers over to multi-process signalling [\#266](https://github.com/CodistoConnect/CodistoConnect/pull/266) ([lamery](https://github.com/lamery))
+- add exception handling on calc quote to fall back to standard process [\#265](https://github.com/CodistoConnect/CodistoConnect/pull/265) ([lamery](https://github.com/lamery))
+- when launching sub-process check php extensions in target executable [\#263](https://github.com/CodistoConnect/CodistoConnect/pull/263) ([lamery](https://github.com/lamery))
+- use php ini in sub processes to ensure curl and pdo are loaded [\#262](https://github.com/CodistoConnect/CodistoConnect/pull/262) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#264](https://github.com/CodistoConnect/CodistoConnect/pull/264) ([bradmccormack](https://github.com/bradmccormack))
+- use quote pricing instead of running own magento equivalent price calc [\#261](https://github.com/CodistoConnect/CodistoConnect/pull/261) ([lamery](https://github.com/lamery))
+- async signalling + process protection on cms content [\#260](https://github.com/CodistoConnect/CodistoConnect/pull/260) ([lamery](https://github.com/lamery))
+- reduce the number of signals during updates [\#259](https://github.com/CodistoConnect/CodistoConnect/pull/259) ([lamery](https://github.com/lamery))
+
 ## [1.1.78](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.78) (2016-02-19)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.77...1.1.78)
 
