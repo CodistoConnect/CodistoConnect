@@ -361,29 +361,79 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return $result;
 	}
 
-	private function phpPath($requiredExtensions)
+	private function phpCheck($interpreter, $requiredVersion, $requiredExtensions)
 	{
-		if(isset($this->phpInterpreter))
-			return $this->phpInterpreter;
-
-		if(is_array($requiredExtensions))
+		if(function_exists('proc_open') &&
+			function_exists('proc_close'))
 		{
-			$extensionScript = '<?php echo serialize(array('.implode(',',
-									array_map(create_function('$ext',
-										'return \'\\\'\'.$ext.\'\\\' => extension_loaded(\\\'\'.$ext.\'\\\')\';'),
-									$requiredExtensions)).'));';
-
-			$extensionSet = array();
-			foreach ($requiredExtensions as $extension)
+			if(is_array($requiredExtensions))
 			{
-				$extensionSet[$extension] = 1;
+				$extensionScript = '<?php echo serialize(array('.implode(',',
+										array_map(create_function('$ext',
+											'return \'\\\'\'.$ext.\'\\\' => extension_loaded(\\\'\'.$ext.\'\\\')\';'),
+										$requiredExtensions)).'));';
+
+				$extensionSet = array();
+				foreach ($requiredExtensions as $extension)
+				{
+					$extensionSet[$extension] = 1;
+				}
+			}
+			else
+			{
+				$extensionScript = '';
+				$extensionSet = array();
+			}
+
+			$php_version = $this->phpTest($interpreter, '-n', '<?php echo phpversion();');
+
+			if(!preg_match('/^\d+\.\d+\.\d+/', $php_version))
+				return '';
+
+			if(version_compare($php_version, $requiredVersion, 'lt'))
+				return '';
+
+			if($extensionScript)
+			{
+				$extensions = $this->phpTest($interpreter, '-n', $extensionScript);
+				$extensions = @unserialize($extensions);
+				if(!is_array($extensions))
+					$extensions = array();
+
+				$extensionDiff = array_diff($extensionSet, $extensions);
+
+				if(empty($extensionDiff))
+				{
+					return '"'.$interpreter.'" -n';
+				}
+				else
+				{
+					$extensions = $this->phpTest($interpreter, '', $extensionScript);
+					$extensions = @unserialize($extensions);
+					if(!is_array($extensions))
+						$extensions = array();
+
+					$extensionDiff = array_diff($extensionSet, $extensions);
+
+					if(empty($extensionDiff))
+					{
+						return '"'.$interpreter.'"';
+					}
+				}
 			}
 		}
 		else
 		{
-			$extensionScript = '';
-			$extensionSet = array();
+			return '"'.$interpreter.'"';
 		}
+
+		return '';
+	}
+
+	private function phpPath($requiredExtensions)
+	{
+		if(isset($this->phpInterpreter))
+			return $this->phpInterpreter;
 
 		$interpreterName = array( 'php', 'php5', 'php-cli', 'hhvm' );
 		$extension = '';
@@ -423,54 +473,9 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 				if(@is_file($file) && ('\\' === DIRECTORY_SEPARATOR || @is_executable($file)))
 				{
-					if(function_exists('proc_open') &&
-						function_exists('proc_close'))
-					{
-						$php_version = $this->phpTest($file, '-n', '<?php echo phpversion();');
-
-						if(!preg_match('/^\d+\.\d+\.\d+/', $php_version))
-							continue;
-
-						if(version_compare($php_version, '5.0.0', 'lt'))
-							continue;
-
-						if($extensionScript)
-						{
-							$extensions = $this->phpTest($file, '-n', $extensionScript);
-							$extensions = @unserialize($extensions);
-							if(!is_array($extensions))
-								$extensions = array();
-
-							$extensionDiff = array_diff($extensionSet, $extensions);
-
-							if(empty($extensionDiff))
-							{
-								$file = '"'.$file.'" -n';
-							}
-							else
-							{
-								$extensions = $this->phpTest($file, '', $extensionScript);
-								$extensions = @unserialize($extensions);
-								if(!is_array($extensions))
-									$extensions = array();
-
-								$extensionDiff = array_diff($extensionSet, $extensions);
-
-								if(empty($extensionDiff))
-								{
-									$file = '"'.$file.'"';
-								}
-								else
-								{
-									continue;
-								}
-							}
-						}
-					}
-					else
-					{
-						$file = '"'.$file.'"';
-					}
+					$file = $this->phpCheck($file, '5.0.0', $requiredExtensions);
+					if(!$file)
+						continue;
 
 					$this->phpInterpreter = $file;
 
@@ -489,54 +494,9 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 					$file = trim($file);
 					if(@is_file($file) && ('\\' === DIRECTORY_SEPARATOR || @is_executable($file)))
 					{
-						if(function_exists('proc_open') &&
-							function_exists('proc_close'))
-						{
-							$php_version = $this->phpTest($file, '-n', '<?php echo phpversion();');
-
-							if(!preg_match('/^\d+\.\d+\.\d+/', $php_version))
-								continue;
-
-							if(version_compare($php_version, '5.0.0', 'lt'))
-								continue;
-
-							if($extensionScript)
-							{
-								$extensions = $this->phpTest($file, '-n', $extensionScript);
-								$extensions = @unserialize($extensions);
-								if(!is_array($extensions))
-									$extensions = array();
-
-								$extensionDiff = array_diff($extensionSet, $extensions);
-
-								if(empty($extensionDiff))
-								{
-									$file = '"'.$file.'" -n';
-								}
-								else
-								{
-									$extensions = $this->phpTest($file, '', $extensionScript);
-									$extensions = @unserialize($extensions);
-									if(!is_array($extensions))
-										$extensions = array();
-
-									$extensionDiff = array_diff($extensionSet, $extensions);
-
-									if(empty($extensionDiff))
-									{
-										$file = '"'.$file.'"';
-									}
-									else
-									{
-										continue;
-									}
-								}
-							}
-						}
-						else
-						{
-							$file = '"'.$file.'"';
-						}
+						$file = $this->phpCheck($file, '5.0.0', $requiredExtensions);
+						if(!$file)
+							continue;
 
 						$this->phpInterpreter = $file;
 
