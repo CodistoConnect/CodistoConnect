@@ -340,10 +340,50 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		}
 	}
 
-	private function phpPath()
+	private function phpTest($interpreter, $args, $script)
+	{
+		$process = proc_open('"'.$interpreter.'" '.$args, array(
+			array('pipe', 'r'),
+			array('pipe', 'w')
+		), $pipes);
+
+		@fwrite($pipes[0], $script);
+		fclose($pipes[0]);
+
+		$result = @stream_get_contents($pipes[1]);
+		if(!$result)
+			$result = '';
+
+		fclose($pipes[1]);
+
+		proc_close($process);
+
+		return $result;
+	}
+
+	private function phpPath($requiredExtensions)
 	{
 		if(isset($this->phpInterpreter))
 			return $this->phpInterpreter;
+
+		if(is_array($requiredExtensions))
+		{
+			$extensionScript = '<?php echo serialize(array('.implode(',',
+									array_map(create_function('$ext',
+										'return \'\\\'\'.$ext.\'\\\' => extension_loaded(\\\'\'.$ext.\'\\\')\';'),
+									$requiredExtensions)).'));';
+
+			$extensionSet = array();
+			foreach ($requiredExtensions as $extension)
+			{
+				$extensionSet[$extension] = 1;
+			}
+		}
+		else
+		{
+			$extensionScript = '';
+			$extensionSet = array();
+		}
 
 		$interpreterName = array( 'php', 'php5', 'php-cli', 'hhvm' );
 		$extension = '';
@@ -383,27 +423,53 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 				if(@is_file($file) && ('\\' === DIRECTORY_SEPARATOR || @is_executable($file)))
 				{
-					if(function_exists('proc_open'))
+					if(function_exists('proc_open') &&
+						function_exists('proc_close'))
 					{
-						$process = proc_open($file.' -n', array(
-							array('pipe', 'r'),
-							array('pipe', 'w')
-						), $pipes);
-
-						fwrite($pipes[0], '<?php echo phpversion();');
-						fclose($pipes[0]);
-
-						$php_version = stream_get_contents($pipes[1]);
-
-						fclose($pipes[1]);
-
-						proc_close($process);
+						$php_version = $this->phpTest($file, '-n', '<?php echo phpversion();');
 
 						if(!preg_match('/^\d+\.\d+\.\d+/', $php_version))
 							continue;
 
 						if(version_compare($php_version, '5.0.0', 'lt'))
 							continue;
+
+						if($extensionScript)
+						{
+							$extensions = $this->phpTest($file, '-n', $extensionScript);
+							$extensions = @unserialize($extensions);
+							if(!is_array($extensions))
+								$extensions = array();
+
+							$extensionDiff = array_diff($extensionSet, $extensions);
+
+							if(empty($extensionDiff))
+							{
+								$file = '"'.$file.'" -n';
+							}
+							else
+							{
+								$extensions = $this->phpTest($file, '', $extensionScript);
+								$extensions = @unserialize($extensions);
+								if(!is_array($extensions))
+									$extensions = array();
+
+								$extensionDiff = array_diff($extensionSet, $extensions);
+
+								if(empty($extensionDiff))
+								{
+									$file = '"'.$file.'"';
+								}
+								else
+								{
+									continue;
+								}
+							}
+						}
+					}
+					else
+					{
+						$file = '"'.$file.'"';
 					}
 
 					$this->phpInterpreter = $file;
@@ -423,27 +489,53 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 					$file = trim($file);
 					if(@is_file($file) && ('\\' === DIRECTORY_SEPARATOR || @is_executable($file)))
 					{
-						if(function_exists('proc_open'))
+						if(function_exists('proc_open') &&
+							function_exists('proc_close'))
 						{
-							$process = proc_open($file.' -n', array(
-								array('pipe', 'r'),
-								array('pipe', 'w')
-							), $pipes);
-
-							fwrite($pipes[0], '<?php echo phpversion();');
-							fclose($pipes[0]);
-
-							$php_version = stream_get_contents($pipes[1]);
-
-							fclose($pipes[1]);
-
-							proc_close($process);
+							$php_version = $this->phpTest($file, '-n', '<?php echo phpversion();');
 
 							if(!preg_match('/^\d+\.\d+\.\d+/', $php_version))
 								continue;
 
 							if(version_compare($php_version, '5.0.0', 'lt'))
 								continue;
+
+							if($extensionScript)
+							{
+								$extensions = $this->phpTest($file, '-n', $extensionScript);
+								$extensions = @unserialize($extensions);
+								if(!is_array($extensions))
+									$extensions = array();
+
+								$extensionDiff = array_diff($extensionSet, $extensions);
+
+								if(empty($extensionDiff))
+								{
+									$file = '"'.$file.'" -n';
+								}
+								else
+								{
+									$extensions = $this->phpTest($file, '', $extensionScript);
+									$extensions = @unserialize($extensions);
+									if(!is_array($extensions))
+										$extensions = array();
+
+									$extensionDiff = array_diff($extensionSet, $extensions);
+
+									if(empty($extensionDiff))
+									{
+										$file = '"'.$file.'"';
+									}
+									else
+									{
+										continue;
+									}
+								}
+							}
+						}
+						else
+						{
+							$file = '"'.$file.'"';
 						}
 
 						$this->phpInterpreter = $file;
@@ -459,11 +551,11 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return null;
 	}
 
-	private function runProcessBackground($script, $args)
+	private function runProcessBackground($script, $args, $extensions)
 	{
 		if(function_exists('proc_open'))
 		{
-			$interpreter = $this->phpPath();
+			$interpreter = $this->phpPath($extensions);
 			if($interpreter)
 			{
 				$curl_cainfo = ini_get('curl.cainfo');
@@ -510,12 +602,12 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return false;
 	}
 
-	function runProcess($script, $args, $stdin)
+	function runProcess($script, $args, $extensions, $stdin)
 	{
 		if(function_exists('proc_open')
 			&& function_exists('proc_close'))
 		{
-			$interpreter = $this->phpPath();
+			$interpreter = $this->phpPath($extensions);
 			if($interpreter)
 			{
 				$curl_cainfo = ini_get('curl.cainfo');
@@ -586,7 +678,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 	public function processCmsContent($content)
 	{
-		$result = $this->runProcess('app/code/community/Codisto/Sync/Helper/CmsContent.php', null, $content);
+		$result = $this->runProcess('app/code/community/Codisto/Sync/Helper/CmsContent.php', null, array('pdo', 'curl', 'simplexml'), $content);
 		if($result != null)
 			return $result;
 
@@ -595,7 +687,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 	public function signal($merchants, $msg)
 	{
-		$backgroundSignal = $this->runProcessBackground('app/code/community/Codisto/Sync/Helper/Signal.php', array(serialize($merchants), $msg));
+		$backgroundSignal = $this->runProcessBackground('app/code/community/Codisto/Sync/Helper/Signal.php', array(serialize($merchants), $msg), array('pdo', 'curl', 'simplexml'));
 		if($backgroundSignal)
 			return;
 
