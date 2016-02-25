@@ -1,5 +1,17 @@
 # Change Log
 
+## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
+
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.79...HEAD)
+
+**Implemented enhancements:**
+
+- support non admin users with codisto role [\#267](https://github.com/CodistoConnect/CodistoConnect/pull/267) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#269](https://github.com/CodistoConnect/CodistoConnect/pull/269) ([bradmccormack](https://github.com/bradmccormack))
+
 ## [1.1.79](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.79) (2016-02-24)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.78...1.1.79)
 
