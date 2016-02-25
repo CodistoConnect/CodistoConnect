@@ -626,6 +626,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$order->setQuote($quote);
 
+		$freightservice = 'Freight';
 		$freighttotal =  0.0;
 		$freighttotalextax =  0.0;
 		$freighttax = 0.0;
@@ -641,6 +642,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$freighttax = $freighttotal - $freighttotalextax;
 				$freightservice = (string)$orderline->productname[0];
 			}
+		}
+
+		if(strtolower($freightservice) != 'freight')
+		{
+			$order->setShippingDescription($freightservice);
 		}
 
 		$ordersubtotal -= $freighttotalextax;
@@ -814,6 +820,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$freighttax = $freighttotal - $freighttotalextax;
 				$freightservice = (string)$orderline->productname[0];
 			}
+		}
+
+		if(strtolower($freightservice) != 'freight')
+		{
+			$order->setShippingDescription($freightservice);
 		}
 
 		$ordersubtotal -= $freighttotalextax;
