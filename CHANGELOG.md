@@ -1,29 +1,30 @@
 # Change Log
 
-## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
-
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.79...HEAD)
-
-**Implemented enhancements:**
-
-- support non admin users with codisto role [\#267](https://github.com/CodistoConnect/CodistoConnect/pull/267) ([lamery](https://github.com/lamery))
+## [1.1.80](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.80) (2016-02-25)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.79...1.1.80)
 
 **Merged pull requests:**
 
-- Release [\#269](https://github.com/CodistoConnect/CodistoConnect/pull/269) ([bradmccormack](https://github.com/bradmccormack))
+- Release [\#270](https://github.com/CodistoConnect/CodistoConnect/pull/270) ([bradmccormack](https://github.com/bradmccormack))
 
-## [1.1.79](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.79) (2016-02-24)
+## [1.1.79](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.79) (2016-02-25)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.78...1.1.79)
 
 **Implemented enhancements:**
 
+- support non admin users with codisto role [\#267](https://github.com/CodistoConnect/CodistoConnect/pull/267) ([lamery](https://github.com/lamery))
 - switch observers over to multi-process signalling [\#266](https://github.com/CodistoConnect/CodistoConnect/pull/266) ([lamery](https://github.com/lamery))
 - add exception handling on calc quote to fall back to standard process [\#265](https://github.com/CodistoConnect/CodistoConnect/pull/265) ([lamery](https://github.com/lamery))
 - when launching sub-process check php extensions in target executable [\#263](https://github.com/CodistoConnect/CodistoConnect/pull/263) ([lamery](https://github.com/lamery))
 - use php ini in sub processes to ensure curl and pdo are loaded [\#262](https://github.com/CodistoConnect/CodistoConnect/pull/262) ([lamery](https://github.com/lamery))
 
+**Fixed bugs:**
+
+- go back to previous strategy of forcing totals in order create [\#268](https://github.com/CodistoConnect/CodistoConnect/pull/268) ([lamery](https://github.com/lamery))
+
 **Merged pull requests:**
 
+- Release [\#269](https://github.com/CodistoConnect/CodistoConnect/pull/269) ([bradmccormack](https://github.com/bradmccormack))
 - Release [\#264](https://github.com/CodistoConnect/CodistoConnect/pull/264) ([bradmccormack](https://github.com/bradmccormack))
 - use quote pricing instead of running own magento equivalent price calc [\#261](https://github.com/CodistoConnect/CodistoConnect/pull/261) ([lamery](https://github.com/lamery))
 - async signalling + process protection on cms content [\#260](https://github.com/CodistoConnect/CodistoConnect/pull/260) ([lamery](https://github.com/lamery))
