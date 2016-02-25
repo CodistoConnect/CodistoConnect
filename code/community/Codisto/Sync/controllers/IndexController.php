@@ -105,6 +105,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$totalweight = 0;
 
 			$quote = Mage::getModel('sales/quote');
+			$quote->setIsSuperMode(true);
 
 			for($inputidx = 0; ; $inputidx++)
 			{
@@ -141,6 +142,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 					if($product)
 					{
+						$product->setIsSuperMode(true);
+
 						$taxpercent = $productprice == 0 ? 0 : round($productpriceincltax / $productprice - 1.0, 2) * 100;
 
 						$item = Mage::getModel('sales/quote_item');
@@ -456,6 +459,12 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
 
 		$ordertotal = floatval($ordercontent->ordertotal[0]);
+		$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
+		$ordertaxtotal = floatval($ordercontent->ordertaxtotal[0]);
+
+		$ordersubtotal = $store->roundPrice($ordersubtotal);
+		$ordersubtotalincltax = $store->roundPrice($ordersubtotal + $ordertaxtotal);
+		$ordertotal = $store->roundPrice($ordertotal);
 
 		$ebaysalesrecordnumber = (string)$ordercontent->ebaysalesrecordnumber;
 		if(!$ebaysalesrecordnumber)
@@ -616,6 +625,65 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$quote->setInventoryProcessed(true);
 
 		$order->setQuote($quote);
+
+		$freightservice = 'Freight';
+		$freighttotal =  0.0;
+		$freighttotalextax =  0.0;
+		$freighttax = 0.0;
+		$taxpercent =  0.0;
+		$taxrate =  1.0;
+
+		foreach($ordercontent->orderlines->orderline as $orderline)
+		{
+			if($orderline->productcode[0] == 'FREIGHT')
+			{
+				$freighttotal += floatval($orderline->linetotalinctax[0]);
+				$freighttotalextax += floatval($orderline->linetotal[0]);
+				$freighttax = $freighttotal - $freighttotalextax;
+				$freightservice = (string)$orderline->productname[0];
+			}
+		}
+
+		if(strtolower($freightservice) != 'freight')
+		{
+			$order->setShippingDescription($freightservice);
+		}
+
+		$ordersubtotal -= $freighttotalextax;
+		$ordersubtotalincltax -= $freighttotal;
+		$ordertaxtotal -= $freighttax;
+
+		$order->setBaseShippingAmount($freighttotal);
+		$order->setShippingAmount($freighttotal);
+
+		$order->setBaseShippingInclTax($freighttotal);
+		$order->setShippingInclTax($freighttotal);
+
+		$order->setBaseShippingTaxAmount($freighttax);
+		$order->setShippingTaxAmount($freighttax);
+
+		$order->setBaseSubtotal($ordersubtotal);
+		$order->setSubtotal($ordersubtotal);
+
+		$order->setBaseSubtotalInclTax($ordersubtotalincltax);
+		$order->setSubtotalInclTax($ordersubtotalincltax);
+
+		$order->setBaseTaxAmount($ordertaxtotal);
+		$order->setTaxAmount($ordertaxtotal);
+
+
+		$order->setDiscountAmount(0.0);
+		$order->setShippingDiscountAmount(0.0);
+		$order->setBaseShippingDiscountAmount(0.0);
+
+		$order->setBaseHiddenTaxAmount(0.0);
+		$order->setHiddenTaxAmount(0.0);
+		$order->setBaseHiddenShippingTaxAmnt(0.0);
+		$order->setHiddenShippingTaxAmount(0.0);
+
+		$order->setBaseGrandTotal($ordertotal);
+		$order->setGrandTotal($ordertotal);
+
 		$order->save();
 
 		try
@@ -752,6 +820,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$freighttax = $freighttotal - $freighttotalextax;
 				$freightservice = (string)$orderline->productname[0];
 			}
+		}
+
+		if(strtolower($freightservice) != 'freight')
+		{
+			$order->setShippingDescription($freightservice);
 		}
 
 		$ordersubtotal -= $freighttotalextax;
@@ -1378,6 +1451,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$ordersubtotalincltax = $store->roundPrice($ordersubtotal + $ordertaxtotal);
 		$ordertotal = $store->roundPrice($ordertotal);
 
+		$quote->setIsSuperMode(true);
 		$quote->setStore($store);
 		$quote->setCheckoutMethod(Mage_Checkout_Model_Type_Onepage::METHOD_GUEST);
 		$quote->save();
@@ -1431,6 +1505,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				{
 					$product = Mage::getModel('catalog/product');
 				}
+
+				$product->setIsSuperMode(true);
 
 				$qty = (int)$orderline->quantity[0];
 				$subtotalinctax = floatval($orderline->linetotalinctax[0]);
