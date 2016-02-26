@@ -31,7 +31,7 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 
 	public function ordersAction()
 	{
-		$url = preg_replace('/\/ebaytab(?:\/index)?(\/key\/)?/', '/orders$1', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
+		$url = preg_replace('/\/ebaytab(?:\/index)?(\/key\/)?/', '/ebaytab/orders$1', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
 
 		$action = $this->getRequest()->getQuery('action');
 		if($action)
