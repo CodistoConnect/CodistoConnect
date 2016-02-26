@@ -287,10 +287,13 @@ class Codisto_Sync_Model_Observer
 
 	public function catalogRuleAfterApply($observer)
 	{
-		$productId = $observer->getProduct();
-		if(isset($productId))
+		if(Mage::registry('codisto_catalog_rule_after_apply'))
+			return;
+
+		$product = $observer->getProduct();
+		if($product || is_numeric($product))
 		{
-			// individual product save - so ignore
+			Mage::register('codisto_catalog_rule_after_apply', 1);
 			return;
 		}
 
