@@ -400,24 +400,36 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 				if(!is_array($extensions))
 					$extensions = array();
 
-				$extensionDiff = array_diff($extensionSet, $extensions);
-
-				if(empty($extensionDiff))
+				if($extensionSet == $extensions)
 				{
 					return '"'.$interpreter.'" -n';
 				}
 				else
 				{
-					$extensions = $this->phpTest($interpreter, '', $extensionScript);
-					$extensions = @unserialize($extensions);
-					if(!is_array($extensions))
-						$extensions = array();
-
-					$extensionDiff = array_diff($extensionSet, $extensions);
-
-					if(empty($extensionDiff))
+					$php_ini = php_ini_loaded_file();
+					if($php_ini)
 					{
-						return '"'.$interpreter.'"';
+						$extensions = $this->phpTest($interpreter, '-c "'.$php_ini.'"', $extensionScript);
+						$extensions = @unserialize($extensions);
+						if(!is_array($extensions))
+							$extensions = array();
+					}
+
+					if($extensionSet == $extensions)
+					{
+						return '"'.$interpreter.'" -c "'.$php_ini.'"';
+					}
+					else
+					{
+						$extensions = $this->phpTest($interpreter, '', $extensionScript);
+						$extensions = @unserialize($extensions);
+						if(!is_array($extensions))
+							$extensions = array();
+
+						if($extensionSet == $extensions)
+						{
+							return '"'.$interpreter.'"';
+						}
 					}
 				}
 			}
@@ -638,6 +650,9 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 	public function processCmsContent($content)
 	{
+		if(strpos($AttributeValue, '{{') !== false)
+			return $content;
+
 		$result = $this->runProcess('app/code/community/Codisto/Sync/Helper/CmsContent.php', null, array('pdo', 'curl', 'simplexml'), $content);
 		if($result != null)
 			return $result;

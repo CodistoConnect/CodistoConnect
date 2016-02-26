@@ -965,6 +965,8 @@ class Codisto_Sync_Model_Sync
 					{
 						if($backendType == 'text')
 						{
+							$AttributeValue = Mage::helper('codistosync')->processCmsContent($AttributeValue);
+
 							$insertHTMLSQL->execute(array($productData['entity_id'], $AttributeLabel, $AttributeValue));
 						}
 
