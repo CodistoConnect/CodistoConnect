@@ -165,15 +165,22 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 					$stores = Mage::getModel('core/store')->getCollection();
 
-					foreach($stores as $store)
+					if($stores->count() == 1)
 					{
-						if($store->getId() != 0)
+						$syncStores = array($stores->getFirstItem()->getId());
+					}
+					else
+					{
+						foreach($stores as $store)
 						{
-							$storeMerchantId = Mage::getStoreConfig('codisto/merchantid', $store->getId());
-
-							if($defaultMerchantId != $storeMerchantId)
+							if($store->getId() != 0)
 							{
-								$syncStores[] = $store->getId();
+								$storeMerchantId = Mage::getStoreConfig('codisto/merchantid', $store->getId());
+	
+								if($defaultMerchantId != $storeMerchantId)
+								{
+									$syncStores[] = $store->getId();
+								}
 							}
 						}
 					}
@@ -260,15 +267,22 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 					$stores = Mage::getModel('core/store')->getCollection();
 
-					foreach($stores as $store)
+					if($stores->count() == 1)
 					{
-						if($store->getId() != 0)
+						$syncStores = array($stores->getFirstItem()->getId());
+					}
+					else
+					{
+						foreach($stores as $store)
 						{
-							$storeMerchantId = Mage::getStoreConfig('codisto/merchantid', $store->getId());
-
-							if($defaultMerchantId != $storeMerchantId)
+							if($store->getId() != 0)
 							{
-								$syncStores[] = $store->getId();
+								$storeMerchantId = Mage::getStoreConfig('codisto/merchantid', $store->getId());
+	
+								if($defaultMerchantId != $storeMerchantId)
+								{
+									$syncStores[] = $store->getId();
+								}
 							}
 						}
 					}
@@ -376,16 +390,23 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 					$defaultMerchantId = Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
 
 					$stores = Mage::getModel('core/store')->getCollection();
-
-					foreach($stores as $store)
+					
+					if($stores->count() == 1)
 					{
-						if($store->getId() != 0)
+						$syncStores = array($stores->getFirstItem()->getId());
+					}
+					else
+					{
+						foreach($stores as $store)
 						{
-							$storeMerchantId = Mage::getStoreConfig('codisto/merchantid', $store->getId());
-
-							if($defaultMerchantId != $storeMerchantId)
+							if($store->getId() != 0)
 							{
-								$syncStores[] = $store->getId();
+								$storeMerchantId = Mage::getStoreConfig('codisto/merchantid', $store->getId());
+	
+								if($defaultMerchantId != $storeMerchantId)
+								{
+									$syncStores[] = $store->getId();
+								}
 							}
 						}
 					}
