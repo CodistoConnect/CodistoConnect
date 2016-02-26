@@ -228,8 +228,16 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						try
 						{
 							$indexer = Mage::getModel('index/process');
-							$indexer->load('codistoebayindex', 'indexer_code')
-										->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
+
+							try
+							{
+								$indexer->load('codistoebayindex', 'indexer_code')
+											->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
+							}
+							catch(Exception $e)
+							{
+
+							}
 
 							$syncObject = Mage::getModel('codistosync/sync');
 
@@ -269,7 +277,22 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									$syncObject->SyncStaticBlocks($syncDb, $storeId);
 									$syncObject->SyncStores($syncDb, $storeId);
 
-									$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+									for($Retry = 0; ; $Retry++)
+									{
+										try
+										{
+											$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+											break;
+										}
+										catch(Exception $e)
+										{
+											if($Retry >= 3)
+												break;
+
+											usleep(500000);
+											continue;
+										}
+									}
 									break;
 								}
 
@@ -361,8 +384,16 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						try
 						{
 							$indexer = Mage::getModel('index/process');
-							$indexer->load('codistoebayindex', 'indexer_code')
-										->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
+
+							try
+							{
+								$indexer->load('codistoebayindex', 'indexer_code')
+											->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
+							}
+							catch(Exception $e)
+							{
+
+							}
 
 							$syncObject = Mage::getModel('codistosync/sync');
 
@@ -397,7 +428,23 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							{
 								$syncObject->SyncTax($syncDb, $storeId);
 								$syncObject->SyncStores($syncDb, $storeId);
-								$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+
+								for($Retry = 0; ; $Retry++)
+								{
+									try
+									{
+										$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+										break;
+									}
+									catch(Exception $e)
+									{
+										if($Retry >= 3)
+											break;
+
+										usleep(500000);
+										continue;
+									}
+								}
 
 							} else {
 
