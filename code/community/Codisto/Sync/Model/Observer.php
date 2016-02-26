@@ -124,7 +124,22 @@ class Codisto_Sync_Model_Observer
 			if($indexer->load('codistoebayindex', 'indexer_code')->getStatus() == 'working')
 				return;
 
-			$indexer->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
+			for($Retry = 0; ; $Retry++)
+			{
+				try
+				{
+					$indexer->changeStatus(Mage_Index_Model_Process::STATUS_RUNNING);
+					break;
+				}
+				catch(Exception $e)
+				{
+					if($Retry >= 3)
+						throw $e;
+
+					usleep(500000);
+					continue;
+				}
+			}
 
 			$http = new Zend_Http_Client();
 			$http->setConfig(array( 'keepalive' => false, 'maxredirects' => 0, 'timeout' => 5 ));
@@ -163,7 +178,21 @@ class Codisto_Sync_Model_Observer
 						$syncObject->SyncTax($syncDb, $storeId);
 						$syncObject->SyncStores($syncDb, $storeId);
 
-						$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+						for($Retry = 0; ; $Retry++)
+						{
+							try
+							{
+								$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+								break;
+							}
+							catch(Exception $e)
+							{
+								if($Retry >= 3)
+									break;
+
+								usleep(500000);
+							}
+						}
 						break;
 					}
 
@@ -227,91 +256,59 @@ class Codisto_Sync_Model_Observer
 
 			}
 
+
+			$file->write('codisto-external-sync-failed', (string)microtime(true));
+
 		} catch (Exception $e) {
 
-			$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
 			$file->write('codisto-external-sync-failed', 0);
 
 			Mage::log('Codisto Sync Error: ' . $e->getMessage() . ' on line: ' . $e->getLine() . ' in file: ' . $e->getFile());
 
 		}
 
-		$file->write('codisto-external-sync-failed', (string)microtime(true));
-		$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+		for($Retry = 0; ; $Retry++)
+		{
+			try
+			{
+				$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+				break;
+			}
+			catch(Exception $e)
+			{
+				if($Retry >= 3)
+					break;
 
+				usleep(500000);
+				continue;
+			}
+		}
 	}
 
 	public function catalogRuleAfterApply($observer)
 	{
+		if(Mage::registry('codisto_catalog_rule_after_apply'))
+			return;
 
-		$productId = null;
-		if(property_exists($observer , 'product'))
-			$productId = $observer->getEvent()->getProduct()->getId();
-
-		if(!$productId) {
-
-			try {
-
-				$resource = Mage::getSingleton('core/resource');
-				$tableName = $resource->getTableName('catalogrule/affected_product');
-
-				$readConnection = $resource->getConnection('core_read');
-
-				$query = 'SELECT product_id FROM '.$tableName;
-
-				$results = $readConnection->fetchAll($query);
-
-				if(sizeOf($results) == 1){
-
-					$productId = intval($results[0]['product_id']);
-
-				} else if ($results && sizeOf($results) > 1) {
-
-					$indexer = Mage::getModel('index/process');
-					$indexer->load('codistoebayindex', 'indexer_code')
-					->changeStatus(Mage_Index_Model_Process::STATUS_REQUIRE_REINDEX)
-					->reindexAll();
-
-				}
-
-			} catch (Exception $e) {
-
-			}
-
-
+		$product = $observer->getProduct();
+		if($product || is_numeric($product))
+		{
+			Mage::register('codisto_catalog_rule_after_apply', 1);
+			return;
 		}
 
-		if($productId) {
+		$indexer = Mage::getModel('index/process');
+		$indexer->load('codistoebayindex', 'indexer_code');
+		$indexer->reindexAll();
 
-			$merchants = $this->getMerchants();
-
-			$syncObject = Mage::getModel('codistosync/sync');
-
-			foreach($merchants as $merchant)
-			{
-				$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$merchant['storeid'].'.db';
-				$syncObject->UpdateProducts($syncDb, array($productId), $merchant['storeid']);
-			}
-
-			$syncedProducts = Mage::registry('codisto_synced_products');
-			if(!is_array($syncedProducts))
-			{
-				$syncedProducts = array();
-			}
-
-			if(!in_array($productId, $syncedProducts))
-			{
-				$syncedProducts[] = $productId;
-
-				Mage::unregister('codisto_synced_products');
-				Mage::register('codisto_synced_products', $syncedProducts);
-
-				Mage::helper('codistosync')->signal($merchants, 'action=sync&productid='.$productId);
-			}
+		try
+		{
+			$indexer->changeStatus(Mage_Index_Model_Process::STATUS_REQUIRE_REINDEX);
 		}
+		catch(Exception $e)
+		{
 
-		return;
-
+		}
 	}
 
 	public function paymentInfoBlockPrepareSpecificInformation($observer)

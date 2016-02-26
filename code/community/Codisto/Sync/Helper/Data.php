@@ -327,12 +327,10 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 	{
 		try
 		{
-
 			$indexer = Mage::getModel('index/process');
 			$indexer->load('codistoebayindex', 'indexer_code')
-			->changeStatus(Mage_Index_Model_Process::STATUS_REQUIRE_REINDEX)
-			->reindexAll();
-
+				->reindexAll()
+				->changeStatus(Mage_Index_Model_Process::STATUS_REQUIRE_REINDEX);
 		}
 		catch (Exception $e)
 		{
