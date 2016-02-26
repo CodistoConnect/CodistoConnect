@@ -392,7 +392,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 			if(version_compare($php_version, $requiredVersion, 'lt'))
 				return '';
-				
+
 			if($extensionScript)
 			{
 				$extensions = $this->phpTest($interpreter, '-n', $extensionScript);
@@ -650,6 +650,9 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 	public function processCmsContent($content)
 	{
+		if(strpos($AttributeValue, '{{') !== false)
+			return $content;
+
 		$result = $this->runProcess('app/code/community/Codisto/Sync/Helper/CmsContent.php', null, array('pdo', 'curl', 'simplexml'), $content);
 		if($result != null)
 			return $result;
