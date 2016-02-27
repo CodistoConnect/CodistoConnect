@@ -4,6 +4,17 @@
 
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.80...HEAD)
 
+**Fixed bugs:**
+
+- fix typo in processCmsContent [\#280](https://github.com/CodistoConnect/CodistoConnect/pull/280) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#281](https://github.com/CodistoConnect/CodistoConnect/pull/281) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.80](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.80) (2016-02-27)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.79...1.1.80)
+
 **Implemented enhancements:**
 
 - redo sync enhancements [\#278](https://github.com/CodistoConnect/CodistoConnect/pull/278) ([lamery](https://github.com/lamery))
@@ -15,12 +26,6 @@
 - Release [\#279](https://github.com/CodistoConnect/CodistoConnect/pull/279) ([bradmccormack](https://github.com/bradmccormack))
 - Release [\#276](https://github.com/CodistoConnect/CodistoConnect/pull/276) ([bradmccormack](https://github.com/bradmccormack))
 - - Update README with Magento version tested against \[plugin skip\] [\#271](https://github.com/CodistoConnect/CodistoConnect/pull/271) ([bradmccormack](https://github.com/bradmccormack))
-
-## [1.1.80](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.80) (2016-02-25)
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.79...1.1.80)
-
-**Merged pull requests:**
-
 - Release [\#270](https://github.com/CodistoConnect/CodistoConnect/pull/270) ([bradmccormack](https://github.com/bradmccormack))
 
 ## [1.1.79](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.79) (2016-02-25)
