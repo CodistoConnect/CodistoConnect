@@ -648,7 +648,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 	public function processCmsContent($content)
 	{
-		if(strpos($content, '{{') !== false)
+		if(strpos($content, '{{') === false)
 			return trim($content);
 
 		$result = $this->runProcess('app/code/community/Codisto/Sync/Helper/CmsContent.php', null, array('pdo', 'curl', 'simplexml'), $content);
