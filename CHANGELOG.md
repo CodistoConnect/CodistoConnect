@@ -2,7 +2,18 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.80...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.81...HEAD)
+
+**Fixed bugs:**
+
+- fix logic error on when to process cms tags [\#282](https://github.com/CodistoConnect/CodistoConnect/pull/282) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#283](https://github.com/CodistoConnect/CodistoConnect/pull/283) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.81](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.81) (2016-02-27)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.80...1.1.81)
 
 **Fixed bugs:**
 
