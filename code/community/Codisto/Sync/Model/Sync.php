@@ -440,6 +440,7 @@ class Codisto_Sync_Model_Sync
 		$product = Mage::getModel('catalog/product');
 		$product->setData($skuData)
 				->setStore($store)
+				->setStoreId($store->getId())
 				->setCustomerGroupId($this->ebayGroupId);
 
 		$stockItem = Mage::getModel('cataloginventory/stock_item');
@@ -647,6 +648,8 @@ class Codisto_Sync_Model_Sync
 
 		$product = Mage::getModel('catalog/product');
 		$product->setData($productData);
+		$product->setStore($store);
+		$product->setStoreId($store->getId());
 
 		$configurableData = Mage::getModel('catalog/product_type_configurable');
 
@@ -743,6 +746,7 @@ class Codisto_Sync_Model_Sync
 		$product = Mage::getModel('catalog/product');
 		$product->setData($productData)
 				->setStore($store)
+				->setStoreId($store->getId())
 				->setCustomerGroupId($this->ebayGroupId);
 
 		$stockItem = Mage::getModel('cataloginventory/stock_item');
@@ -965,6 +969,8 @@ class Codisto_Sync_Model_Sync
 					{
 						if($backendType == 'text')
 						{
+							$AttributeValue = Mage::helper('codistosync')->processCmsContent($AttributeValue);
+
 							$insertHTMLSQL->execute(array($productData['entity_id'], $AttributeLabel, $AttributeValue));
 						}
 
