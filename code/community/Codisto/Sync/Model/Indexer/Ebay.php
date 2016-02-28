@@ -290,9 +290,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 				$syncObject = Mage::getModel('codistosync/sync');
 				$syncIds = Mage::getResourceSingleton('catalog/product_type_configurable')->getParentIdsByChild($event->getDataObject()->getProductId());
-
-				if(empty($syncIds))
-					$syncIds = array($event->getDataObject()->getProductId());
+				$syncIds[] = $event->getDataObject()->getProductId();
 
 				$syncIds = array_diff($syncIds, $syncedProducts);
 
@@ -414,9 +412,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 				$syncObject = Mage::getModel('codistosync/sync');
 				$syncIds = Mage::getResourceSingleton('catalog/product_type_configurable')->getParentIdsByChild($event->getDataObject()->getId());
-
-				if(empty($syncIds))
-					$syncIds = array($event->getDataObject()->getId());
+				$syncIds[] = $event->getDataObject()->getId();
 
 				$syncIds = array_diff($syncIds, $syncedProducts);
 

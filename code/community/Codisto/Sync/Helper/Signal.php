@@ -19,6 +19,7 @@ $client->setStream();
 foreach($merchants as $merchant)
 {
 	try {
+Mage::log('signalling '.'https://api.codisto.com/'.$merchant['merchantid'].' '.$msg, null, 'codisto.log');
 		$client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
 		$client->setHeaders('X-HostKey', $merchant['hostkey']);
 		$client->setRawData($msg)->request('POST');

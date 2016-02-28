@@ -29,12 +29,11 @@ class Codisto_Sync_Model_Sync
 	private $taxCalculation;
 	private $rateRequest;
 
-	private $codistoStore;
-	private $calcQuote;
-
 	private $ebayGroupId;
 
 	private $groupCache;
+	private $optionCache;
+	private $optionTextCache;
 
 	public function __construct()
 	{
@@ -62,6 +61,8 @@ class Codisto_Sync_Model_Sync
 		}
 
 		$this->groupCache = array();
+		$this->optionCache = array();
+		$this->optionTextCache = array();
 
 		$ebayGroup = Mage::getModel('customer/group');
 		$ebayGroup->load('eBay', 'customer_group_code');
@@ -259,17 +260,21 @@ class Codisto_Sync_Model_Sync
 
 		$insertCategoryProduct = $db->prepare('INSERT OR IGNORE INTO CategoryProduct(ProductExternalReference, CategoryExternalReference, Sequence) VALUES(?,?,?)');
 		$insertProduct = $db->prepare('INSERT INTO Product(ExternalReference, Code, Name, Price, ListPrice, TaxClass, Description, Enabled, StockControl, StockLevel, Weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+		$checkProduct = $db->prepare('SELECT CASE WHEN EXISTS(SELECT 1 FROM Product WHERE ExternalReference = ?) THEN 1 ELSE 0 END');
 		$insertSKU = $db->prepare('INSERT OR IGNORE INTO SKU(ExternalReference, Code, ProductExternalReference, Name, StockControl, StockLevel, Price, Enabled) VALUES(?,?,?,?,?,?,?,?)');
+		$insertSKULink = $db->prepare('INSERT OR REPLACE INTO SKULink (SKUExternalReference, ProductExternalReference, Price) VALUES (?, ?, ?)');
 		$insertSKUMatrix = $db->prepare('INSERT INTO SKUMatrix(SKUExternalReference, Code, OptionName, OptionValue, ProductOptionExternalReference, ProductOptionValueExternalReference) VALUES(?,?,?,?,?,?)');
 		$insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
 		$insertSKUImage = $db->prepare('INSERT INTO SKUImage(SKUExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
 		$insertProductOption = $db->prepare('INSERT INTO ProductOption (ExternalReference, Sequence, ProductExternalReference) VALUES (?,?,?)');
 		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence) VALUES (?,?)');
 		$insertProductHTML = $db->prepare('INSERT OR IGNORE INTO ProductHTML(ProductExternalReference, Tag, HTML) VALUES (?, ?, ?)');
+		$clearAttribute = $db->prepare('DELETE FROM ProductAttributeValue WHERE ProductExternalReference = ?');
 		$insertAttribute = $db->prepare('INSERT OR REPLACE INTO Attribute(ID, Code, Label, Type) VALUES (?, ?, ?, ?)');
 		$insertAttributeGroup = $db->prepare('INSERT OR IGNORE INTO AttributeGroup(ID, Name) VALUES(?, ?)');
 		$insertAttributeGroupMap = $db->prepare('INSERT OR IGNORE INTO AttributeGroupMap(GroupID, AttributeID) VALUES(?,?)');
 		$insertProductAttribute = $db->prepare('INSERT OR IGNORE INTO ProductAttributeValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
+		$clearProductQuestion = $db->prepare('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference = ?1); DELETE FROM ProductQuestion WHERE ProductExternalReference = ?1');
 		$insertProductQuestion = $db->prepare('INSERT OR REPLACE INTO ProductQuestion(ExternalReference, ProductExternalReference, Name, Type, Sequence) VALUES (?, ?, ?, ?, ?)');
 		$insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
 
@@ -278,30 +283,21 @@ class Codisto_Sync_Model_Sync
 		$coreResource = Mage::getSingleton('core/resource');
 
 		$superLinkName = $coreResource->getTableName('catalog/product_super_link');
-		$catalogEntityName = $coreResource->getTableName('catalog/product');
-		$catalogWebsiteName = $coreResource->getTableName('catalog/product_website');
-		$storeName = $coreResource->getTableName('core/store');
 
 		// Configurable products
 		$configurableProducts = Mage::getModel('catalog/product')->getCollection()
 							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
 							->addAttributeToFilter('type_id', array('eq' => 'configurable'));
 
-		$sqlCheckStore = '(`e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))';
 		$sqlCheckModified = '(`e`.entity_id IN ('.implode(',', $ids).') OR `e`.entity_id IN (SELECT parent_id FROM `'.$superLinkName.'` WHERE product_id IN ('.implode(',', $ids).')))';
 
-		$configurableProducts->getSelect()->where($sqlCheckStore . ' AND ' . $sqlCheckModified);
+		$configurableProducts->getSelect()->where($sqlCheckModified);
 
 		// Simple Products not participating as configurable skus
 		$simpleProducts = Mage::getModel('catalog/product')->getCollection()
 							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
 							->addAttributeToFilter('type_id', array('eq' => 'simple'))
 							->addAttributeToFilter('entity_id', array('in' => $ids));
-
-		$sqlCheckStore = '(`e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))';
-		$sqlCheckModified = '(`e`.entity_id NOT IN (SELECT product_id FROM `'.$superLinkName.'` WHERE parent_id IN (SELECT entity_id FROM `'.$catalogEntityName.'` WHERE type_id = \'configurable\' AND entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))))';
-
-		$simpleProducts->getSelect()->where($sqlCheckStore . ' AND ' . $sqlCheckModified);
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
@@ -311,6 +307,7 @@ class Codisto_Sync_Model_Sync
 		$db->exec('DELETE FROM ProductHTML WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
 		$db->exec('DELETE FROM SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
+		$db->exec('DELETE FROM SKULink WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
 		$db->exec('DELETE FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).')');
@@ -321,7 +318,9 @@ class Codisto_Sync_Model_Sync
 				'type' => 'configurable',
 				'db' => $db,
 				'preparedStatement' => $insertProduct,
+				'preparedcheckproductStatement' => $checkProduct,
 				'preparedskuStatement' => $insertSKU,
+				'preparedskulinkStatement' => $insertSKULink,
 				'preparedskumatrixStatement' => $insertSKUMatrix,
 				'preparedcategoryproductStatement' => $insertCategoryProduct,
 				'preparedimageStatement' => $insertImage,
@@ -329,10 +328,12 @@ class Codisto_Sync_Model_Sync
 				'preparedproductoptionStatement' => $insertProductOption,
 				'preparedproductoptionvalueStatement' => $insertProductOptionValue,
 				'preparedproducthtmlStatement' => $insertProductHTML,
+				'preparedclearattributeStatement' => $clearAttribute,
 				'preparedattributeStatement' => $insertAttribute,
 				'preparedattributegroupStatement' => $insertAttributeGroup,
 				'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 				'preparedproductattributeStatement' => $insertProductAttribute,
+				'preparedclearproductquestionStatement' => $clearProductQuestion,
 				'preparedproductquestionStatement' => $insertProductQuestion,
 				'preparedproductanswerStatement' => $insertProductAnswer,
 				'store' => $store )
@@ -345,13 +346,16 @@ class Codisto_Sync_Model_Sync
 				'type' => 'simple',
 				'db' => $db,
 				'preparedStatement' => $insertProduct,
+				'preparedcheckproductStatement' => $checkProduct,
 				'preparedcategoryproductStatement' => $insertCategoryProduct,
 				'preparedimageStatement' => $insertImage,
 				'preparedproducthtmlStatement' => $insertProductHTML,
+				'preparedclearattributeStatement' => $clearAttribute,
 				'preparedattributeStatement' => $insertAttribute,
 				'preparedattributegroupStatement' => $insertAttributeGroup,
 				'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 				'preparedproductattributeStatement' => $insertProductAttribute,
+				'preparedclearproductquestionStatement' => $clearProductQuestion,
 				'preparedproductquestionStatement' => $insertProductQuestion,
 				'preparedproductanswerStatement' => $insertProductAnswer,
 				'store' => $store )
@@ -384,6 +388,7 @@ class Codisto_Sync_Model_Sync
 					'DELETE FROM ProductImage WHERE ProductExternalReference = '.$id.';'.
 					'DELETE FROM ProductOption WHERE ProductExternalReference = '.$id.';'.
 					'DELETE FROM ProductHTML WHERE ProductExternalReference = '.$id.';'.
+					'DELETE FROM SKULink WHERE ProductExternalReference = '.$id.';'.
 					'DELETE FROM SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference = '.$id.');'.
 					'DELETE FROM SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference = '.$id.');'.
 					'DELETE FROM SKU WHERE ProductExternalReference = '.$id.';'.
@@ -414,28 +419,41 @@ class Codisto_Sync_Model_Sync
 		$insertSQL->execute($data);
 	}
 
+	public function SyncProductPrice($store, $parentProduct, $options = null)
+	{
+		$addInfo = new Varien_Object();
+
+		if(is_array($options))
+		{
+			$addInfo->setData(array(
+				'product' => $parentProduct->getId(),
+				'qty' => 1,
+				'super_attribute' => $options
+			));
+		}
+		else
+		{
+			$addInfo->setQty(1);
+		}
+
+		$parentProduct->getTypeInstance(true)->processConfiguration($addInfo, $parentProduct, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
+
+		$price = $this->getExTaxPrice($parentProduct, $parentProduct->getFinalPrice(), $store);
+
+		return $price;
+	}
+
 	public function SyncSKUData($args)
 	{
 		$skuData = $args['row'];
 		$db = $args['db'];
 
-		if($db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SKU WHERE ExternalReference = '.$skuData['entity_id'].') THEN 1 ELSE 0 END')->fetchColumn())
-			return;
-
 		$store = $args['store'];
 
+		$insertSKULinkSQL = $args['preparedskulinkStatement'];
+		$insertSKUMatrixSQL = $args['preparedskumatrixStatement'];
+
 		$attributes = $args['attributes'];
-		$pricesByAttributeValues = $args['prices'];
-		$options = array();
-
-		foreach ($attributes as $attribute) {
-
-			$productAttribute = $attribute->getProductAttribute();
-
-			$attributeOptionValue = Mage::getResourceModel('catalog/product')->getAttributeRawValue($skuData['entity_id'], $productAttribute->getAttributeCode(), $store->getId());
-
-			$skuData[$productAttribute->getAttributeCode()] = $attributeOptionValue;
-		}
 
 		$product = Mage::getModel('catalog/product');
 		$product->setData($skuData)
@@ -447,181 +465,53 @@ class Codisto_Sync_Model_Sync
 		$stockItem->setStockId(Mage_CatalogInventory_Model_Stock::DEFAULT_STOCK_ID)
 					->assignProduct($product);
 
-		$insertSQL = $args['preparedStatement'];
-		$insertCategorySQL = $args['preparedcategoryproductStatement'];
-		$insertImageSQL = $args['preparedimageStatement'];
-		$insertSKUMatrixSQL = $args['preparedskumatrixStatement'];
-
 		$productParent = $args['parent_product'];
-		$productParent->setIsSuperMode(true);
+
+		$attributeCodes = array();
+
+		foreach($attributes as $attribute)
+		{
+			$attributeCodes[] = $attribute->getProductAttribute()->getAttributeCode();
+		}
+
+		$attributeValues = Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($skuData['entity_id'], $attributeCodes, $store->getId());
+
 
 		$options = array();
 
-		foreach ($attributes as $attribute) {
-
+		foreach($attributes as $attribute)
+		{
 			$productAttribute = $attribute->getProductAttribute();
 
-			$attributeOptionId = $product->getData($productAttribute->getAttributeCode());
-
-			$options[$productAttribute->getId()] = $attributeOptionId;
-
+			$options[$productAttribute->getId()] = $attributeValues[$productAttribute->getAttributeCode()];
 		}
 
-		$params = new Varien_Object();
-		$params->setData(array(
-			'product' => $productParent->getId(),
-			'qty' => 1,
-			'super_attribute' => $options
-		));
+		$price = $this->SyncProductPrice($store, $productParent, $options);
+		if(!$price)
+			$price = 0;
 
-		if(!isset($this->codistoStore))
-		{
-			$this->codistoStore = new Codisto_Core_Model_Store();
-		}
+		$insertSKULinkSQL->execute(array($skuData['entity_id'], $args['parent_id'], $price));
 
-		$this->codistoStore->cloneStore($store);
-		Mage::app()->setCurrentStore($this->codistoStore);
-
-		$price = null;
-
-		try
-		{
-			if(!isset($this->calcQuote))
-			{
-				$this->calcQuote = Mage::getModel('sales/quote');
-				$this->calcQuote->setIsSuperMode(true);
-				$this->calcQuote->getShippingAddress();
-				$this->calcQuote->getBillingAddress();
-				$this->calcQuote->setCustomer(Mage::getSingleton('customer/session')->getCustomer());
-			}
-			else
-			{
-				$this->calcQuote->getShippingAddress()->unsetData('cached_items_all');
-	  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nominal');
-	  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nonnominal');
-				$this->calcQuote->getBillingAddress()->unsetData('cached_items_all');
-	  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nominal');
-	  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nonnominal');
-
-				$this->calcQuote->removeAllItems();
-
-				$this->calcQuote->setTotalsCollectedFlag(false);
-			}
-
-			$this->calcQuote->setStore($store);
-			$this->calcQuote->setStoreId($store->getId());
-
-			$this->calcQuote->addProductAdvanced($productParent, $params, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
-			$this->calcQuote->getShippingAddress()->collectTotals();
-
-			$quoteItems = $this->calcQuote->getAllItems();
-
-			if(is_array($quoteItems))
-			{
-				foreach ($quoteItems as $quoteItem)
-				{
-					if($quoteItem->getProductId() == $productParent->getId())
-					{
-						$price = $quoteItem->getPrice();
-						break;
-					}
-				}
-			}
-		}
-		catch(Exception $e)
-		{
-
-		}
-
-		Mage::app()->setCurrentStore($store);
-
-		if(!is_numeric($price))
-		{
-			$totalPrice = $args['baseprice'];
-
-			foreach ($attributes as $attribute) {
-
-				$productAttribute = $attribute->getProductAttribute();
-
-				$attributeOptionId = $product->getData($productAttribute->getAttributeCode());
-
-				//add the price adjustment to the total price of the simple product
-				if (isset($pricesByAttributeValues[$attributeOptionId])) {
-					$totalPrice += $pricesByAttributeValues[$attributeOptionId];
-				}
-			}
-
-			$price = $this->getExTaxPrice($product, $totalPrice, $store);
-		}
-
-		$qty = $stockItem->getQty();
-		if(!is_numeric($qty))
-			$qty = 0;
-
-		$skuName = $skuData['name'];
-		if(!$skuName)
-			$skuName = '';
-
-		$data = array();
-		$data[] = $skuData['entity_id'];
-		$data[] = $skuData['sku'];
-		$data[] = $args['parent_id'];
-		$data[] = $skuName;
-		$data[] = $stockItem->getManageStock() ? -1 : 0;
-		$data[] = (int)$qty;
-		$data[] = $price;
-		$data[] = $skuData['status'] != 1 ? 0 : -1;
-
-		$insertSQL->execute($data);
-
-		$categoryIds = $product->getCategoryIds();
-		foreach ($categoryIds as $categoryId) {
-			$insertCategorySQL->execute(array($args['parent_id'], $categoryId, 0));
-		}
 
 		// SKU Matrix
 		foreach($attributes as $attribute)
 		{
-
 			$productAttribute = $attribute->getProductAttribute();
 			$productOptionId = $productAttribute->getId();
-			$productOptionValueId = $product->getData($productAttribute->getAttributeCode());
+			$productOptionValueId = $attributeValues[$productAttribute->getAttributeCode()];
 
-			$attributeName = $attribute->getLabel();
-			$attributeValue = $product->getAttributeText($productAttribute->getAttributeCode());
-			$insertSKUMatrixSQL->execute(array($skuData['entity_id'], '', $attributeName, $attributeValue, $productOptionId, $productOptionValueId));
-
-		}
-
-		$hasImage = false;
-
-		$product->load('media_gallery');
-		foreach ($product->getMediaGallery('images') as $image) {
-
-			$imgURL = $product->getMediaConfig()->getMediaUrl($image['file']);
-
-			$enabled = ($image['disabled'] == 0 ? -1 : 0);
-
-			if($image['file'] == $skuData['image'])
+			if(isset($productOptionValueId))
 			{
-				$tag = '';
-				$sequence = 0;
-			}
-			else
-			{
-				$tag = $image['label'];
-				if(!$tag)
-					$tag = '';
-				$sequence = $image['position'];
-				if(!$sequence)
-					$sequence = 1;
-				else
-					$sequence++;
-			}
+				$attributeName = $attribute->getLabel();
+				$attributeValue = $productAttribute->getSource()->getOptionText($productOptionValueId);
 
-			$insertImageSQL->execute(array($skuData['entity_id'], $imgURL, $tag, $sequence, $enabled));
-
-			$hasImage = true;
+				$insertSKUMatrixSQL->execute(array(
+					$skuData['entity_id'], '',
+					$attributeName,
+					$attributeValue,
+					$productOptionId,
+					$productOptionValueId));
+			}
 		}
 	}
 
@@ -633,6 +523,7 @@ class Codisto_Sync_Model_Sync
 		$db = $args['db'];
 
 		$insertSQL = $args['preparedskuStatement'];
+		$insertSKULinkSQL = $args['preparedskulinkStatement'];
 		$insertCategorySQL = $args['preparedcategoryproductStatement'];
 		$insertImageSQL = $args['preparedskuimageStatement'];
 		$insertSKUMatrixSQL = $args['preparedskumatrixStatement'];
@@ -646,82 +537,28 @@ class Codisto_Sync_Model_Sync
 
 		$this->SyncSimpleProductData(array_merge($args, array('row' => $productData)));
 
-		$product = Mage::getModel('catalog/product');
-		$product->setData($productData);
-		$product->setStore($store);
-		$product->setStoreId($store->getId());
+		$product = Mage::getModel('catalog/product')
+					->setData($productData)
+					->setStore($store)
+					->setStoreId($store->getId())
+					->setCustomerGroupId($this->ebayGroupId)
+					->setIsSuperMode(true);
 
 		$configurableData = Mage::getModel('catalog/product_type_configurable');
 
-		$configurableData->setProduct($product);
-
 		$configurableAttributes = $configurableData->getConfigurableAttributes($product);
 
-
-		// NOTE: we can't call $product->getFinalPrice below as it interacts with getUsedProductCollection in strange ways
-		// so we create a canary product object just to calculate the price then throw it away
-		$productCanary = Mage::getModel('catalog/product');
-		$productCanary->setData($productData);
-
-		$basePrice = $productCanary->getFinalPrice();
-
-		unset($productCanary);
-
-		$pricesByAttributeValues = array();
-		$configurableProductOptionSequence = array();
-
-		foreach ($configurableAttributes as $attribute){
-			$prices = $attribute->getPrices();
-			if(is_array($prices))
-			{
-				foreach ($prices as $price){
-
-					if ($price['is_percent']){ //if the price is specified in percents
-						$pricesByAttributeValues[$price['value_index']] = (float)$price['pricing_value'] * $basePrice / 100;
-					}
-					else { //if the price is absolute value
-						$pricesByAttributeValues[$price['value_index']] = (float)$price['pricing_value'];
-					}
-				}
-			}
-
-
-			$attributeid = $attribute->getAttributeId();
-			$position = $attribute->getPosition();
-			$pid = $attribute->getProductId();
-
-			$insertProductOptionSQL->execute(array($attributeid, $position, $pid));
-
-			if($insertProductOptionValueSQL) {
-
-				$options = Mage::getResourceModel('eav/entity_attribute_option_collection')
-				->setAttributeFilter($attributeid)
-				->setPositionOrder('asc', true)
-				->load();
-
-				foreach($options as $opt){
-					$sequence = $opt->getSortOrder();
-					$optId = $opt->getId();
-					$insertProductOptionValueSQL->execute(array($optId, $sequence));
-				}
-			}
-
-		}
-
-		$productOptionValueSequence = array();
-
-		$childProducts = $configurableData->getUsedProductCollection()
-							->addAttributeToSelect(array('name', 'image', 'status', 'price', 'special_price', 'special_from_date', 'special_to_date', 'tax_class_id'), 'left');
+		$childProducts = $configurableData->getUsedProductCollection($product)
+							->addAttributeToSelect(array('price', 'special_price', 'special_from_date', 'special_to_date', 'tax_class_id'), 'left');
 
 		Mage::getSingleton('core/resource_iterator')->walk($childProducts->getSelect(), array(array($this, 'SyncSKUData')),
 			array(
 				'parent_id' => $productData['entity_id'],
 				'parent_product' => $product,
 				'attributes' => $configurableAttributes,
-				'baseprice' => $basePrice,
-				'prices' => $pricesByAttributeValues,
 				'db' => $db,
 				'preparedStatement' => $insertSQL,
+				'preparedskulinkStatement' => $insertSKULinkSQL,
 				'preparedskumatrixStatement' => $insertSKUMatrixSQL,
 				'preparedcategoryproductStatement' => $insertCategorySQL,
 				'preparedimageStatement' => $insertImageSQL,
@@ -740,14 +577,23 @@ class Codisto_Sync_Model_Sync
 
 		$db = $args['db'];
 
+		$parentids;
+
 		$store = $args['store'];
 		$productData = $args['row'];
+
+		$checkProductSQL = $args['preparedcheckproductStatement'];
+		$checkProductSQL->execute(array($productData['entity_id']));
+
+		if($checkProductSQL->fetchColumn())
+			return;
 
 		$product = Mage::getModel('catalog/product');
 		$product->setData($productData)
 				->setStore($store)
 				->setStoreId($store->getId())
-				->setCustomerGroupId($this->ebayGroupId);
+				->setCustomerGroupId($this->ebayGroupId)
+				->setIsSuperMode(true);
 
 		$stockItem = Mage::getModel('cataloginventory/stock_item');
 		$stockItem->setStockId(Mage_CatalogInventory_Model_Stock::DEFAULT_STOCK_ID)
@@ -757,83 +603,16 @@ class Codisto_Sync_Model_Sync
 		$insertCategorySQL = $args['preparedcategoryproductStatement'];
 		$insertImageSQL = $args['preparedimageStatement'];
 		$insertHTMLSQL = $args['preparedproducthtmlStatement'];
+		$clearAttributeSQL = $args['preparedclearattributeStatement'];
 		$insertAttributeSQL = $args['preparedattributeStatement'];
 		$insertAttributeGroupSQL = $args['preparedattributegroupStatement'];
 		$insertAttributeGroupMapSQL = $args['preparedattributegroupmapStatement'];
 		$insertProductAttributeSQL = $args['preparedproductattributeStatement'];
+		$clearProductQuestionSQL = $args['preparedclearproductquestionStatement'];
 		$insertProductQuestionSQL = $args['preparedproductquestionStatement'];
 		$insertProductAnswerSQL = $args['preparedproductanswerStatement'];
 
-		$product->setIsSuperMode(true);
-
-		if(!isset($this->codistoStore))
-		{
-			$this->codistoStore = new Codisto_Core_Model_Store();
-		}
-
-		$this->codistoStore->cloneStore($store);
-		Mage::app()->setCurrentStore($this->codistoStore);
-
-		$price = null;
-
-		try
-		{
-			if(!isset($this->calcQuote))
-			{
-				$this->calcQuote = Mage::getModel('sales/quote');
-				$this->calcQuote->setIsSuperMode(true);
-				$this->calcQuote->getShippingAddress();
-				$this->calcQuote->getBillingAddress();
-				$this->calcQuote->setCustomer(Mage::getSingleton('customer/session')->getCustomer());
-			}
-			else
-			{
-				$this->calcQuote->getShippingAddress()->unsetData('cached_items_all');
-	  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nominal');
-	  			$this->calcQuote->getShippingAddress()->unsetData('cached_items_nonnominal');
-				$this->calcQuote->getBillingAddress()->unsetData('cached_items_all');
-	  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nominal');
-	  			$this->calcQuote->getBillingAddress()->unsetData('cached_items_nonnominal');
-
-				$this->calcQuote->removeAllItems();
-
-				$this->calcQuote->setTotalsCollectedFlag(false);
-			}
-
-			$config = new Varien_Object();
-			$config->setQty(1);
-
-			$this->calcQuote->setStore($store);
-			$this->calcQuote->setStoreId($store->getId());
-
-			$this->calcQuote->addProductAdvanced($product, $config, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
-			$this->calcQuote->getShippingAddress()->collectTotals();
-
-			$quoteItems = $this->calcQuote->getAllItems();
-
-			if(is_array($quoteItems))
-			{
-				foreach ($quoteItems as $quoteItem)
-				{
-					if($quoteItem->getProductId() == $product->getId())
-					{
-						$price = $quoteItem->getPrice();
-						break;
-					}
-				}
-			}
-		}
-		catch(Exception $e)
-		{
-
-		}
-
-		Mage::app()->setCurrentStore($store);
-
-		if(!is_numeric($price))
-		{
-			$price = $this->getExTaxPrice($product, $product->getFinalPrice(), $store);
-		}
+		$price = $this->SyncProductPrice($store, $product);
 
 		$listPrice = $this->getExTaxPrice($product, $product->getPrice(), $store);
 		if(!is_numeric($listPrice))
@@ -846,9 +625,7 @@ class Codisto_Sync_Model_Sync
 		// work around for description not appearing via collection
 		if(!isset($productData['description']))
 		{
-			$tmpProduct = Mage::getModel('catalog/product')->setStoreId($store->getId())->load($productData['entity_id']);
-			$description = $tmpProduct->getDescription();
-			unset($tmpProduct);
+			$description = Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($parentid, 'description', $store->getId());
 		}
 		else
 		{
@@ -859,17 +636,24 @@ class Codisto_Sync_Model_Sync
 		if($type == 'simple' &&
 			$description == '')
 		{
-			$parentIds = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($productData['entity_id']);
-
-			if($parentIds && is_object($parentIds))
+			if(!isset($parentids))
 			{
-				$groupedParentId = $parentIds->getFirstItem();
-				if($groupedParentId)
+				$configurableparentids = Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild($productData['entity_id']);
+				$groupedparentids = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($productData['entity_id']);
+				$bundleparentids = Mage::getModel('bundle/product_type')->getParentIdsByChild($productData['entity_id']);
+
+				$parentids = array_unique(array_merge($configurableparentids, $groupedparentids, $bundleparentids));
+			}
+
+			foreach ($parentids as $parentid) {
+
+				$description = Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($parentid, 'description', $store->getId());
+				if($description)
 				{
-					$groupedParent = Mage::getModel('catalog/product')->load($groupedParentId);
-					if($groupedParent)
-						$description = Mage::helper('codistosync')->processCmsContent($groupedParent->description);
+					$description = Mage::helper('codistosync')->processCmsContent($description);
+					break;
 				}
+
 			}
 
 			if(!$description)
@@ -894,9 +678,6 @@ class Codisto_Sync_Model_Sync
 		$data[] = (int)$qty;
 		$data[] = isset($productData['weight']) && is_numeric($productData['weight']) ? (float)$productData['weight'] : $productData['weight'];
 
-		if($db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM Product WHERE ExternalReference = '.$productData['entity_id'].') THEN 1 ELSE 0 END')->fetchColumn())
-			return;
-
 		$insertSQL->execute($data);
 
 		$categoryIds = $product->getCategoryIds();
@@ -911,7 +692,10 @@ class Codisto_Sync_Model_Sync
 			$insertHTMLSQL->execute(array($productData['entity_id'], 'Short Description', $shortDescription));
 		}
 
-		$db->exec('DELETE FROM ProductAttributeValue WHERE ProductExternalReference = ' . (int)$productData['entity_id']);
+		$clearAttributeSQL->execute(array($productData['entity_id']));
+
+		$attributeSet = array();
+		$attributeCodes = array();
 
 		$attributes = $product->getAttributes();
 		foreach($attributes as $attribute)
@@ -919,44 +703,58 @@ class Codisto_Sync_Model_Sync
 			$backendType = $attribute->getBackendType();
 			if($backendType != 'static')
 			{
-				$AttributeID = $attribute->getId();
-				$AttributeLabel = $attribute->getStoreLabel();
+				$attributeID = $attribute->getId();
+				$attributeLabel = $attribute->getStoreLabel();
 
-				if($AttributeLabel)
+				if($attributeLabel)
 				{
-					$AttributeGroupID = $attribute->getAttributeGroupId();
+					$attributeGroupID = $attribute->getAttributeGroupId();
 
-					if($AttributeGroupID)
+					if($attributeGroupID)
 					{
-						if(isset($this->groupCache[$AttributeGroupID]))
+						if(isset($this->groupCache[$attributeGroupID]))
 						{
-							$AttributeGroupName = $this->groupCache[$AttributeGroupID];
+							$attributeGroupName = $this->groupCache[$attributeGroupID];
 						}
 						else
 						{
-							$AttributeGroup = Mage::getModel('catalog/product_attribute_group')->load($AttributeGroupID);
+							$attributeGroup = Mage::getModel('catalog/product_attribute_group')->load($attributeGroupID);
 
-							$AttributeGroupName = html_entity_decode($AttributeGroup->getAttributeGroupName());
+							$attributeGroupName = html_entity_decode($attributeGroup->getAttributeGroupName());
 
-							$this->groupCache[$AttributeGroupID] = $AttributeGroupName;
+							$this->groupCache[$attributeGroupID] = $attributeGroupName;
 						}
 					}
 
-					$AttributeFrontEnd = $attribute->getFrontend();
+					$attributeFrontEnd = $attribute->getFrontend();
 
-					$AttributeValue = Mage::getResourceModel('catalog/product')->getAttributeRawValue($productData['entity_id'], $attribute->getAttributeCode(), $store->getId());
+					$attributeData = array(
+							'id' => $attributeID,
+							'code' => $attribute->getAttributeCode(),
+							'name' => $attribute->getName(),
+							'label' => $attributeLabel,
+							'backend_type' => $backendType,
+							'frontend_type' => $attributeFrontEnd->getInputType(),
+							'groupid' => $attributeGroupID,
+							'groupname' => $attributeGroupName
+					);
 
-					switch($AttributeFrontEnd->getInputType())
+					switch($attributeData['frontend_type'])
 					{
 					case 'multiselect':
 					case 'select':
 					case 'dropdown':
 
-						$product->setData($attribute->getAttributeCode(), $AttributeValue);
+						if(isset($this->optionCache[$store->getId().'-'.$attribute->getId()]))
+						{
+							$attributeData['source'] = $this->optionCache[$store->getId().'-'.$attribute->getId()];
+						}
+						else
+						{
+							$attributeData['source'] = $attribute->getSource();
 
-						try{
-						$AttributeValue = $product->getAttributeText($attribute->getAttributeCode());
-						}catch(Exception $e){}
+							$this->optionCache[$store->getId().'-'.$attribute->getId()] = $attributeData['source'];
+						}
 
 						break;
 
@@ -965,29 +763,85 @@ class Codisto_Sync_Model_Sync
 						break;
 					}
 
-					if($AttributeValue != null)
-					{
-						if($backendType == 'text')
-						{
-							$AttributeValue = Mage::helper('codistosync')->processCmsContent($AttributeValue);
-
-							$insertHTMLSQL->execute(array($productData['entity_id'], $AttributeLabel, $AttributeValue));
-						}
-
-						$insertAttributeSQL->execute(array($AttributeID, $attribute->getName(), $AttributeLabel, $backendType));
-
-						if($AttributeGroupID)
-						{
-							$insertAttributeGroupSQL->execute(array($AttributeGroupID, $AttributeGroupName));
-							$insertAttributeGroupMapSQL->execute(array($AttributeGroupID, $AttributeID));
-						}
-
-						if(is_array($AttributeValue))
-							$AttributeValue = implode(',', $AttributeValue);
-
-						$insertProductAttributeSQL->execute(array($productData['entity_id'], $AttributeID, $AttributeValue));
-					}
+					$attributeSet[] = $attributeData;
+					$attributeCodes[] = $attribute->getAttributeCode();
 				}
+			}
+		}
+
+		$attributeValues = Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($productData['entity_id'], $attributeCodes, $store->getId());
+
+		foreach($attributeSet as $attributeData)
+		{
+			if(isset($attributeValues[$attributeData['code']]))
+				$attributeValue = $attributeValues[$attributeData['code']];
+			else
+				$attributeValue = null;
+
+			switch($attributeData['frontend_type'])
+			{
+			case 'multiselect':
+			case 'select':
+			case 'dropdown':
+
+				try
+				{
+					if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue]))
+					{
+						$attributeValue = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue];
+					}
+					else
+					{
+						$attributeValue = $attributeData['source']->getOptionText($attributeValue);
+
+						$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue] = $attributeValue;
+					}
+
+				}
+				catch(Exception $e)
+				{
+
+				}
+
+				break;
+
+			default:
+
+				break;
+			}
+
+			switch($attributeData['backend_type'])
+			{
+			case 'text':
+
+				$attributeValue = Mage::helper('codistosync')->processCmsContent($attributeValue);
+
+				break;
+
+			default:
+
+				break;
+			}
+
+			if($attributeValue != null)
+			{
+				if($attributeData['backend_type'] == 'text')
+				{
+					$insertHTMLSQL->execute(array($productData['entity_id'], $attributeData['label'], $attributeValue));
+				}
+
+				$insertAttributeSQL->execute(array($attributeData['id'], $attributeData['name'], $attributeData['label'], $attributeData['backend_type']));
+
+				if($attributeData['groupid'])
+				{
+					$insertAttributeGroupSQL->execute(array($attributeData['groupid'], $attributeData['groupname']));
+					$insertAttributeGroupMapSQL->execute(array($attributeData['groupid'], $attributeData['id']));
+				}
+
+				if(is_array($attributeValue))
+					$attributeValue = implode(',', $attributeValue);
+
+				$insertProductAttributeSQL->execute(array($productData['entity_id'], $attributeData['id'], $attributeValue));
 			}
 		}
 
@@ -1028,23 +882,51 @@ class Codisto_Sync_Model_Sync
 		if($type == 'simple' &&
 			!$hasImage)
 		{
+			$mediaAttributeModel = Mage::getResourceSingleton('catalog/product_attribute_backend_media');
+			$mediaConfig = Mage::getSingleton('catalog/product_media_config');
+
 			$baseSequence = 0;
 
-			$groupedparentsid = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($product['entity_id']);
-			foreach ($groupedparentsid as $parentid) {
+			if(!isset($parentids))
+			{
+				$configurableparentids = Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild($productData['entity_id']);
+				$groupedparentids = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($productData['entity_id']);
+				$bundleparentids = Mage::getModel('bundle/product_type')->getParentIdsByChild($productData['entity_id']);
 
-				$groupedProduct = Mage::getModel('catalog/product')->load($parentid);
+				$parentids = array_unique(array_merge($configurableparentids, $groupedparentids, $bundleparentids));
+			}
+
+			foreach ($parentids as $parentid) {
+
+				$baseImagePath = Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($parentid, 'image', $store->getId());
+
+				if(method_exists($mediaAttributeModel, 'loadGallerySet'))
+				{
+					$mediaGallery = $mediaAttributeModel->loadGallerySet(array($parentid), $store->getId());
+				}
+				else
+				{
+					$parentProduct = Mage::getModel('catalog/product')
+										->setData(array('entity_id' => $parentid, 'type_id' => 'simple' ));
+
+					$attributes = $parentProduct->getTypeInstance(true)->getSetAttributes($parentProduct);
+					$media_gallery = $attributes['media_gallery'];
+					$backend = $media_gallery->getBackend();
+					$backend->afterLoad($parentProduct);
+
+					$mediaGallery = $parentProduct->getMediaGallery('images');
+				}
 
 				$maxSequence = 0;
 				$baseImageFound = false;
 
-				foreach ($groupedProduct->getMediaGallery('images') as $image) {
+				foreach ($mediaGallery as $image) {
 
-					$imgURL = $groupedProduct->getMediaConfig()->getMediaUrl($image['file']);
+					$imgURL = $mediaConfig->getMediaUrl($image['file']);
 
 					$enabled = ($image['disabled'] == 0 ? -1 : 0);
 
-					if(!$baseImageFound && ($image['file'] == $groupedProduct->getImage()))
+					if(!$baseImageFound && ($image['file'] == $baseImagePath))
 					{
 						$tag = '';
 						$sequence = 0;
@@ -1070,13 +952,19 @@ class Codisto_Sync_Model_Sync
 				}
 
 				$baseSequence = $maxSequence;
+
+				if($baseImageFound)
+					break;
 			}
 		}
 
+
 		// process simple product question/answers
 
-		$db->exec('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference = '.$productData['entity_id'].')');
-		$db->exec('DELETE FROM ProductQuestion WHERE ProductExternalReference = '.$productData['entity_id']);
+		$clearProductQuestionSQL->execute(array($productData['entity_id']));
+
+		//$db->exec('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference = '.$productData['entity_id'].')');
+		//$db->exec('DELETE FROM ProductQuestion WHERE ProductExternalReference = '.$productData['entity_id']);
 
 		$options = $product->getProductOptionsCollection();
 
@@ -1162,17 +1050,21 @@ class Codisto_Sync_Model_Sync
 		$insertCategory = $db->prepare('INSERT OR REPLACE INTO Category(ExternalReference, Name, ParentExternalReference, LastModified, Enabled, Sequence) VALUES(?,?,?,?,?,?)');
 		$insertCategoryProduct = $db->prepare('INSERT OR IGNORE INTO CategoryProduct(ProductExternalReference, CategoryExternalReference, Sequence) VALUES(?,?,?)');
 		$insertProduct = $db->prepare('INSERT INTO Product(ExternalReference, Code, Name, Price, ListPrice, TaxClass, Description, Enabled, StockControl, StockLevel, Weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+		$checkProduct = $db->prepare('SELECT CASE WHEN EXISTS(SELECT 1 FROM Product WHERE ExternalReference = ?) THEN 1 ELSE 0 END');
 		$insertSKU = $db->prepare('INSERT OR IGNORE INTO SKU(ExternalReference, Code, ProductExternalReference, Name, StockControl, StockLevel, Price, Enabled) VALUES(?,?,?,?,?,?,?,?)');
+		$insertSKULink = $db->prepare('INSERT OR REPLACE INTO SKULink (SKUExternalReference, ProductExternalReference, Price) VALUES (?, ?, ?)');
 		$insertSKUMatrix = $db->prepare('INSERT INTO SKUMatrix(SKUExternalReference, Code, OptionName, OptionValue, ProductOptionExternalReference, ProductOptionValueExternalReference) VALUES(?,?,?,?,?,?)');
 		$insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
 		$insertSKUImage = $db->prepare('INSERT INTO SKUImage(SKUExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
 		$insertProductOption = $db->prepare('INSERT INTO ProductOption (ExternalReference, Sequence, ProductExternalReference) VALUES (?,?,?)');
 		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence) VALUES (?,?)');
 		$insertProductHTML = $db->prepare('INSERT OR IGNORE INTO ProductHTML(ProductExternalReference, Tag, HTML) VALUES (?, ?, ?)');
+		$clearAttribute = $db->prepare('DELETE FROM ProductAttributeValue WHERE ProductExternalReference = ?');
 		$insertAttribute = $db->prepare('INSERT OR REPLACE INTO Attribute(ID, Code, Label, Type) VALUES (?, ?, ?, ?)');
 		$insertAttributeGroup = $db->prepare('INSERT OR REPLACE INTO AttributeGroup(ID, Name) VALUES(?, ?)');
 		$insertAttributeGroupMap = $db->prepare('INSERT OR IGNORE INTO AttributeGroupMap(GroupID, AttributeID) VALUES(?,?)');
 		$insertProductAttribute = $db->prepare('INSERT OR IGNORE INTO ProductAttributeValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
+		$clearProductQuestion = $db->prepare('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference = ?1); DELETE FROM ProductQuestion WHERE ProductExternalReference = ?1');
 		$insertProductQuestion = $db->prepare('INSERT OR REPLACE INTO ProductQuestion(ExternalReference, ProductExternalReference, Name, Type, Sequence) VALUES (?, ?, ?, ?, ?)');
 		$insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
 		$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber) VALUES (?, ?, ?, ?, ?, ?)');
@@ -1239,13 +1131,7 @@ class Codisto_Sync_Model_Sync
 			$insertConfiguration->execute(array('currency', $store->getBaseCurrencyCode()));
 			$insertConfiguration->execute(array('defaultcountry', Mage::getStoreConfig('tax/defaults/country', $store)));
 
-			// Categories
-			$categories = Mage::getModel('catalog/category')->getCollection()
-								->addAttributeToSelect(array('name', 'image', 'is_active', 'updated_at', 'parent_id', 'position'), 'left');
-
-			Mage::getSingleton('core/resource_iterator')->walk($categories->getSelect(), array(array($this, 'SyncCategoryData')), array( 'db' => $db, 'preparedStatement' => $insertCategory, 'store' => $store ));
-
-			$state = 'configurable';
+			$state = 'simple';
 		}
 
 		$this->productsProcessed = array();
@@ -1253,72 +1139,15 @@ class Codisto_Sync_Model_Sync
 
 		$coreResource = Mage::getSingleton('core/resource');
 
-		if($state == 'configurable')
-		{
-			$catalogWebsiteName = $coreResource->getTableName('catalog/product_website');
-			$storeName = $coreResource->getTableName('core/store');
-
-			// Configurable products
-			$configurableProducts = Mage::getModel('catalog/product')->getCollection()
-								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
-								->addAttributeToFilter('type_id', array('eq' => 'configurable'))
-								->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId));
-
-			$sqlCheckStore = '(`e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))';
-
-			$configurableProducts->getSelect()->where($sqlCheckStore)->order('entity_id')->limit($configurableCount);
-			$configurableProducts->setOrder('entity_id', 'ASC');
-
-			Mage::getSingleton('core/resource_iterator')->walk($configurableProducts->getSelect(), array(array($this, 'SyncConfigurableProductData')),
-				array(
-					'type' => 'configurable',
-					'db' => $db,
-					'preparedStatement' => $insertProduct,
-					'preparedskuStatement' => $insertSKU,
-					'preparedskumatrixStatement' => $insertSKUMatrix,
-					'preparedcategoryproductStatement' => $insertCategoryProduct,
-					'preparedimageStatement' => $insertImage,
-					'preparedskuimageStatement' => $insertSKUImage,
-					'preparedproductoptionStatement' => $insertProductOption,
-					'preparedproducthtmlStatement' => $insertProductHTML,
-					'preparedattributeStatement' => $insertAttribute,
-					'preparedattributegroupStatement' => $insertAttributeGroup,
-					'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
-					'preparedproductattributeStatement' => $insertProductAttribute,
-					'preparedproductquestionStatement' => $insertProductQuestion,
-					'preparedproductanswerStatement' => $insertProductAnswer,
-					'store' => $store )
-			);
-
-			if(!empty($this->productsProcessed))
-			{
-				$db->exec('DELETE FROM Product WHERE ExternalReference IN ('.implode(',', $this->productsProcessed).') AND ExternalReference NOT IN (SELECT ProductExternalReference FROM SKU WHERE ProductExternalReference IS NOT NULL)');
-				$db->exec('INSERT OR REPLACE INTO Progress (Sentinel, State, entity_id) VALUES (1, \'configurable\', '.$this->currentEntityId.')');
-			}
-			else
-			{
-				$state = 'simple';
-				$this->currentEntityId = 0;
-			}
-		}
-
 		if($state == 'simple')
 		{
-			$superLinkName = $coreResource->getTableName('catalog/product_super_link');
-			$catalogEntityName = $coreResource->getTableName('catalog/product');
-			$catalogWebsiteName = $coreResource->getTableName('catalog/product_website');
-			$storeName = $coreResource->getTableName('core/store');
-
 			// Simple Products not participating as configurable skus
 			$simpleProducts = Mage::getModel('catalog/product')->getCollection()
 								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'simple'))
 								->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId));
 
-			$sqlCheckStore = '(`e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))';
-			$sqlCheckSimple = '(`e`.entity_id NOT IN (SELECT product_id FROM `'.$superLinkName.'` WHERE parent_id IN (SELECT entity_id FROM `'.$catalogEntityName.'` WHERE type_id = \'configurable\' AND entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))))))';
-
-			$simpleProducts->getSelect()->where($sqlCheckStore . ' AND ' . $sqlCheckSimple)->order('entity_id')->limit($simpleCount);
+			$simpleProducts->getSelect()->order('entity_id')->limit($simpleCount);
 			$simpleProducts->setOrder('entity_id', 'ASC');
 
 			Mage::getSingleton('core/resource_iterator')->walk($simpleProducts->getSelect(), array(array($this, 'SyncSimpleProductData')),
@@ -1326,13 +1155,16 @@ class Codisto_Sync_Model_Sync
 					'type' => 'simple',
 					'db' => $db,
 					'preparedStatement' => $insertProduct,
+					'preparedcheckproductStatement' => $checkProduct,
 					'preparedcategoryproductStatement' => $insertCategoryProduct,
 					'preparedimageStatement' => $insertImage,
 					'preparedproducthtmlStatement' => $insertProductHTML,
+					'preparedclearattributeStatement' => $clearAttribute,
 					'preparedattributeStatement' => $insertAttribute,
 					'preparedattributegroupStatement' => $insertAttributeGroup,
 					'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 					'preparedproductattributeStatement' => $insertProductAttribute,
+					'preparedclearproductquestionStatement' => $clearProductQuestion,
 					'preparedproductquestionStatement' => $insertProductQuestion,
 					'preparedproductanswerStatement' => $insertProductAnswer,
 					'store' => $store ));
@@ -1340,6 +1172,53 @@ class Codisto_Sync_Model_Sync
 			if(!empty($this->productsProcessed))
 			{
 				$db->exec('INSERT OR REPLACE INTO Progress (Sentinel, State, entity_id) VALUES (1, \'simple\', '.$this->currentEntityId.')');
+			}
+			else
+			{
+				$state = 'configurable';
+				$this->currentEntityId = 0;
+			}
+		}
+
+		if($state == 'configurable')
+		{
+			// Configurable products
+			$configurableProducts = Mage::getModel('catalog/product')->getCollection()
+								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+								->addAttributeToFilter('type_id', array('eq' => 'configurable'))
+								->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId));
+
+			$configurableProducts->getSelect()->order('entity_id')->limit($configurableCount);
+			$configurableProducts->setOrder('entity_id', 'ASC');
+
+			Mage::getSingleton('core/resource_iterator')->walk($configurableProducts->getSelect(), array(array($this, 'SyncConfigurableProductData')),
+				array(
+					'type' => 'configurable',
+					'db' => $db,
+					'preparedStatement' => $insertProduct,
+					'preparedcheckproductStatement' => $checkProduct,
+					'preparedskuStatement' => $insertSKU,
+					'preparedskulinkStatement' => $insertSKULink,
+					'preparedskumatrixStatement' => $insertSKUMatrix,
+					'preparedcategoryproductStatement' => $insertCategoryProduct,
+					'preparedimageStatement' => $insertImage,
+					'preparedskuimageStatement' => $insertSKUImage,
+					'preparedproductoptionStatement' => $insertProductOption,
+					'preparedproducthtmlStatement' => $insertProductHTML,
+					'preparedclearattributeStatement' => $clearAttribute,
+					'preparedattributeStatement' => $insertAttribute,
+					'preparedattributegroupStatement' => $insertAttributeGroup,
+					'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
+					'preparedproductattributeStatement' => $insertProductAttribute,
+					'preparedclearproductquestionStatement' => $clearProductQuestion,
+					'preparedproductquestionStatement' => $insertProductQuestion,
+					'preparedproductanswerStatement' => $insertProductAnswer,
+					'store' => $store )
+			);
+
+			if(!empty($this->productsProcessed))
+			{
+				$db->exec('INSERT OR REPLACE INTO Progress (Sentinel, State, entity_id) VALUES (1, \'configurable\', '.$this->currentEntityId.')');
 			}
 			else
 			{
@@ -1359,8 +1238,6 @@ class Codisto_Sync_Model_Sync
 
 				$orderStoreId = $stores->getFirstItem()->getId();
 			}
-
-			$coreResource = Mage::getSingleton('core/resource');
 
 			$invoiceName = $coreResource->getTableName('sales/invoice');
 			$shipmentName = $coreResource->getTableName('sales/shipment');
@@ -1389,10 +1266,14 @@ class Codisto_Sync_Model_Sync
 					'store' => $store )
 			);
 
-			$db->exec('INSERT OR REPLACE INTO Progress (Sentinel, State, entity_id) VALUES (1, \'orders\', '.$this->currentEntityId.')');
-
-			if(empty($this->ordersProcessed)){
+			if(!empty($this->ordersProcessed))
+			{
+				$db->exec('INSERT OR REPLACE INTO Progress (Sentinel, State, entity_id) VALUES (1, \'orders\', '.$this->currentEntityId.')');
+			}
+			else
+			{
 				$state = 'productoption';
+				$this->currentEntityId = 0;
 			}
 		}
 
@@ -1411,6 +1292,19 @@ class Codisto_Sync_Model_Sync
 				$optId = $opt->getId();
 				$insertProductOptionValue->execute(array($optId, $sequence));
 			}
+
+			$state = 'categories';
+		}
+
+		if($state == 'categories')
+		{
+			// Categories
+			$categories = Mage::getModel('catalog/category')->getCollection()
+								->addAttributeToSelect(array('name', 'image', 'is_active', 'updated_at', 'parent_id', 'position'), 'left');
+
+			Mage::getSingleton('core/resource_iterator')->walk($categories->getSelect(), array(array($this, 'SyncCategoryData')), array( 'db' => $db, 'preparedStatement' => $insertCategory, 'store' => $store ));
+
+			$db->exec('INSERT OR REPLACE INTO Progress (Sentinel, State, entity_id) VALUES (1, \'complete\', 0)');
 		}
 
 		$db->exec('COMMIT TRANSACTION');
@@ -1695,8 +1589,8 @@ class Codisto_Sync_Model_Sync
 		$db = new PDO('sqlite:' . $syncDb);
 		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-		$db->exec('PRAGMA synchronous=0');
-		$db->exec('PRAGMA temp_store=2');
+		$db->exec('PRAGMA synchronous=OFF');
+		$db->exec('PRAGMA temp_store=MEMORY');
 		$db->exec('PRAGMA page_size=65536');
 		$db->exec('PRAGMA encoding=\'UTF-8\'');
 		$db->exec('PRAGMA cache_size=15000');
@@ -1727,6 +1621,8 @@ class Codisto_Sync_Model_Sync
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_SKU_ProductExternalReference ON SKU(ProductExternalReference)');
 		$db->exec('CREATE TABLE IF NOT EXISTS SKUMatrix (SKUExternalReference text NOT NULL, Code text NULL, OptionName text NOT NULL, OptionValue text NOT NULL, ProductOptionExternalReference text NOT NULL, ProductOptionValueExternalReference text NOT NULL)');
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_SKUMatrix_SKUExternalReference ON SKUMatrix(SKUExternalReference)');
+
+		$db->exec('CREATE TABLE IF NOT EXISTS SKULink (SKUExternalReference text NOT NULL, ProductExternalReference text NOT NULL, Price real NOT NULL, PRIMARY KEY (SKUExternalReference, ProductExternalReference))');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS ProductImage (ProductExternalReference text NOT NULL, URL text NOT NULL, Tag text NOT NULL DEFAULT \'\', Sequence integer NOT NULL, Enabled bit NOT NULL DEFAULT -1)');
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_ProductImage_ProductExternalReference ON ProductImage(ProductExternalReference)');
@@ -1850,6 +1746,7 @@ class Codisto_Sync_Model_Sync
 	{
 		$db = new PDO('sqlite:' . $templateDb);
 		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		$db->setAttribute(PDO::ATTR_TIMEOUT, 60);
 
 		$db->exec('PRAGMA synchronous=0');
 		$db->exec('PRAGMA temp_store=2');
@@ -1884,43 +1781,5 @@ class Codisto_Sync_Model_Sync
 		}
 
 		return $price;
-	}
-}
-
-class Codisto_Core_Model_Store extends Mage_Core_Model_Store
-{
-	public function _construct()
-	{
-
-	}
-
-	public function cloneStore($store)
-	{
-		$this->_eventPrefix = $store->_eventPrefix;
-		$this->_eventObject = $store->_eventObject;
-		$this->_resourceName = $store->_resourceName;
-		$this->_resource = $store->_resource;
-		$this->_resourceCollectionName = $store->_resourceCollectionName;
-		$this->_cacheTag = $store->_cacheTag;
-		$this->_dataSaveAllowed = $store->_dataSaveAllowed;
-		$this->_isObjectNew = $store->_isObjectNew;
-		$this->_priceFilter = $store->_priceFilter;
-		$this->_website = $store->_website;
-		$this->_group = $store->_group;
-		$this->_configCache = $store->_configCache;
-		$this->_configCacheBaseNodes = $store->_configCacheBaseNodes;
-		$this->_dirCache = $store->_dirCache;
-		$this->_urlCache = $store->_urlCache;
-		$this->_baseUrlCache = $store->_baseUrlCache;
-		$this->_session = $store->_session;
-		$this->_isAdminSecure = $store->_isAdminSecure;
-		$this->_isFrontSecure = $store->_isFrontSecure;
-		$this->_frontendName = $store->_frontendName;
-		$this->_isReadOnly = $store->_isReadOnly;
-	}
-
-	public function roundPrice($price)
-	{
-		return round($price, 4);
 	}
 }
