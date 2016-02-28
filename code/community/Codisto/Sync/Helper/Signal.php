@@ -18,15 +18,26 @@ $client->setStream();
 
 foreach($merchants as $merchant)
 {
-	try {
-Mage::log('signalling '.'https://api.codisto.com/'.$merchant['merchantid'].' '.$msg, null, 'codisto.log');
-		$client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
-		$client->setHeaders('X-HostKey', $merchant['hostkey']);
-		$client->setRawData($msg)->request('POST');
-	}
-	catch(Exception $e)
+	for($Retry = 0; ; $Retry++)
 	{
+		try
+		{
+			$client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
+			$client->setHeaders('X-HostKey', $merchant['hostkey']);
+			$client->setRawData($msg)->request('POST');
+			break;
+		}
+		catch(Exception $e)
+		{
+			if($Retry > 3)
+			{
+				Mage::logException($e);
+				break;
+			}
 
+			usleep(100000);
+			continue;
+		}
 	}
 }
 
