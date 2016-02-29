@@ -54,13 +54,13 @@ Use the following table to verify you have the correct prerequisites to install 
 			<th>For more information</th>
 		</tr>
 		<tr>
-			<td>Magento Community Edition (versions 1.6.0.0 - 1.9.2.3  <sup> Verified up to SUPEE-6788 </sup>) <br>
+			<td>Magento Community Edition (versions 1.6.0.0 - 1.9.2.4) <br>
 			Magento Enterprise Edition (versions 1.11 - 1.14)</td>
 			<td>To check your version consult Magento documentation or use a site such as <a href="http://magentoversion.com/">http://magentoversion.com/</a></td>
 			<td><a href="http://magento.com/products/overview">Magento products overview</a></td>
 		</tr>
 		<tr>
-			<td>PHP, Apache and MySQL versions supported are those specified by the supported Magento versions. (Whilst Magento 1.X requires PHP 5.4 CodistoConnect aims to be compatible with PHP 5.2) </td>
+			<td>PHP, Apache and MySQL versions supported are those specified by the supported Magento versions. (Whilst Magento 1.X requires PHP 5.4 Codisto Connect aims to be compatible with PHP 5.2) </td>
 			<td><a href="http://magento.com/resources/system-requirements">Magento system requirements</a></td>
 			<td><a href="http://help.codisto.com/article/25-verify-your-prerequisites">See our help article</a></td>
 		</tr>
@@ -118,7 +118,7 @@ rm plugin.tgz
 
 OR
 
-<h5>via SSH (using the CodistoConnect <a href="https://qa.codisto.com/plugin/install">plugin install helper script</a>)</h5>
+<h5>via SSH (using the Codisto Connect <a href="https://qa.codisto.com/plugin/install">plugin install helper script</a>)</h5>
 
 ``` bash
 ssh $USER@$DOMAIN "wget -O install.sh https://qa.codisto.com/plugin/install && chmod +x ./install.sh && ./install.sh"
