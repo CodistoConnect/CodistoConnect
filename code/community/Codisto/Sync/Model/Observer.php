@@ -725,15 +725,6 @@ class Codisto_Sync_Model_Observer
 
 			unset($visited);
 
-			$syncObject = Mage::getModel('codistosync/sync');
-
-			foreach($merchants as $merchant)
-			{
-				$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$merchant['storeid'].'.db';
-
-				$syncObject->UpdateProducts($syncDb, $stockItems, $merchant['storeid']);
-			}
-
 			$syncedProducts = Mage::registry('codisto_synced_products');
 			if(!is_array($syncedProducts))
 			{
@@ -760,7 +751,7 @@ class Codisto_Sync_Model_Observer
 				else
 					$productids = '['.implode(',', $syncIds).']';
 
-				Mage::helper('codistosync')->signal($merchants, 'action=sync&productid='.$productids);
+				Mage::helper('codistosync')->signal($merchants, 'action=sync&productid='.$productids, Mage_Index_Model_Event::TYPE_SAVE, $stockItems);
 			}
 		}
 	}

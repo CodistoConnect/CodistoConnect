@@ -658,8 +658,36 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return Mage::helper('cms')->getBlockTemplateProcessor()->filter(trim($content));
 	}
 
-	public function signal($merchants, $msg)
+	public function signalOnShutdown($merchants, $msg, $eventtype, $productids)
 	{
+		if(is_array($productids))
+		{
+			$syncObject = Mage::getModel('codistosync/sync');
+
+			$storeVisited = array();
+
+			foreach($merchants as $merchant)
+			{
+				$storeId = $merchant['storeid'];
+
+				if(!isset($storeVisited[$storeId]))
+				{
+					$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+
+					if($eventtype == Mage_Index_Model_Event::TYPE_DELETE)
+					{
+						$syncObject->DeleteProduct($syncDb, $productids, $storeId);
+					}
+					else
+					{
+						$syncObject->UpdateProducts($syncDb, $productids, $storeId);
+					}
+
+					$storeVisited[$storeId] = 1;
+				}
+			}
+		}
+
 		$backgroundSignal = $this->runProcessBackground('app/code/community/Codisto/Sync/Helper/Signal.php', array(serialize($merchants), $msg), array('pdo', 'curl', 'simplexml'));
 		if($backgroundSignal)
 			return;
@@ -684,5 +712,10 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 			}
 		}
+	}
+
+	public function signal($merchants, $msg, $eventtype = null, $productids = null)
+	{
+		register_shutdown_function(array($this, 'signalOnShutdown'), $merchants, $msg, $eventtype, $productids);
 	}
 }

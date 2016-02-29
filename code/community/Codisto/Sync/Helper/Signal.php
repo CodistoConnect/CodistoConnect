@@ -2,10 +2,12 @@
 
 require_once 'app/Mage.php';
 
+Mage::app();
+
 $merchants = unserialize($argv[1]);
 $msg = $argv[2];
 
-$curlOptions = array( CURLOPT_TIMEOUT => 10, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0 );
+$curlOptions = array( CURLOPT_TIMEOUT => 10 );
 
 if(isset($_ENV['CURL_CA_BUNDLE']) && $_ENV['CURL_CA_BUNDLE'])
 {
@@ -29,7 +31,7 @@ foreach($merchants as $merchant)
 		}
 		catch(Exception $e)
 		{
-			if($Retry > 3)
+			if($Retry >= 3)
 			{
 				Mage::logException($e);
 				break;

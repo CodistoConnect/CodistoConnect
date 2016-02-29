@@ -677,7 +677,7 @@ class Codisto_Sync_Model_Sync
 		$data[] = $stockItem->getManageStock() ? -1 : 0;
 		$data[] = (int)$qty;
 		$data[] = isset($productData['weight']) && is_numeric($productData['weight']) ? (float)$productData['weight'] : $productData['weight'];
-
+Mage::log('inserting '.$store->getId().' '.print_r($data, true), null, 'codisto.log');
 		$insertSQL->execute($data);
 
 		$categoryIds = $product->getCategoryIds();
