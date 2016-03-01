@@ -2,7 +2,19 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.81...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.82...HEAD)
+
+**Implemented enhancements:**
+
+- handle pdf output for payment info [\#285](https://github.com/CodistoConnect/CodistoConnect/pull/285) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#286](https://github.com/CodistoConnect/CodistoConnect/pull/286) ([bradmccormack](https://github.com/bradmccormack))
+- - Update README.md and template README \[plugin skip\] [\#284](https://github.com/CodistoConnect/CodistoConnect/pull/284) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.82](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.82) (2016-02-27)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.81...1.1.82)
 
 **Fixed bugs:**
 
