@@ -1216,8 +1216,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 		}
 
-		Mage::dispatchEvent('sales_model_service_quote_submit_before', array('order'=>$order, 'quote'=>$quote));
-
 		if($ordercontent->paymentstatus == 'complete')
 		{
 			$order->setBaseTotalPaid($ordertotal);
@@ -1240,11 +1238,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$payment->save();
 		}
 
-		Mage::dispatchEvent('sales_model_service_quote_submit_success', array('order'=>$order, 'quote'=>$quote));
-
 		$order->save();
-
-		Mage::dispatchEvent('sales_model_service_quote_submit_after', array('order'=>$order, 'quote'=>$quote));
 
 		if(!$order->hasInvoices())
 		{
