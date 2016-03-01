@@ -1,6 +1,9 @@
 Template Editing is described here:
 
-https://codisto.zendesk.com/hc/en-us/articles/205212765-Editing-the-ImageSmart-eBay-Listing-Template
+http://help.codisto.com/article/21-editing-the-imagesmart-ebay-listing-template
 
-To receive a copy of the default template files ensure that <MAGENTO_BASE_DIR>app/design/ebay folder is writable by the user context of the webserver/fpm pool
+Further template editing articles are located here:
+http://help.codisto.com/category/11-category
 
+To receive a copy of the default template files ensure that <MAGENTO_BASE_DIR>app/design/ebay folder is writable by the user context of the webserver/fpm pool.
+The templates will appear the first time you refresh the full screen preview.
