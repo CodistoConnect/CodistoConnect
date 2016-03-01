@@ -323,7 +323,10 @@ class Codisto_Sync_Model_Observer
 			$orderid = $payment->getOrder()->getCodistoOrderid();
 
 			if($paypaltransactionid)
-				$transport['PayPal TransactionID'] = '<a href="'.htmlspecialchars(Mage::getBaseUrl()).'codisto/ebaypayment?orderid='.htmlspecialchars($orderid).'" target="codisto!ebaypayment" class="codisto-ebay-payment-link">'.htmlspecialchars($paypaltransactionid).'</a>';
+			{
+				$transport['PayPal TransactionID_HTML'] = '<a href="'.htmlspecialchars(Mage::getBaseUrl()).'codisto/ebaypayment?orderid='.htmlspecialchars($orderid).'" target="codisto!ebaypayment" class="codisto-ebay-payment-link">'.htmlspecialchars($paypaltransactionid).'</a>';
+				$transport['PayPal TransactionID'] = $paypaltransactionid;
+			}
 
 			$additionalInfo = $payment->getData('additional_information');
 
@@ -332,13 +335,15 @@ class Codisto_Sync_Model_Observer
 				if(isset($additionalInfo['ebaysalesrecordnumber']) &&
 					$additionalInfo['ebaysalesrecordnumber'])
 				{
-					$transport['eBay Sales Record Number'] = '<a href="'.htmlspecialchars(Mage::getBaseUrl()).'codisto/ebaysale?orderid='.htmlspecialchars($orderid).'" target="codisto!ebaysale" class="codisto-ebay-sales-link">'.htmlspecialchars($additionalInfo['ebaysalesrecordnumber']).'</a>';
+					$transport['eBay Sales Record Number_HTML'] = '<a href="'.htmlspecialchars(Mage::getBaseUrl()).'codisto/ebaysale?orderid='.htmlspecialchars($orderid).'" target="codisto!ebaysale" class="codisto-ebay-sales-link">'.htmlspecialchars($additionalInfo['ebaysalesrecordnumber']).'</a>';
+					$transport['eBay Sales Record Number'] = $additionalInfo['ebaysalesrecordnumber'];
 				}
 
 				if(isset($additionalInfo['ebayuser']) &&
 					$additionalInfo['ebayuser'])
 				{
-					$transport['eBay User'] = '<a href="'.htmlspecialchars(Mage::getBaseUrl()).'codisto/ebayuser?orderid='.htmlspecialchars($orderid).'" target="codisto!ebayuser" class="codisto-ebay-user-link">'.htmlspecialchars($additionalInfo['ebayuser']).'</a>';
+					$transport['eBay User_HTML'] = '<a href="'.htmlspecialchars(Mage::getBaseUrl()).'codisto/ebayuser?orderid='.htmlspecialchars($orderid).'" target="codisto!ebayuser" class="codisto-ebay-user-link">'.htmlspecialchars($additionalInfo['ebayuser']).'</a>';
+					$transport['eBay User'] = $additionalInfo['ebayuser'];
 				}
 			}
 		}

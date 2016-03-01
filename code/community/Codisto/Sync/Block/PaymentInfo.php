@@ -20,8 +20,29 @@
 
 class Codisto_Sync_Block_PaymentInfo extends Mage_Payment_Block_Info
 {
+	public function toPdf()
+	{
+		$html = $this->escapeHtml($this->getMethod()->getTitle());
+
+		$specificInfo = $this->getSpecificInformation();
+
+		$html .= '{{pdf_row_separator}}';
+
+		foreach($specificInfo as $k => $v)
+		{
+			if(!preg_match('/_HTML$/', $k))
+			{
+				$html .= $k.': '.$v.'{{pdf_row_separator}}';
+			}
+		}
+
+		return $html;
+	}
+
 	protected function _toHtml()
 	{
+		$secureMode = $this->getIsSecureMode();
+
 		$html = $this->escapeHtml($this->getMethod()->getTitle());
 
 		$specificInfo = $this->getSpecificInformation();
@@ -30,7 +51,20 @@ class Codisto_Sync_Block_PaymentInfo extends Mage_Payment_Block_Info
 
 		foreach($specificInfo as $k => $v)
 		{
-			$html .= '<tr><td>'.$this->escapeHtml($k).'</td><td>'.$v.'</td></tr>';
+			if($secureMode)
+			{
+				if(!preg_match('/_HTML$/', $k))
+				{
+					$html .= '<tr><td>'.$this->escapeHtml($k).'</td><td>'.$this->escapeHtml($v).'</td></tr>';
+				}
+			}
+			else
+			{
+				if(preg_match('/_HTML$/', $k))
+				{
+					$html .= '<tr><td>'.$this->escapeHtml(preg_replace('/_HTML$/', '', $k)).'</td><td>'.$v.'</td></tr>';
+				}
+			}
 		}
 
 		$html .= '</table>';
