@@ -2,7 +2,18 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.82...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.83...HEAD)
+
+**Implemented enhancements:**
+
+- remove quote events on order sync [\#287](https://github.com/CodistoConnect/CodistoConnect/pull/287) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#288](https://github.com/CodistoConnect/CodistoConnect/pull/288) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.83](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.83) (2016-03-01)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.82...1.1.83)
 
 **Implemented enhancements:**
 
