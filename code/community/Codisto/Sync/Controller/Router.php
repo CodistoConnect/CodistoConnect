@@ -109,9 +109,6 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				return true;
 			}
 
-			$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
-			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
-
 			Mage::getSingleton('core/session', array('name'=>'adminhtml'));
 
 			// unlock session
@@ -204,7 +201,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					return true;
 				}
 
-
+				$MerchantID = Zend_Json::decode($MerchantID);
 				if(is_array($MerchantID))
 				{
 					$merchantmatch = array();
@@ -282,7 +279,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				$zlibEnabled = strtoupper(ini_get('zlib.output_compression'));
 
 				if(!$acceptEncoding || ($zlibEnabled == 1 || $zlibEnabled == 'ON'))
-				$curlOptions[CURLOPT_ENCODING] = '';
+					$curlOptions[CURLOPT_ENCODING] = '';
 
 				// proxy request
 				$client = new Zend_Http_Client($remoteUrl, array(
