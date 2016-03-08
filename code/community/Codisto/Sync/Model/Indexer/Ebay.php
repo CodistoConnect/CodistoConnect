@@ -290,9 +290,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 				$syncObject = Mage::getModel('codistosync/sync');
 				$syncIds = Mage::getResourceSingleton('catalog/product_type_configurable')->getParentIdsByChild($event->getDataObject()->getProductId());
-
-				if(empty($syncIds))
-					$syncIds = array($event->getDataObject()->getProductId());
+				$syncIds[] = $event->getDataObject()->getProductId();
 
 				$syncIds = array_diff($syncIds, $syncedProducts);
 
@@ -318,21 +316,20 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 					$merchants = array();
 					$merchantSignalled = array();
 
+					$eventtype = $type;
+					if($type == Mage_Index_Model_Event::TYPE_DELETE &&
+						count($syncIds) == 1 &&
+						$syncIds[0] == $event-getDataObject()->getId())
+					{
+						$eventtype = Mage_Index_Model_Event::TYPE_DELETE;
+					}
+					else
+					{
+						$eventtype = Mage_Index_Model_Event::TYPE_SAVE;
+					}
+
 					foreach($syncStores as $storeId)
 					{
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
-
-						if($type == Mage_Index_Model_Event::TYPE_DELETE
-								&& count($syncIds) == 1
-								&& $syncIds[0] == $event->getDataObject()->getId())
-						{
-							$syncObject->DeleteProduct($syncDb, $event->getDataObject()->getId(), $storeId);
-						}
-						else
-						{
-							$syncObject->UpdateProducts($syncDb, $syncIds, $storeId);
-						}
-
 						$merchantid = Mage::getStoreConfig('codisto/merchantid', $storeId);
 						$hostkey = Mage::getStoreConfig('codisto/hostkey', $storeId);
 
@@ -350,7 +347,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 						}
 					}
 
-					Mage::helper('codistosync')->signal($merchants, 'action=sync&productid='.$productIds);
+					Mage::helper('codistosync')->signal($merchants, 'action=sync&productid='.$productIds, $eventtype, $syncIds);
 				}
 			}
 		}
@@ -414,9 +411,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 				$syncObject = Mage::getModel('codistosync/sync');
 				$syncIds = Mage::getResourceSingleton('catalog/product_type_configurable')->getParentIdsByChild($event->getDataObject()->getId());
-
-				if(empty($syncIds))
-					$syncIds = array($event->getDataObject()->getId());
+				$syncIds[] = $event->getDataObject()->getId();
 
 				$syncIds = array_diff($syncIds, $syncedProducts);
 
@@ -442,21 +437,20 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 					$merchants = array();
 					$merchantSignalled = array();
 
+					$eventtype = $type;
+					if($type == Mage_Index_Model_Event::TYPE_DELETE &&
+						count($syncIds) == 1 &&
+						$syncIds[0] == $event-getDataObject()->getId())
+					{
+						$eventtype = Mage_Index_Model_Event::TYPE_DELETE;
+					}
+					else
+					{
+						$eventtype = Mage_Index_Model_Event::TYPE_SAVE;
+					}
+
 					foreach($syncStores as $storeId)
 					{
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
-
-						if($type == Mage_Index_Model_Event::TYPE_DELETE
-								&& count($syncIds) == 1
-								&& $syncIds[0] == $event->getDataObject()->getId())
-						{
-							$syncObject->DeleteProduct($syncDb, $event->getDataObject()->getId(), $storeId);
-						}
-						else
-						{
-							$syncObject->UpdateProducts($syncDb, $syncIds, $storeId);
-						}
-
 						$merchantid = Mage::getStoreConfig('codisto/merchantid', $storeId);
 						$hostkey = Mage::getStoreConfig('codisto/hostkey', $storeId);
 
@@ -474,7 +468,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 						}
 					}
 
-					Mage::helper('codistosync')->signal($merchants, 'action=sync&productid='.$productIds);
+					Mage::helper('codistosync')->signal($merchants, 'action=sync&productid='.$productIds, $eventtype, $syncIds);
 				}
 			}
 		}

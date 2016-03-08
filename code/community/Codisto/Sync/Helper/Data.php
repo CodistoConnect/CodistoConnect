@@ -658,31 +658,71 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return Mage::helper('cms')->getBlockTemplateProcessor()->filter(trim($content));
 	}
 
-	public function signal($merchants, $msg)
+	public function signalOnShutdown($merchants, $msg, $eventtype, $productids)
 	{
-		$backgroundSignal = $this->runProcessBackground('app/code/community/Codisto/Sync/Helper/Signal.php', array(serialize($merchants), $msg), array('pdo', 'curl', 'simplexml'));
-		if($backgroundSignal)
-			return;
-
-		if(!$this->client)
+		try
 		{
-			$this->client = new Zend_Http_Client();
-			$this->client->setConfig(array( 'adapter' => 'Zend_Http_Client_Adapter_Curl', 'curloptions' => array(CURLOPT_TIMEOUT => 4, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0), 'keepalive' => true, 'maxredirects' => 0 ));
-			$this->client->setStream();
-		}
+			if(is_array($productids))
+			{
+				$syncObject = Mage::getModel('codistosync/sync');
 
-		foreach($merchants as $merchant)
+				$storeVisited = array();
+
+				foreach($merchants as $merchant)
+				{
+					$storeId = $merchant['storeid'];
+
+					if(!isset($storeVisited[$storeId]))
+					{
+						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+
+						if($eventtype == Mage_Index_Model_Event::TYPE_DELETE)
+						{
+							$syncObject->DeleteProduct($syncDb, $productids, $storeId);
+						}
+						else
+						{
+							$syncObject->UpdateProducts($syncDb, $productids, $storeId);
+						}
+
+						$storeVisited[$storeId] = 1;
+					}
+				}
+			}
+
+			$backgroundSignal = $this->runProcessBackground('app/code/community/Codisto/Sync/Helper/Signal.php', array(serialize($merchants), $msg), array('pdo', 'curl', 'simplexml'));
+			if($backgroundSignal)
+				return;
+
+			if(!$this->client)
+			{
+				$this->client = new Zend_Http_Client();
+				$this->client->setConfig(array( 'adapter' => 'Zend_Http_Client_Adapter_Curl', 'curloptions' => array(CURLOPT_TIMEOUT => 4, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0), 'keepalive' => true, 'maxredirects' => 0 ));
+				$this->client->setStream();
+			}
+
+			foreach($merchants as $merchant)
+			{
+				try
+				{
+					$this->client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
+					$this->client->setHeaders('X-HostKey', $merchant['hostkey']);
+					$this->client->setRawData($msg)->request('POST');
+				}
+				catch(Exception $e)
+				{
+
+				}
+			}
+		}
+		catch(Exception $e)
 		{
-			try
-			{
-				$this->client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
-				$this->client->setHeaders('X-HostKey', $merchant['hostkey']);
-				$this->client->setRawData($msg)->request('POST');
-			}
-			catch(Exception $e)
-			{
-
-			}
+			Mage::log('error signalling '.$e->getMessage(), null, 'codisto.log');
 		}
+	}
+
+	public function signal($merchants, $msg, $eventtype = null, $productids = null)
+	{
+		register_shutdown_function(array($this, 'signalOnShutdown'), $merchants, $msg, $eventtype, $productids);
 	}
 }

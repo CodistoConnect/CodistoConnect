@@ -8,7 +8,7 @@ try {
 
 	$contents = file_get_contents('php://stdin');
 
-	echo Mage::helper('cms')->getBlockTemplateProcessor()->filter(preg_replace('/^\s+|\s+$/', '', $contents));
+	echo Mage::helper('cms')->getBlockTemplateProcessor()->filter(trim($contents));
 
 } catch (Exception $e) {
 

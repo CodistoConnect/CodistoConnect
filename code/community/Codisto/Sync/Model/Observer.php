@@ -68,10 +68,23 @@ class Codisto_Sync_Model_Observer
 				}
 			}
 
-			$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
-			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
-			if(!in_array($MerchantID, $visited, true))
-				$merchants[] = array( 'merchantid' => $MerchantID, 'hostkey' => $HostKey, 'storeid' => 0);
+			$merchantlist = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', 0));
+			if($merchantlist)
+			{
+				$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
+
+				if(!is_array($merchantlist))
+					$merchantlist = array($merchantlist);
+
+				foreach($merchantlist as $merchantId)
+				{
+					if(!in_array($merchantId, $visited, true))
+					{
+						$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $HostKey, 'storeid' => 0);
+						$visited[] = $merchantId;
+					}
+				}
+			}
 
 			unset($visited);
 
@@ -377,10 +390,23 @@ class Codisto_Sync_Model_Observer
 			}
 		}
 
-		$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
-		$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
-		if(!in_array($MerchantID, $visited, true))
-			$merchants[] = array( 'merchantid' => $MerchantID, 'hostkey' => $HostKey, 'storeid' => 0);
+		$merchantlist = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', 0));
+		if($merchantlist)
+		{
+			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
+
+			if(!is_array($merchantlist))
+				$merchantlist = array($merchantlist);
+
+			foreach($merchantlist as $merchantId)
+			{
+				if(!in_array($merchantId, $visited, true))
+				{
+					$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $HostKey, 'storeid' => 0);
+					$visited[] = $merchantId;
+				}
+			}
+		}
 
 		unset($visited);
 
@@ -408,10 +434,18 @@ class Codisto_Sync_Model_Observer
 				if(!is_array($merchantList))
 					$merchantList = array($merchantList);
 
-				foreach($merchantList as $merchantid)
+				$visited = array();
+
+				foreach($merchantList as $merchantId)
 				{
-					$merchants[] = array( 'merchantid' => $merchantid, 'hostkey' => $hostkey, 'storeid' => $storeId );
+					if(!in_array($merchantId, $visited, true))
+					{
+						$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $hostkey, 'storeid' => $storeId );
+						$visited[] = $merchantId;
+					}
 				}
+
+				unset($visited);
 
 				Mage::helper('codistosync')->signal($merchants, 'action=syncorder&orderid='.$orderid);
 			}
@@ -437,9 +471,15 @@ class Codisto_Sync_Model_Observer
 				if(!is_array($merchantList))
 					$merchantList = array($merchantList);
 
-				foreach($merchantList as $merchantid)
+				$visited = array();
+
+				foreach($merchantList as $merchantId)
 				{
-					$merchants[] = array( 'merchantid' => $merchantid, 'hostkey' => $hostkey, 'storeid' => $storeId );
+					if(!in_array($merchantId, $visited, true))
+					{
+						$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $hostkey, 'storeid' => $storeId );
+						$visited[] = $merchantId;
+					}
 				}
 
 				Mage::helper('codistosync')->signal($merchants, 'action=syncorder&orderid='.$orderid);
@@ -536,7 +576,7 @@ class Codisto_Sync_Model_Observer
 
 			$type = $product->getTypeId();
 
-			if(in_array($type, array('simple', 'configurable')))
+			if(in_array($type, array('simple', 'configurable', 'grouped')))
 			{
 				$storeId = $block->getRequest()->getParam('store');
 				if(!$storeId)
@@ -684,7 +724,7 @@ class Codisto_Sync_Model_Observer
 			}
 		}
 
-		$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+		$MerchantID = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', 0));
 		$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 		if(!in_array($MerchantID, $visited, true))
 			$merchants[] = array( 'merchantid' => $MerchantID, 'hostkey' => $HostKey, 'storeid' => 0);
@@ -723,21 +763,12 @@ class Codisto_Sync_Model_Observer
 				}
 			}
 
-			$MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+			$MerchantID = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', 0));
 			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 			if(!in_array($MerchantID, $visited, true))
 				$merchants[] = array( 'merchantid' => $MerchantID, 'hostkey' => $HostKey, 'storeid' => 0);
 
 			unset($visited);
-
-			$syncObject = Mage::getModel('codistosync/sync');
-
-			foreach($merchants as $merchant)
-			{
-				$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$merchant['storeid'].'.db';
-
-				$syncObject->UpdateProducts($syncDb, $stockItems, $merchant['storeid']);
-			}
 
 			$syncedProducts = Mage::registry('codisto_synced_products');
 			if(!is_array($syncedProducts))
@@ -765,7 +796,7 @@ class Codisto_Sync_Model_Observer
 				else
 					$productids = '['.implode(',', $syncIds).']';
 
-				Mage::helper('codistosync')->signal($merchants, 'action=sync&productid='.$productids);
+				Mage::helper('codistosync')->signal($merchants, 'action=sync&productid='.$productids, Mage_Index_Model_Event::TYPE_SAVE, $stockItems);
 			}
 		}
 	}

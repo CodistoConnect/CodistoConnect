@@ -2,10 +2,12 @@
 
 require_once 'app/Mage.php';
 
+Mage::app();
+
 $merchants = unserialize($argv[1]);
 $msg = $argv[2];
 
-$curlOptions = array( CURLOPT_TIMEOUT => 10, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0 );
+$curlOptions = array( CURLOPT_TIMEOUT => 10 );
 
 if(isset($_ENV['CURL_CA_BUNDLE']) && $_ENV['CURL_CA_BUNDLE'])
 {
@@ -18,14 +20,26 @@ $client->setStream();
 
 foreach($merchants as $merchant)
 {
-	try {
-		$client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
-		$client->setHeaders('X-HostKey', $merchant['hostkey']);
-		$client->setRawData($msg)->request('POST');
-	}
-	catch(Exception $e)
+	for($Retry = 0; ; $Retry++)
 	{
+		try
+		{
+			$client->setUri('https://api.codisto.com/'.$merchant['merchantid']);
+			$client->setHeaders('X-HostKey', $merchant['hostkey']);
+			$client->setRawData($msg)->request('POST');
+			break;
+		}
+		catch(Exception $e)
+		{
+			if($Retry >= 3)
+			{
+				Mage::logException($e);
+				break;
+			}
 
+			usleep(100000);
+			continue;
+		}
 	}
 }
 
