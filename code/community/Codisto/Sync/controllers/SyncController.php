@@ -21,8 +21,7 @@
 
 class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 {
-	private $defaultSyncTimeout = 10;
-	private $defaultSleep = 100000;
+	private $defaultSyncTimeout = 15;
 	private $defaultConfigurableCount = 6;
 	private $defaultSimpleCount = 250;
 
@@ -147,9 +146,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									$db->exec('CREATE TABLE ProductImage AS SELECT * FROM SyncDb.ProductImage WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 									$db->exec('CREATE TABLE CategoryProduct AS SELECT * FROM SyncDb.CategoryProduct WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 									$db->exec('CREATE TABLE SKU AS SELECT * FROM SyncDb.SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+									$db->exec('CREATE TABLE SKULink AS SELECT * FROM SyncDb.SKULink WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 									$db->exec('CREATE TABLE SKUMatrix AS SELECT * FROM SyncDb.SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU)');
 									$db->exec('CREATE TABLE SKUImage AS SELECT * FROM SyncDb.SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU)');
-									$db->exec('CREATE TABLE ProductOption AS SELECT * FROM SyncDb.ProductOption WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 									$db->exec('CREATE TABLE ProductOptionValue AS SELECT DISTINCT * FROM SyncDb.ProductOptionValue');
 									$db->exec('CREATE TABLE ProductHTML AS SELECT * FROM SyncDb.ProductHTML WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 									$db->exec('CREATE TABLE Attribute AS SELECT * FROM SyncDb.Attribute');
@@ -261,13 +260,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							if(!$timeout || !is_numeric($timeout))
 								$timeout = $this->defaultSyncTimeout;
 
-							$sleep = (int)$request->getQuery('sleep');
-							if(!$sleep || !is_numeric($sleep))
-								$sleep = $this->defaultSleep;
+							if($timeout < 5)
+								$timeout = 5;
 
 							$startTime = microtime(true);
 
-							for(;;)
+							for($chunkCount = 0; $chunkCount < 2; $chunkCount++)
 							{
 								$result = $syncObject->SyncChunk($syncDb, $simpleCount, $configurableCount, $storeId, false);
 
@@ -296,14 +294,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									break;
 								}
 
-								$now = microtime(true);
+								$duration = microtime(true) - $startTime;
 
-								if(($now - $startTime) > $timeout)
-								{
+								if(($duration / ($chunkCount + 1)) * 2 > $timeout)
 									break;
-								}
 
-								usleep($sleep);
+								usleep(10000);
 							}
 
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
@@ -415,10 +411,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							if(!$timeout || !is_numeric($timeout))
 								$timeout = $this->defaultSyncTimeout;
 
-							$sleep = (int)$request->getQuery('sleep');
-							if(!$sleep || !is_numeric($sleep))
-								$sleep = $this->defaultSleep;
-
 							$startTime = microtime(true);
 
 							$result = $syncObject->SyncChunk($syncDb, 0, $configurableCount, $storeId, true);
@@ -527,9 +519,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							$db->exec('CREATE TABLE ProductImage AS SELECT * FROM SyncDb.ProductImage WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 							$db->exec('CREATE TABLE CategoryProduct AS SELECT * FROM SyncDb.CategoryProduct WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 							$db->exec('CREATE TABLE SKU AS SELECT * FROM SyncDb.SKU WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+							$db->exec('CREATE TABLE SKULink AS SELECT * FROM SyncDb.SKULink WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 							$db->exec('CREATE TABLE SKUMatrix AS SELECT * FROM SyncDb.SKUMatrix WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU)');
 							$db->exec('CREATE TABLE SKUImage AS SELECT * FROM SyncDb.SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU)');
-							$db->exec('CREATE TABLE ProductOption AS SELECT * FROM SyncDb.ProductOption WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 							$db->exec('CREATE TABLE ProductOptionValue AS SELECT * FROM SyncDb.ProductOptionValue WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 							$db->exec('CREATE TABLE ProductHTML AS SELECT * FROM SyncDb.ProductHTML WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 							$db->exec('CREATE TABLE Attribute AS SELECT * FROM SyncDb.Attribute');
