@@ -835,6 +835,11 @@ class Codisto_Sync_Model_Sync
 							'source_model' => $attribute->getSourceModel()
 					);
 
+					if(!isset($attributeData['frontend_type']) || is_null($attributeData['frontend_type']))
+					{
+						$attributeData['frontend_type'] = '';
+					}
+
 					if($attributeData['source_model'])
 					{
 						if(isset($this->optionCache[$store->getId().'-'.$attribute->getId()]))
