@@ -900,7 +900,9 @@ class Codisto_Sync_Model_Sync
 							$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue] = $attributeText;
 
 							$attributeValue = $attributeText;
-						}catch(Exception $e){}
+						}catch(Exception $e){
+							$attributeValue = null;
+						}
 					}
 				}
 			}
