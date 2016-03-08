@@ -2,7 +2,18 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.83...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.84...HEAD)
+
+**Implemented enhancements:**
+
+- skulink + attrmap [\#289](https://github.com/CodistoConnect/CodistoConnect/pull/289) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#290](https://github.com/CodistoConnect/CodistoConnect/pull/290) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.84](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.84) (2016-03-01)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.83...1.1.84)
 
 **Implemented enhancements:**
 
