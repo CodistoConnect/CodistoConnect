@@ -892,14 +892,15 @@ class Codisto_Sync_Model_Sync
 					else
 					{
 						$attributeOptionId = $attributeValue;
-						$attributeText = $attributeData['source']->getOptionText($attributeValue);
+						try{
+							$attributeText = $attributeData['source']->getOptionText($attributeValue);
+							if(is_array($attributeText))
+								$attributeText = implode(',', $attributeText);
 
-						if(is_array($attributeText))
-							$attributeText = implode(',', $attributeText);
+							$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue] = $attributeText;
 
-						$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue] = $attributeText;
-
-						$attributeValue = $attributeText;
+							$attributeValue = $attributeText;
+						}catch(Exception $e){}
 					}
 				}
 			}
