@@ -2,7 +2,18 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.84...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.85...HEAD)
+
+**Fixed bugs:**
+
+- fix null attribute input [\#291](https://github.com/CodistoConnect/CodistoConnect/pull/291) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#292](https://github.com/CodistoConnect/CodistoConnect/pull/292) ([jschiller](https://github.com/jschiller))
+
+## [1.1.85](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.85) (2016-03-08)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.84...1.1.85)
 
 **Implemented enhancements:**
 
