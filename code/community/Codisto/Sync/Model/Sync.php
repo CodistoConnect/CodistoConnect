@@ -1371,6 +1371,22 @@ class Codisto_Sync_Model_Sync
 
 		if($state == 'orders')
 		{
+			if($this->currentEntityId == 0)
+			{
+				$connection = $coreResource->getConnection('core_write');
+				try
+				{
+					$connection->addColumn(
+							Mage::getConfig()->getTablePrefix() . 'sales_flat_order',
+							'codisto_orderid',
+							'varchar(10)'
+						);
+				}
+				catch(Exception $e)
+				{
+				}
+			}
+
 			$orderStoreId = $storeId;
 			if($storeId == 0)
 			{
