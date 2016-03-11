@@ -440,7 +440,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 					$eventtype = $type;
 					if($type == Mage_Index_Model_Event::TYPE_DELETE &&
 						count($syncIds) == 1 &&
-						$syncIds[0] == $event-getDataObject()->getId())
+						$syncIds[0] == $event->getDataObject()->getId())
 					{
 						$eventtype = Mage_Index_Model_Event::TYPE_DELETE;
 					}
