@@ -2,7 +2,18 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.85...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.86...HEAD)
+
+**Fixed bugs:**
+
+- fix typo on delete [\#293](https://github.com/CodistoConnect/CodistoConnect/pull/293) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- release [\#294](https://github.com/CodistoConnect/CodistoConnect/pull/294) ([lamery](https://github.com/lamery))
+
+## [1.1.86](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.86) (2016-03-08)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.85...1.1.86)
 
 **Fixed bugs:**
 
