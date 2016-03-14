@@ -1318,7 +1318,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			'firstname' => (string)$billing_first_name,
 			'middlename' => '',
 			'lastname' => (string)$billing_last_name,
-			'street' => (string)$billing_address->address1.($shipping_address->address2 ? "\n".$billing_address->address2 : ''),
+			'street' => (string)$billing_address->address1.($billing_address->address2 ? "\n".$billing_address->address2 : ''),
 			'city' => (string)$billing_address->place,
 			'postcode' => (string)$billing_address->postalcode,
 			'telephone' => (string)$billing_address->phone,
