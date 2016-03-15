@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.86...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.87...HEAD)
+
+**Merged pull requests:**
+
+- Release [\#296](https://github.com/CodistoConnect/CodistoConnect/pull/296) ([bradmccormack](https://github.com/bradmccormack))
+- fix address var typo in order creation [\#295](https://github.com/CodistoConnect/CodistoConnect/pull/295) ([lamery](https://github.com/lamery))
+
+## [1.1.87](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.87) (2016-03-11)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.86...1.1.87)
 
 **Fixed bugs:**
 
