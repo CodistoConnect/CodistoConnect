@@ -103,7 +103,19 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 	public function getMerchantId($storeId)
 	{
-		return Mage::getStoreConfig('codisto/merchantid', $storeId);
+		$merchantlist = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', $storeId));
+		if($merchantlist)
+		{
+			if(is_array($merchantlist))
+			{
+				return $merchantlist[0];
+			}
+			return $merchantlist;
+		}
+		else
+		{
+			return 0;
+		}
 	}
 
 	//Determine if we can create a new merchant. Prevent multiple requests from being able to complete signups
