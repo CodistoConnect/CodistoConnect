@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.88...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.89...HEAD)
+
+**Merged pull requests:**
+
+- Release [\#300](https://github.com/CodistoConnect/CodistoConnect/pull/300) ([bradmccormack](https://github.com/bradmccormack))
+- - Support more than one merchantid mapped to a store [\#299](https://github.com/CodistoConnect/CodistoConnect/pull/299) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.89](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.89) (2016-03-16)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.88...1.1.89)
 
 **Implemented enhancements:**
 
