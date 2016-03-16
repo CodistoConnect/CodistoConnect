@@ -101,6 +101,11 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return isset($merchantID) && $merchantID != ""	&&	isset($hostKey) && $hostKey != "";
 	}
 
+	public function getMerchantId($storeId)
+	{
+		return Mage::getStoreConfig('codisto/merchantid', $storeId);
+	}
+
 	//Determine if we can create a new merchant. Prevent multiple requests from being able to complete signups
 	public function createMerchantwithLock()
 	{
@@ -725,4 +730,5 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 	{
 		register_shutdown_function(array($this, 'signalOnShutdown'), $merchants, $msg, $eventtype, $productids);
 	}
+
 }
