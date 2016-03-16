@@ -2,7 +2,18 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.87...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.88...HEAD)
+
+**Implemented enhancements:**
+
+- - Make sure payment links handle multiple store views [\#297](https://github.com/CodistoConnect/CodistoConnect/pull/297) ([bradmccormack](https://github.com/bradmccormack))
+
+**Merged pull requests:**
+
+- Release [\#298](https://github.com/CodistoConnect/CodistoConnect/pull/298) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.88](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.88) (2016-03-15)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.87...1.1.88)
 
 **Merged pull requests:**
 
