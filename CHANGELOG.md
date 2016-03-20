@@ -2,7 +2,16 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.89...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.90...HEAD)
+
+**Merged pull requests:**
+
+- Release [\#303](https://github.com/CodistoConnect/CodistoConnect/pull/303) ([bradmccormack](https://github.com/bradmccormack))
+- - Use secure links if secure mode is specified in web configuration [\#302](https://github.com/CodistoConnect/CodistoConnect/pull/302) ([bradmccormack](https://github.com/bradmccormack))
+- - Update router to handle payment links with specific accounts [\#301](https://github.com/CodistoConnect/CodistoConnect/pull/301) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.90](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.90) (2016-03-16)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.89...1.1.90)
 
 **Merged pull requests:**
 
