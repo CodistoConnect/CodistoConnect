@@ -221,6 +221,45 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 						$path = preg_replace('/(^\/codisto\/ebaytab\/)(\d+\/?)/', '$1', $path);
 					}
+					else if(preg_match('/^\/codisto\/ebaypayment\/(\d+)/', $path, $merchantmatch))
+					{
+						$requestedMerchantID = (int)$merchantmatch[1];
+						if(in_array($requestedMerchantID, $MerchantID))
+						{
+							$MerchantID = $requestedMerchantID;
+						}
+						else
+						{
+							$MerchantID = $MerchantID[0];
+						}
+						$path = preg_replace('/(^\/codisto\/ebaypayment\/)(\d+\/?)/', '$1', $path);
+					}
+					else if(preg_match('/^\/codisto\/ebaysale\/(\d+)/', $path, $merchantmatch))
+					{
+						$requestedMerchantID = (int)$merchantmatch[1];
+						if(in_array($requestedMerchantID, $MerchantID))
+						{
+							$MerchantID = $requestedMerchantID;
+						}
+						else
+						{
+							$MerchantID = $MerchantID[0];
+						}
+						$path = preg_replace('/(^\/codisto\/ebaysale\/)(\d+\/?)/', '$1', $path);
+					}
+					else if(preg_match('/^\/codisto\/ebayuser\/(\d+)/', $path, $merchantmatch))
+					{
+						$requestedMerchantID = (int)$merchantmatch[1];
+						if(in_array($requestedMerchantID, $MerchantID))
+						{
+							$MerchantID = $requestedMerchantID;
+						}
+						else
+						{
+							$MerchantID = $MerchantID[0];
+						}
+						$path = preg_replace('/(^\/codisto\/ebayuser\/)(\d+\/?)/', '$1', $path);
+					}
 					else
 					{
 						$MerchantID = $MerchantID[0];
