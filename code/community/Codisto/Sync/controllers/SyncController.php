@@ -800,7 +800,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						{
 							if($request->isGet())
 							{
-								$templateDb = Mage::getBaseDir('var') . '/codisto-ebay-template.db';
+								$merchantid = (int)$request->getQuery('merchantid');
+
+								$templateDb = Mage::getBaseDir('var') . '/codisto-ebay-template-'.$merchantid.'.db';
 
 								if($request->getQuery('markreceived'))
 								{
