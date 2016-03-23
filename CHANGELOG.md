@@ -2,7 +2,23 @@
 
 ## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.91...HEAD)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.92...HEAD)
+
+**Implemented enhancements:**
+
+- tidy signalling and remove unused sync controller actions [\#306](https://github.com/CodistoConnect/CodistoConnect/pull/306) ([lamery](https://github.com/lamery))
+
+**Fixed bugs:**
+
+- configurable pricing - defeat cache [\#307](https://github.com/CodistoConnect/CodistoConnect/pull/307) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#309](https://github.com/CodistoConnect/CodistoConnect/pull/309) ([jschiller](https://github.com/jschiller))
+- older versions of magento don't chain reindexAll properly, this works… [\#308](https://github.com/CodistoConnect/CodistoConnect/pull/308) ([lamery](https://github.com/lamery))
+
+## [1.1.92](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.92) (2016-03-21)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.91...1.1.92)
 
 **Implemented enhancements:**
 
