@@ -437,7 +437,9 @@ class Codisto_Sync_Model_Sync
 			$addInfo->setQty(1);
 		}
 
-		$parentProduct->getTypeInstance(true)->processConfiguration($addInfo, $parentProduct, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
+		$parentProduct->unsetData('final_price');
+
+		$parentProduct->getTypeInstance(true)->processConfiguration($addInfo, $parentProduct);
 
 		$price = $this->getExTaxPrice($parentProduct, $parentProduct->getFinalPrice(), $store);
 
@@ -488,8 +490,8 @@ class Codisto_Sync_Model_Sync
 
 			$options[$productAttribute->getId()] = $attributeValues[$productAttribute->getAttributeCode()];
 		}
-
 		$price = $this->SyncProductPrice($store, $productParent, $options);
+
 		if(!$price)
 			$price = 0;
 
