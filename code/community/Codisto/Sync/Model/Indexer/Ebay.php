@@ -165,11 +165,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 					$stores = Mage::getModel('core/store')->getCollection();
 
-					if($stores->count() == 1)
-					{
-						$syncStores = array($stores->getFirstItem()->getId());
-					}
-					else
+					if($stores->count() > 1)
 					{
 						foreach($stores as $store)
 						{
@@ -267,11 +263,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 					$stores = Mage::getModel('core/store')->getCollection();
 
-					if($stores->count() == 1)
-					{
-						$syncStores = array($stores->getFirstItem()->getId());
-					}
-					else
+					if($stores->count() > 1)
 					{
 						foreach($stores as $store)
 						{
@@ -290,6 +282,8 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 				$syncObject = Mage::getModel('codistosync/sync');
 				$syncIds = Mage::getResourceSingleton('catalog/product_type_configurable')->getParentIdsByChild($event->getDataObject()->getProductId());
+				if(!is_array($syncIds))
+					$syncIds = array();
 				$syncIds[] = $event->getDataObject()->getProductId();
 
 				$syncIds = array_diff($syncIds, $syncedProducts);
@@ -388,11 +382,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 					$stores = Mage::getModel('core/store')->getCollection();
 
-					if($stores->count() == 1)
-					{
-						$syncStores = array($stores->getFirstItem()->getId());
-					}
-					else
+					if($stores->count() > 1)
 					{
 						foreach($stores as $store)
 						{
