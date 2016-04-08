@@ -414,7 +414,26 @@ class Codisto_Sync_Model_Sync
 		$data = array();
 		foreach ($insertFields as $key)
 		{
-			$data[] = $categoryData[$key];
+
+			$value = $categoryData[$key];
+
+			if(!$value) {
+				if($key == 'entity_id') {
+					return;
+				} else if ($key == 'name') {
+					$value = '';
+				} else if ($key == 'parent_id') {
+					$value = 0;
+				} else if ($key == 'updated_at') {
+					$value = '1970-01-01 00:00:00';
+				} else if ($key == 'is_active') {
+					$value = 0;
+				} else if ($key == 'position') {
+					$value = 0;
+				}
+			}
+
+			$data[] = $value;
 		}
 
 		$insertSQL->execute($data);
