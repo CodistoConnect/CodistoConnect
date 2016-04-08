@@ -1,8 +1,14 @@
 # Change Log
 
-## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
+## [1.1.94](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.94) (2016-04-08)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.93...1.1.94)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.92...HEAD)
+**Merged pull requests:**
+
+- fallback values for category data [\#312](https://github.com/CodistoConnect/CodistoConnect/pull/312) ([jlivas](https://github.com/jlivas))
+
+## [1.1.93](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.93) (2016-03-23)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.92...1.1.93)
 
 **Implemented enhancements:**
 
