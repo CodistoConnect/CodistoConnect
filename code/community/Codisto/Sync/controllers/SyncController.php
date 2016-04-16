@@ -188,6 +188,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						}
 						catch(Exception $e)
 						{
+							$response->clearAllHeaders();
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
 								http_response_code(500);
@@ -204,6 +205,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						$response->clearAllHeaders();
 						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
@@ -302,6 +304,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 								usleep(10000);
 							}
 
+							$response->clearAllHeaders();
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(200);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(200);
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
@@ -310,6 +318,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						}
 						catch(Exception $e)
 						{
+							$response->clearAllHeaders();
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
 								http_response_code(500);
@@ -326,6 +335,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						$response->clearAllHeaders();
 						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
@@ -349,6 +359,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$syncObject = Mage::getModel('codistosync/sync');
 						$totals = $syncObject->ProductTotals($storeId);
 
+						$response->clearAllHeaders();
+						//@codingStandardsIgnoreStart
+						if(function_exists('http_response_code'))
+							http_response_code(200);
+						//@codingStandardsIgnoreEnd
+						$response->setHttpResponseCode(200);
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 						$response->setHeader('Pragma', 'no-cache', true);
@@ -357,6 +373,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						$response->clearAllHeaders();
 						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
@@ -444,6 +461,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 							}
 
+							$response->clearAllHeaders();
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(200);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(200);
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
@@ -452,6 +475,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						}
 						catch(Exception $e)
 						{
+							$response->clearAllHeaders();
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
 								http_response_code(500);
@@ -468,6 +492,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						$response->clearAllHeaders();
 						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
@@ -540,6 +565,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						}
 						catch(Exception $e)
 						{
+							$response->clearAllHeaders();
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
 								http_response_code(500);
@@ -556,6 +582,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						$response->clearAllHeaders();
 						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
@@ -613,6 +640,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						}
 						catch(Exception $e)
 						{
+							$response->clearAllHeaders();
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
 								http_response_code(500);
@@ -629,6 +657,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						$response->clearAllHeaders();
 						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
@@ -683,6 +712,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						}
 						catch(Exception $e)
 						{
+							$response->clearAllHeaders();
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
 								http_response_code(500);
@@ -699,6 +729,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						$response->clearAllHeaders();
 						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
@@ -760,6 +791,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						}
 						catch(Exception $e)
 						{
+							$response->clearAllHeaders();
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
 								http_response_code(500);
@@ -776,6 +808,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						$response->clearAllHeaders();
 						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
@@ -833,6 +866,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 										$db->exec('COMMIT TRANSACTION');
 										$db = null;
 
+										$response->clearAllHeaders();
+										//@codingStandardsIgnoreStart
+										if(function_exists('http_response_code'))
+											http_response_code(200);
+										//@codingStandardsIgnoreEnd
+										$response->setHttpResponseCode(200);
 										$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 										$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 										$response->setHeader('Pragma', 'no-cache', true);
@@ -841,6 +880,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									}
 									catch(Exception $e)
 									{
+										$response->clearAllHeaders();
 										//@codingStandardsIgnoreStart
 										if(function_exists('http_response_code'))
 											http_response_code(500);
@@ -885,6 +925,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 									if($fileCount == 0)
 									{
+										$response->clearAllHeaders();
 										//@codingStandardsIgnoreStart
 										if(function_exists('http_response_code'))
 											http_response_code(204);
@@ -918,6 +959,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 								unlink($tmpDb);
 
+								$response->clearAllHeaders();
+								//@codingStandardsIgnoreStart
+								if(function_exists('http_response_code'))
+									http_response_code(200);
+								//@codingStandardsIgnoreEnd
+								$response->setHttpResponseCode(200);
 								$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 								$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 								$response->setHeader('Pragma', 'no-cache', true);
@@ -927,6 +974,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						}
 						catch(Exception $e)
 						{
+							$response->clearAllHeaders();
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
 								http_response_code(500);
@@ -943,6 +991,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					}
 					else
 					{
+						$response->clearAllHeaders();
 						//@codingStandardsIgnoreStart
 						if(function_exists('http_response_code'))
 							http_response_code(400);
@@ -960,6 +1009,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 				default:
 
+					$response->clearAllHeaders();
+					//@codingStandardsIgnoreStart
+					if(function_exists('http_response_code'))
+						http_response_code(400);
+					//@codingStandardsIgnoreEnd
+					$response->setHttpResponseCode(400);
 					$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 					$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 					$response->setHeader('Pragma', 'no-cache', true);
@@ -981,6 +1036,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		if(!Mage::helper('codistosync')->getConfig($storeId))
 		{
+			$response->clearAllHeaders();
 			//@codingStandardsIgnoreStart
 			if(function_exists('http_response_code'))
 				http_response_code(500);
@@ -995,10 +1051,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			return;
 		}
 
-		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
-		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
-		$response->setHeader('Pragma', 'no-cache', true);
-
 		if(isset($server['HTTP_X_NONCE'], $server['HTTP_X_HASH']) &&
 			Mage::helper('codistosync')->checkHash($response, Mage::getStoreConfig('codisto/hostkey', $storeId), $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
 		{
@@ -1010,11 +1062,22 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 				unlink($extTestFailed);
 
 			$version = Mage::helper('codistosync')->getCodistoVersion();
+
+			$response->clearAllHeaders();
+			//@codingStandardsIgnoreStart
+			if(function_exists('http_response_code'))
+				http_response_code(200);
+			//@codingStandardsIgnoreEnd
+			$response->setHttpResponseCode(200);
+			$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+			$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+			$response->setHeader('Pragma', 'no-cache', true);
 			$response->setHeader('X-Codisto-Version', $version, true);
 			$response->setBody('OK');
 		}
 		else
 		{
+			$response->clearAllHeaders();
 			//@codingStandardsIgnoreStart
 			if(function_exists('http_response_code'))
 				http_response_code(400);
@@ -1040,6 +1103,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		if(!Mage::helper('codistosync')->getConfig($storeId))
 		{
+			$response->clearAllHeaders();
 			//@codingStandardsIgnoreStart
 			if(function_exists('http_response_code'))
 				http_response_code(500);
@@ -1056,10 +1120,15 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		// TODO: read store view state and post to api.codisto.com
 
+		$response->clearAllHeaders();
+		//@codingStandardsIgnoreStart
+		if(function_exists('http_response_code'))
+			http_response_code(200);
+		//@codingStandardsIgnoreEnd
+		$response->setHttpResponseCode(200);
 		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 		$response->setHeader('Pragma', 'no-cache', true);
-
 		$response->setBody('SUCCESS');
 		$response->sendResponse();
 	}
