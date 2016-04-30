@@ -158,8 +158,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									$db->exec('CREATE TABLE ProductQuestion AS SELECT * FROM SyncDb.ProductQuestion WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 									$db->exec('CREATE TABLE ProductQuestionAnswer AS SELECT * FROM SyncDb.ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion)');
 
-									if($db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE lower(name) = \'productdelete\' AND type = \'table\') THEN 1 ELSE 0 END')->fetchColumn())
+									$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE lower(name) = \'productdelete\' AND type = \'table\') THEN 1 ELSE 0 END');
+
+									if($qry->fetchColumn())
 										$db->exec('CREATE TABLE ProductDelete AS SELECT * FROM SyncDb.ProductDelete WHERE ExternalReference IN ('.implode(',', $productIds).')');
+
+									$qry->closeCursor();
 								}
 
 								if($request->getQuery('orderid'))
@@ -829,6 +833,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 											$update->execute();
 										}
 
+										$files->closeCursor();
+
 										$db->exec('UPDATE File SET Changed = 0');
 										$db->exec('COMMIT TRANSACTION');
 										$db = null;
@@ -882,6 +888,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									$fileCountRow = $fileCountStmt->fetch();
 									$fileCount = $fileCountRow['fileCount'];
 									$db = null;
+
+									$fileCountStmt->closeCursor();
 
 									if($fileCount == 0)
 									{

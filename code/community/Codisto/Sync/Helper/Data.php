@@ -135,6 +135,8 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		$lockRow = $lockQuery->fetch();
 		$timeStamp = $lockRow['id'];
 
+		$lockQuery->closeCursor();
+
 		if($timeStamp + 5000000 < microtime(true))
 		{
 			$createMerchant = true;

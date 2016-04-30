@@ -207,6 +207,8 @@ class Codisto_Sync_Model_Sync
 					}
 				}
 			}
+
+			$files->closeCursor();
 		}
 		catch(Exception $e)
 		{
@@ -698,7 +700,12 @@ class Codisto_Sync_Model_Sync
 		$checkProductSQL->execute(array($productData['entity_id']));
 
 		if($checkProductSQL->fetchColumn())
+		{
+			$checkProductSQL->closeCursor();
 			return;
+		}
+
+		$checkProductSQL->closeCursor();
 
 		$product = Mage::getModel('catalog/product');
 		$product->setData($productData)
@@ -1185,11 +1192,19 @@ class Codisto_Sync_Model_Sync
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
-		$this->currentEntityId = $db->query('SELECT entity_id FROM Progress')->fetchColumn();
+		$qry = $db->query('SELECT entity_id FROM Progress');
+
+		$this->currentEntityId = $qry->fetchColumn();
 		if(!$this->currentEntityId)
 			$this->currentEntityId = 0;
 
-		$state = $db->query('SELECT State FROM Progress')->fetchColumn();
+		$qry->closeCursor();
+
+		$qry = $db->query('SELECT State FROM Progress');
+
+		$state = $qry->fetchColumn();
+
+		$qry->closeCursor();
 
 		if(!$state)
 		{
