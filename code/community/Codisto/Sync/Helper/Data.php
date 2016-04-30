@@ -357,6 +357,32 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		}
 	}
 
+	public function getSyncPath($path)
+	{
+		$file = new Varien_Io_File();
+
+		$base_path = Mage::getBaseDir('var') . '/codisto/';
+
+		try {
+
+			$file->checkAndCreateFolder( $base_path, 0775 );
+
+		} catch (Exception $e) {
+
+			return preg_replace( '/\/+/', '/', Mage::getBaseDir('var') . '/' . $path );
+
+		}
+
+		return preg_replace( '/\/+/', '/', $base_path . $path );
+	}
+
+	public function getSyncPathTemp($path)
+	{
+		$base_path = $this->getSyncPath('');
+
+		return tempnam( $base_path , $path . '-' );
+	}
+
 	private function phpTest($interpreter, $args, $script)
 	{
 		$process = proc_open('"'.$interpreter.'" '.$args, array(
@@ -693,7 +719,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 					if(!isset($storeVisited[$storeId]))
 					{
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+						$syncDb = $this->getSyncPath('sync-'.$storeId.'.db');
 
 						if($eventtype == Mage_Index_Model_Event::TYPE_DELETE)
 						{

@@ -22,6 +22,8 @@ $MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
 $HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 $reindexRequired = true;
 
+@array_map('unlink', glob( Mage::getBaseDir('var').'/codisto-*') );
+
 if(!isset($MerchantID) || !isset($HostKey))
 {
 	$request = Mage::app()->getRequest();
