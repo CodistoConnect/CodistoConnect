@@ -248,6 +248,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 							if($request->getPost('Init') == '1')
 							{
+								@array_map('@unlink', glob( Mage::getBaseDir('var').'/codisto-*') );
+
 								if(file_exists($syncDb))
 									unlink($syncDb);
 							}
