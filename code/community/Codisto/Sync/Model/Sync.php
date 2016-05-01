@@ -859,7 +859,7 @@ class Codisto_Sync_Model_Sync
 							'frontend_type' => $attributeFrontEnd->getInputType(),
 							'groupid' => $attributeGroupID,
 							'groupname' => $attributeGroupName,
-							'html' => $attribute->getIsHtmlAllowedOnFront(),
+							'html' => ($attribute->getIsHtmlAllowedOnFront() && $attribute->getIsWysiwygEnabled()) ? true : false,
 							'source_model' => $attribute->getSourceModel()
 					);
 
@@ -880,6 +880,10 @@ class Codisto_Sync_Model_Sync
 
 							$this->optionCache[$store->getId().'-'.$attribute->getId()] = $attributeData['source'];
 						}
+					}
+					else
+					{
+						$attributeData['source'] = $attribute->getSource();
 					}
 
 					$attributeSet[] = $attributeData;
@@ -905,16 +909,52 @@ class Codisto_Sync_Model_Sync
 			else
 				$attributeValue = null;
 
-			if(isset($attributeData['source']))
+			if(isset($attributeData['source']) &&
+				$attributeData['source_model'] == 'eav/entity_attribute_source_boolean')
 			{
-				if($attributeData['source_model'] == 'eav/entity_attribute_source_boolean')
-				{
-					$attributeData['backend_type'] = 'boolean';
+				$attributeData['backend_type'] = 'boolean';
 
-					if(isset($attributeValue) && $attributeValue)
-						$attributeValue = -1;
-					else
-						$attributeValue = 0;
+				if(isset($attributeValue) && $attributeValue)
+					$attributeValue = -1;
+				else
+					$attributeValue = 0;
+			}
+
+			else if($attributeData['html'])
+			{
+				$attributeValue = Mage::helper('codistosync')->processCmsContent($attributeValue);
+			}
+
+			else if( in_array($attributeData['frontend_type'], array( 'select', 'multiselect' ) ) )
+			{
+				if(is_array($attributeValue))
+				{
+					$attributeValueSet = array();
+
+					foreach($attributeValue as $attributeOptionId)
+					{
+						if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId]))
+						{
+							$attributeValueSet[] = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId];
+						}
+						else
+						{
+							try
+							{
+								$attributeText = $attributeData['source']->getOptionText($attributeOptionId);
+
+								$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId] = $attributeText;
+
+								$attributeValueSet[] = $attributeText;
+							}
+							catch(Exception $e)
+							{
+
+							}
+						}
+					}
+
+					$attributeValue = $attributeValueSet;
 				}
 				else
 				{
@@ -924,25 +964,20 @@ class Codisto_Sync_Model_Sync
 					}
 					else
 					{
-						$attributeOptionId = $attributeValue;
-						try{
+						try
+						{
 							$attributeText = $attributeData['source']->getOptionText($attributeValue);
-							if(is_array($attributeText))
-								$attributeText = implode(',', $attributeText);
 
 							$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue] = $attributeText;
 
 							$attributeValue = $attributeText;
-						}catch(Exception $e){
+						}
+						catch(Exception $e)
+						{
 							$attributeValue = null;
 						}
 					}
 				}
-			}
-
-			else if($attributeData['html'])
-			{
-				$attributeValue = Mage::helper('codistosync')->processCmsContent($attributeValue);
 			}
 
 			if(isset($attributeValue) && !is_null($attributeValue))
