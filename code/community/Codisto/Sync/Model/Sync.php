@@ -696,9 +696,10 @@ class Codisto_Sync_Model_Sync
 		$store = $args['store'];
 		$productData = $args['row'];
 
-		$checkProductSQL = $args['preparedcheckproductStatement'];
-		$checkProductSQL->execute(array($productData['entity_id']));
+		$product_id = $productData['entity_id'];
 
+		$checkProductSQL = $args['preparedcheckproductStatement'];
+		$checkProductSQL->execute(array($product_id));
 		if($checkProductSQL->fetchColumn())
 		{
 			$checkProductSQL->closeCursor();
@@ -744,7 +745,7 @@ class Codisto_Sync_Model_Sync
 		// work around for description not appearing via collection
 		if(!isset($productData['description']))
 		{
-			$description = Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($productData['entity_id'], 'description', $store->getId());
+			$description = Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($product_id, 'description', $store->getId());
 		}
 		else
 		{
@@ -757,9 +758,9 @@ class Codisto_Sync_Model_Sync
 		{
 			if(!isset($parentids))
 			{
-				$configurableparentids = Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild($productData['entity_id']);
-				$groupedparentids = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($productData['entity_id']);
-				$bundleparentids = Mage::getModel('bundle/product_type')->getParentIdsByChild($productData['entity_id']);
+				$configurableparentids = Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild($product_id);
+				$groupedparentids = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($product_id);
+				$bundleparentids = Mage::getModel('bundle/product_type')->getParentIdsByChild($product_id);
 
 				$parentids = array_unique(array_merge($configurableparentids, $groupedparentids, $bundleparentids));
 			}
@@ -785,7 +786,7 @@ class Codisto_Sync_Model_Sync
 
 		$data = array();
 
-		$data[] = $productData['entity_id'];
+		$data[] = $product_id;
 		$data[] = $type == 'configurable' ? 'c' : ($type == 'grouped' ? 'g' : 's');
 		$data[] = $productData['sku'];
 		$data[] = $productName;
@@ -803,29 +804,37 @@ class Codisto_Sync_Model_Sync
 
 		$categoryIds = $product->getCategoryIds();
 		foreach ($categoryIds as $categoryId) {
-			$insertCategorySQL->execute(array($productData['entity_id'], $categoryId, 0));
+			$insertCategorySQL->execute(array($product_id, $categoryId, 0));
 		}
 
 		if(isset($productData['short_description']) && strlen($productData['short_description']) > 0)
 		{
 			$shortDescription = Mage::helper('codistosync')->processCmsContent($productData['short_description']);
 
-			$insertHTMLSQL->execute(array($productData['entity_id'], 'Short Description', $shortDescription));
+			$insertHTMLSQL->execute(array($product_id, 'Short Description', $shortDescription));
 		}
 
-		$clearAttributeSQL->execute(array($productData['entity_id']));
+		$clearAttributeSQL->execute(array($product_id));
 
 		$attributeSet = array();
 		$attributeCodes = array();
+		$attributeTypes = array();
+		$attributeCodeIDMap = array();
 
 		$attributes = $product->getAttributes();
 		foreach($attributes as $attribute)
 		{
-			$backendType = $attribute->getBackendType();
-			if($backendType != 'static')
+			$backend = $attribute->getBackEnd();
+			if(!$backend->isStatic())
 			{
 				$attributeID = $attribute->getId();
+				$attributeCode = $attribute->getAttributeCode();
 				$attributeLabel = $attribute->getStoreLabel();
+				$attributeTable = $backend->getTable();
+
+				$attributeCodeIDMap[$attributeID] = $attributeCode;
+
+				$attributeTypes[$attributeTable][$attributeID] = $attributeCode;
 
 				if($attributeLabel)
 				{
@@ -852,10 +861,10 @@ class Codisto_Sync_Model_Sync
 
 					$attributeData = array(
 							'id' => $attributeID,
-							'code' => $attribute->getAttributeCode(),
+							'code' => $attributeCode,
 							'name' => $attribute->getName(),
 							'label' => $attributeLabel,
-							'backend_type' => $backendType,
+							'backend_type' => $attribute->getBackendType(),
 							'frontend_type' => $attributeFrontEnd->getInputType(),
 							'groupid' => $attributeGroupID,
 							'groupname' => $attributeGroupName,
@@ -887,18 +896,67 @@ class Codisto_Sync_Model_Sync
 					}
 
 					$attributeSet[] = $attributeData;
-					$attributeCodes[] = $attribute->getAttributeCode();
+					$attributeCodes[] = $attributeCode;
 				}
 			}
 
 		}
 
+		$adapter = Mage::getModel('core/resource')->getConnection(Mage_Core_Model_Resource::DEFAULT_READ_RESOURCE);
+
+		$attrTypeSelects = array();
+
+		foreach ($attributeTypes as $table => $_attributes)
+		{
+			$attrTypeSelect = $adapter->select()
+						->from(array('default_value' => $table), array('attribute_id'))
+						->where('default_value.attribute_id IN (?)', array_keys($_attributes))
+						->where('default_value.entity_type_id = :entity_type_id')
+						->where('default_value.entity_id = :entity_id')
+						->where('default_value.store_id = ?', 0);
+
+
+			if($store->getId() == Mage_Catalog_Model_Abstract::DEFAULT_STORE_ID)
+			{
+				$attrTypeSelect->columns(array('attr_value' => new Zend_Db_Expr('CAST(value AS CHAR)')), 'default_value');
+			}
+			else
+			{
+				$valueExpr = new Zend_Db_Expr('CAST(COALESCE(store_value.value, default_value.value) AS CHAR)');
+
+				$joinCondition = array(
+					$adapter->quoteInto('store_value.attribute_id IN (?)', array_keys($_attributes)),
+					'store_value.entity_type_id = :entity_type_id',
+					'store_value.entity_id = :entity_id',
+					'store_value.store_id = :store_id',
+				);
+
+				$attrTypeSelect->joinLeft(
+					array('store_value' => $table),
+					implode(' AND ', $joinCondition),
+					array('attr_value' => $valueExpr)
+				);
+
+				$attrTypeSelect->where('(default_value.value IS NOT NULL OR store_value.value IS NOT NULL)');
+			}
+
+			$attrTypeSelects[] = $attrTypeSelect;
+		}
+
 		$attributeValues = array();
 
-		foreach($attributeCodes as $attributeCode)
-		{
-			$attributeValue = Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($productData['entity_id'], $attributeCode, $store->getId());
+		$attrSelect = $adapter->select()->union($attrTypeSelects);
 
+		$attrArgs = array(
+			'entity_type_id' => 4,
+			'entity_id' => $product_id,
+			'store_id' => $store->getId()
+		);
+
+		$attributeRows = $adapter->fetchPairs($attrSelect, $attrArgs);
+		foreach ($attributeRows as $attributeId => $attributeValue)
+		{
+			$attributeCode = $attributeCodeIDMap[$attributeId];
 			$attributeValues[$attributeCode] = $attributeValue;
 		}
 
@@ -984,7 +1042,7 @@ class Codisto_Sync_Model_Sync
 			{
 				if($attributeData['html'])
 				{
-					$insertHTMLSQL->execute(array($productData['entity_id'], $attributeData['label'], $attributeValue));
+					$insertHTMLSQL->execute(array($product_id, $attributeData['label'], $attributeValue));
 				}
 
 				$insertAttributeSQL->execute(array($attributeData['id'], $attributeData['name'], $attributeData['label'], $attributeData['backend_type'], $attributeData['frontend_type']));
@@ -998,7 +1056,7 @@ class Codisto_Sync_Model_Sync
 				if(is_array($attributeValue))
 					$attributeValue = implode(',', $attributeValue);
 
-				$insertProductAttributeSQL->execute(array($productData['entity_id'], $attributeData['id'], $attributeValue));
+				$insertProductAttributeSQL->execute(array($product_id, $attributeData['id'], $attributeValue));
 			}
 		}
 
@@ -1030,7 +1088,7 @@ class Codisto_Sync_Model_Sync
 					$sequence++;
 			}
 
-			$insertImageSQL->execute(array($productData['entity_id'], $imgURL, $tag, $sequence, $enabled));
+			$insertImageSQL->execute(array($product_id, $imgURL, $tag, $sequence, $enabled));
 
 			$hasImage = true;
 
@@ -1046,9 +1104,9 @@ class Codisto_Sync_Model_Sync
 
 			if(!isset($parentids))
 			{
-				$configurableparentids = Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild($productData['entity_id']);
-				$groupedparentids = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($productData['entity_id']);
-				$bundleparentids = Mage::getModel('bundle/product_type')->getParentIdsByChild($productData['entity_id']);
+				$configurableparentids = Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild($product_id);
+				$groupedparentids = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($product_id);
+				$bundleparentids = Mage::getModel('bundle/product_type')->getParentIdsByChild($product_id);
 
 				$parentids = array_unique(array_merge($configurableparentids, $groupedparentids, $bundleparentids));
 			}
@@ -1105,7 +1163,7 @@ class Codisto_Sync_Model_Sync
 						$maxSequence = max($sequence, $maxSequence);
 					}
 
-					$insertImageSQL->execute(array($productData['entity_id'], $imgURL, $tag, $sequence, $enabled));
+					$insertImageSQL->execute(array($product_id, $imgURL, $tag, $sequence, $enabled));
 				}
 
 				$baseSequence = $maxSequence;
@@ -1117,11 +1175,7 @@ class Codisto_Sync_Model_Sync
 
 
 		// process simple product question/answers
-
-		$clearProductQuestionSQL->execute(array($productData['entity_id']));
-
-		//$db->exec('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference = '.$productData['entity_id'].')');
-		//$db->exec('DELETE FROM ProductQuestion WHERE ProductExternalReference = '.$productData['entity_id']);
+		$clearProductQuestionSQL->execute(array($product_id));
 
 		$options = $product->getProductOptionsCollection();
 
@@ -1140,7 +1194,7 @@ class Codisto_Sync_Model_Sync
 				if(!$optionSortOrder)
 					$optionSortOrder = 0;
 
-				$insertProductQuestionSQL->execute(array($optionId, $productData['entity_id'], $optionName, $optionType, $optionSortOrder));
+				$insertProductQuestionSQL->execute(array($optionId, $product_id, $optionName, $optionType, $optionSortOrder));
 
 				$values = $option->getValuesCollection();
 
@@ -1176,10 +1230,10 @@ class Codisto_Sync_Model_Sync
 
 		if($type == 'simple')
 		{
-			$this->productsProcessed[] = $productData['entity_id'];
+			$this->productsProcessed[] = $product_id;
 
-			if($productData['entity_id'] > $this->currentEntityId)
-				$this->currentEntityId = $productData['entity_id'];
+			if($product_id > $this->currentEntityId)
+				$this->currentEntityId = $product_id;
 		}
 	}
 
