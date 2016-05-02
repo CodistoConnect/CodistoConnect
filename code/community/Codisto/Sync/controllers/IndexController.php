@@ -470,6 +470,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
 		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
+		$ordernumberformat = (string)$ordercontent->ordernumberformat;
 
 		$ordertotal = floatval($ordercontent->ordertotal[0]);
 		$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
@@ -496,6 +497,17 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setPayment($quoteConverter->paymentToOrderPayment($quote->getPayment()));
 		$order->setCustomer($quote->getCustomer());
 		$order->setCodistoOrderid($ordercontent->orderid);
+
+		if(preg_match('/\{ordernumber\}/', $ordernumberformat))
+		{
+			$incrementId = preg_replace('/\{ordernumber\}/', (string)$order->getIncrementId(), $ordernumberformat);
+			$order->setIncrementId($incrementId);
+		}
+		else
+		{
+			$incrementId = $ordernumberformat.''.(string)$order->getIncrementId();
+			$order->setIncrementId($incrementId);
+		}
 
 		$weight_total = 0;
 
@@ -850,7 +862,47 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$quoteConverter =  Mage::getModel('sales/convert_quote');
 
-		$order->setCustomer($quote->getCustomer());
+		$customer = $quote->getCustomer();
+		if($customer)
+			$order->setCustomer($customer);
+
+		$orderBillingAddress = $order->getBillingAddress();
+		$quoteBillingAddress = $quote->getBillingAddress();
+
+		$orderBillingAddress->setPrefix($quoteBillingAddress->getPrefix());
+		$orderBillingAddress->setFirstname($quoteBillingAddress->getFirstname());
+		$orderBillingAddress->setMiddlename($quoteBillingAddress->getMiddlename());
+		$orderBillingAddress->setLastname($quoteBillingAddress->getLastname());
+		$orderBillingAddress->setSuffix($quoteBillingAddress->getSuffix());
+		$orderBillingAddress->setCompany($quoteBillingAddress->getCompany());
+		$orderBillingAddress->setStreet($quoteBillingAddress->getStreet());
+		$orderBillingAddress->setCity($quoteBillingAddress->getCity());
+		$orderBillingAddress->setRegion($quoteBillingAddress->getRegion());
+		$orderBillingAddress->setRegionId($quoteBillingAddress->getRegionId());
+		$orderBillingAddress->setPostcode($quoteBillingAddress->getPostcode());
+		$orderBillingAddress->setCountryId($quoteBillingAddress->getCountryId());
+		$orderBillingAddress->setTelephone($quoteBillingAddress->getTelephone());
+		$orderBillingAddress->setFax($quoteBillingAddress->getFax());
+		$orderBillingAddress->setEmail($quoteBillingAddress->getEmail());
+
+		$orderShippingAddress = $order->getShippingAddress();
+		$quoteShippingAddress = $quote->getShippingAddress();
+
+		$orderShippingAddress->setPrefix($quoteShippingAddress->getPrefix());
+		$orderShippingAddress->setFirstname($quoteShippingAddress->getFirstname());
+		$orderShippingAddress->setMiddlename($quoteShippingAddress->getMiddlename());
+		$orderShippingAddress->setLastname($quoteShippingAddress->getLastname());
+		$orderShippingAddress->setSuffix($quoteShippingAddress->getSuffix());
+		$orderShippingAddress->setCompany($quoteShippingAddress->getCompany());
+		$orderShippingAddress->setStreet($quoteShippingAddress->getStreet());
+		$orderShippingAddress->setCity($quoteShippingAddress->getCity());
+		$orderShippingAddress->setRegion($quoteShippingAddress->getRegion());
+		$orderShippingAddress->setRegionId($quoteShippingAddress->getRegionId());
+		$orderShippingAddress->setPostcode($quoteShippingAddress->getPostcode());
+		$orderShippingAddress->setCountryId($quoteShippingAddress->getCountryId());
+		$orderShippingAddress->setTelephone($quoteShippingAddress->getTelephone());
+		$orderShippingAddress->setFax($quoteShippingAddress->getFax());
+		$orderShippingAddress->setEmail($quoteShippingAddress->getEmail());
 
 		$ebaysalesrecordnumber = (string)$ordercontent->ebaysalesrecordnumber;
 		if(!$ebaysalesrecordnumber)
@@ -1362,6 +1414,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
+		$register_customer = (string)$ordercontent->register_customer == 'false' ? false : true;
+
 		$websiteId = $store->getWebsiteId();
 
 		$billing_address = $ordercontent->orderaddresses->orderaddress[0];
@@ -1447,84 +1501,89 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			'region' => (string)$shipping_address->division
 		);
 
-		$customer = Mage::getModel('customer/customer');
-		$customer->setWebsiteId($websiteId);
-		$customer->setStoreId($store->getId());
+		$customer = null;
 
-		for($Retry = 0; ; $Retry++)
+		if($register_customer)
 		{
-			try
+			$customer = Mage::getModel('customer/customer');
+			$customer->setWebsiteId($websiteId);
+			$customer->setStoreId($store->getId());
+
+			for($Retry = 0; ; $Retry++)
 			{
-				$connection->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
-				$connection->beginTransaction();
-
-				$customer->loadByEmail($email);
-
-				if(!$customer->getId())
+				try
 				{
-					$ebayGroup = Mage::getModel('customer/group');
-					$ebayGroup->load('eBay', 'customer_group_code');
-					if(!$ebayGroup->getId())
-					{
-						$defaultGroup = Mage::getModel('customer/group')->load(1);
+					$connection->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
+					$connection->beginTransaction();
 
-						$ebayGroup->setCode('eBay');
-						$ebayGroup->setTaxClassId($defaultGroup->getTaxClassId());
-						$ebayGroup->save();
+					$customer->loadByEmail($email);
+
+					if(!$customer->getId())
+					{
+						$ebayGroup = Mage::getModel('customer/group');
+						$ebayGroup->load('eBay', 'customer_group_code');
+						if(!$ebayGroup->getId())
+						{
+							$defaultGroup = Mage::getModel('customer/group')->load(1);
+
+							$ebayGroup->setCode('eBay');
+							$ebayGroup->setTaxClassId($defaultGroup->getTaxClassId());
+							$ebayGroup->save();
+						}
+
+						$customerGroupId = $ebayGroup->getId();
+
+						$customer->setWebsiteId($websiteId);
+						$customer->setStoreId($store->getId());
+						$customer->setEmail($email);
+						$customer->setFirstname((string)$billing_first_name);
+						$customer->setLastname((string)$billing_last_name);
+						$customer->setPassword('');
+						$customer->setGroupId($customerGroupId);
+						$customer->save();
+						$customer->setConfirmation(null);
+						$customer->save();
+
+						$customerId = $customer->getId();
+
+						$customerAddress = Mage::getModel('customer/address');
+						$customerAddress->setData($addressBilling)
+							->setCustomerId($customer->getId())
+							->setIsDefaultBilling(1)
+							->setSaveInAddressBook(1);
+						$customerAddress->save();
+
+
+						$customerAddress->setData($addressShipping)
+							->setCustomerId($customer->getId())
+							->setIsDefaultShipping(1)
+							->setSaveInAddressBook(1);
+						$customerAddress->save();
+					}
+					else
+					{
+						$customerId = $customer->getId();
+						$customerGroupId = $customer->getGroupId();
 					}
 
-					$customerGroupId = $ebayGroup->getId();
-
-					$customer->setWebsiteId($websiteId);
-					$customer->setStoreId($store->getId());
-					$customer->setEmail($email);
-					$customer->setFirstname((string)$billing_first_name);
-					$customer->setLastname((string)$billing_last_name);
-					$customer->setPassword('');
-					$customer->setGroupId($customerGroupId);
-					$customer->save();
-					$customer->setConfirmation(null);
-					$customer->save();
-
-					$customerId = $customer->getId();
-
-					$customerAddress = Mage::getModel('customer/address');
-					$customerAddress->setData($addressBilling)
-						->setCustomerId($customer->getId())
-						->setIsDefaultBilling(1)
-						->setSaveInAddressBook(1);
-					$customerAddress->save();
-
-
-					$customerAddress->setData($addressShipping)
-						->setCustomerId($customer->getId())
-						->setIsDefaultShipping(1)
-						->setSaveInAddressBook(1);
-					$customerAddress->save();
+					$connection->commit();
+					break;
 				}
-				else
+				catch(Exception $e)
 				{
-					$customerId = $customer->getId();
-					$customerGroupId = $customer->getGroupId();
-				}
-
-				$connection->commit();
-				break;
-			}
-			catch(Exception $e)
-			{
-				if($Retry < 5)
-				{
-					if($e->getCode() == 40001)
+					if($Retry < 5)
 					{
-						$connection->rollback();
-						sleep($Retry * 10);
-						continue;
+						if($e->getCode() == 40001)
+						{
+							$connection->rollback();
+							sleep($Retry * 10);
+							continue;
+						}
 					}
-				}
 
-				$connection->rollback();
-				throw $e;
+					$connection->rollback();
+					throw $e;
+				}
 			}
 		}
 
@@ -1542,14 +1601,30 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$quote->setCheckoutMethod(Mage_Checkout_Model_Type_Onepage::METHOD_GUEST);
 		$quote->save();
 
-		$quote->assignCustomer($customer);
+		if($customer)
+		{
+			$quote->assignCustomer($customer);
+			$quote->setCustomerId($customerId);
+			$quote->setCustomerGroupId($customerGroupId);
+		}
+		else
+		{
+			$quote->setCustomerId(null);
+			$quote->setCustomerEmail($email);
+			$quote->setCustomerFirstName((string)$billing_first_name);
+			$quote->setCustomerLastName((string)$billing_last_name);
+			$quote->setCustomerIsGuest(true);
+			$quote->setCustomerGroupId(Mage_Customer_Model_Group::NOT_LOGGED_IN_ID);
+		}
 
 		$billingAddress = $quote->getBillingAddress();
-		$billingAddress->setCustomer($customer);
+		if($customer)
+			$billingAddress->setCustomer($customer);
 		$billingAddress->addData($addressBilling);
 
 		$shippingAddress = $quote->getShippingAddress();
-		$shippingAddress->setCustomer($customer);
+		if($customer)
+			$shippingAddress->setCustomer($customer);
 		$shippingAddress->addData($addressShipping);
 		$shippingAddress->implodeStreetAddress();
 
@@ -1690,8 +1765,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$quote->setSubtotal($ordersubtotal);
 		$quote->setBaseSubtotalWithDiscount($ordersubtotal);
 		$quote->setSubtotalWithDiscount($ordersubtotal);
-		$quote->setCustomerId($customerId);
-		$quote->setCustomerGroupId($customerGroupId);
 		$quote->setData('trigger_recollect', 0);
 		$quote->setTotalsCollectedFlag(true);
 		$quote->save();
