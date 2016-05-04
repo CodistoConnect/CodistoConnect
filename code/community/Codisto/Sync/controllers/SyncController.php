@@ -313,7 +313,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 										continue;
 									}
 								}
-								break;
 							}
 
 							$response->clearAllHeaders();
