@@ -380,22 +380,30 @@ class Codisto_Sync_Model_Sync
 		$db->exec('COMMIT TRANSACTION');
 	}
 
-	public function DeleteProduct($syncDb, $id, $storeId)
+	public function DeleteProduct($syncDb, $ids, $storeId)
 	{
 		$db = $this->GetSyncDb($syncDb);
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
-		$db->exec(	'CREATE TABLE IF NOT EXISTS ProductDelete(ExternalReference text NOT NULL PRIMARY KEY);'.
-					'INSERT OR IGNORE INTO ProductDelete VALUES('.$id.');'.
-					'DELETE FROM Product WHERE ExternalReference = '.$id.';'.
-					'DELETE FROM ProductImage WHERE ProductExternalReference = '.$id.';'.
-					'DELETE FROM ProductHTML WHERE ProductExternalReference = '.$id.';'.
-					'DELETE FROM SKULink WHERE ProductExternalReference = '.$id.';'.
-					'DELETE FROM SKUMatrix WHERE ProductExternalReference = '.$id.';'.
-					'DELETE FROM SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference = '.$id.');'.
-					'DELETE FROM SKU WHERE ProductExternalReference = '.$id.';'.
-					'DELETE FROM CategoryProduct WHERE ProductExternalReference = '.$id);
+		if(!is_array($ids))
+		{
+			$ids = array($ids);
+		}
+
+		foreach($ids as $id)
+		{
+			$db->exec(	'CREATE TABLE IF NOT EXISTS ProductDelete(ExternalReference text NOT NULL PRIMARY KEY);'.
+						'INSERT OR IGNORE INTO ProductDelete VALUES('.$id.');'.
+						'DELETE FROM Product WHERE ExternalReference = '.$id.';'.
+						'DELETE FROM ProductImage WHERE ProductExternalReference = '.$id.';'.
+						'DELETE FROM ProductHTML WHERE ProductExternalReference = '.$id.';'.
+						'DELETE FROM SKULink WHERE ProductExternalReference = '.$id.';'.
+						'DELETE FROM SKUMatrix WHERE ProductExternalReference = '.$id.';'.
+						'DELETE FROM SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference = '.$id.');'.
+						'DELETE FROM SKU WHERE ProductExternalReference = '.$id.';'.
+						'DELETE FROM CategoryProduct WHERE ProductExternalReference = '.$id);
+		}
 
 		$db->exec('COMMIT TRANSACTION');
 	}
