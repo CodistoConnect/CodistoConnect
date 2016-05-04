@@ -31,6 +31,7 @@ class Codisto_Sync_Model_Sync
 
 	private $ebayGroupId;
 
+	private $attributeCache;
 	private $groupCache;
 	private $optionCache;
 	private $optionTextCache;
@@ -60,6 +61,7 @@ class Codisto_Sync_Model_Sync
 			$this->taxCalculation = Mage::getModel('tax/calculation');
 		}
 
+		$this->attributeCache = array();
 		$this->groupCache = array();
 		$this->optionCache = array();
 		$this->optionTextCache = array();
@@ -829,7 +831,18 @@ class Codisto_Sync_Model_Sync
 		$attributeTypes = array();
 		$attributeCodeIDMap = array();
 
-		$attributes = $product->getAttributes();
+		$attributeSetID = $product->getAttributeSetId();
+		if(isset($this->attributeCache[$attributeSetID]))
+		{
+			$attributes = $this->attributeCache[$attributeSetID];
+		}
+		else
+		{
+			$attributes = $product->getAttributes();
+
+			$this->attributeCache[$attributeSetID] = $attributes;
+		}
+
 		foreach($attributes as $attribute)
 		{
 			$backend = $attribute->getBackEnd();
@@ -921,31 +934,22 @@ class Codisto_Sync_Model_Sync
 						->where('default_value.attribute_id IN (?)', array_keys($_attributes))
 						->where('default_value.entity_type_id = :entity_type_id')
 						->where('default_value.entity_id = :entity_id')
-						->where('default_value.store_id = ?', 0);
+						->where('default_value.store_id = 0');
 
 
 			if($store->getId() == Mage_Catalog_Model_Abstract::DEFAULT_STORE_ID)
 			{
 				$attrTypeSelect->columns(array('attr_value' => new Zend_Db_Expr('CAST(value AS CHAR)')), 'default_value');
+				$attrTypeSelect->where('default_value.value IS NOT NULL');
 			}
 			else
 			{
-				$valueExpr = new Zend_Db_Expr('CAST(COALESCE(store_value.value, default_value.value) AS CHAR)');
-
-				$joinCondition = array(
-					$adapter->quoteInto('store_value.attribute_id IN (?)', array_keys($_attributes)),
-					'store_value.entity_type_id = :entity_type_id',
-					'store_value.entity_id = :entity_id',
-					'store_value.store_id = :store_id',
-				);
-
 				$attrTypeSelect->joinLeft(
 					array('store_value' => $table),
-					implode(' AND ', $joinCondition),
-					array('attr_value' => $valueExpr)
+					'store_value.attribute_id = default_value.attribute_id AND store_value.entity_type_id = default_value.entity_type_id AND store_value.entity_id = default_value.entity_id AND store_value.store_id = :store_id ',
+					array('attr_value' => new Zend_Db_Expr('CAST(COALESCE(store_value.value, default_value.value) AS CHAR)'))
 				);
-
-				$attrTypeSelect->where('(default_value.value IS NOT NULL OR store_value.value IS NOT NULL)');
+				$attrTypeSelect->where('store_value.value IS NOT NULL OR default_value.value IS NOT NULL');
 			}
 
 			$attrTypeSelects[] = $attrTypeSelect;
@@ -953,7 +957,7 @@ class Codisto_Sync_Model_Sync
 
 		$attributeValues = array();
 
-		$attrSelect = $adapter->select()->union($attrTypeSelects);
+		$attrSelect = $adapter->select()->union($attrTypeSelects, Zend_Db_Select::SQL_UNION_ALL);
 
 		$attrArgs = array(
 			'entity_type_id' => 4,
