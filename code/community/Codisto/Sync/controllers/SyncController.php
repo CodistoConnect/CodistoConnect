@@ -250,6 +250,23 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							{
 								@array_map('@unlink', glob( Mage::getBaseDir('var').'/codisto-*') );
 
+								if($helper->canSyncIncrementally($syncDb))
+								{
+									//@codingStandardsIgnoreStart
+									if(function_exists('http_response_code'))
+										http_response_code(200);
+									//@codingStandardsIgnoreEnd
+									$response->setHttpResponseCode(200);
+									$response->setRawHeader('HTTP/1.0 200 OK');
+									$response->setRawHeader('Status: 200 OK');
+									$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+									$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+									$response->setHeader('Pragma', 'no-cache', true);
+									$response->setBody('incremental');
+									$response->sendResponse();
+									die;
+								}
+
 								if(file_exists($syncDb))
 									unlink($syncDb);
 							}
@@ -308,6 +325,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 								usleep(10000);
 							}
 
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(200);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(200);
+							$response->setRawHeader('HTTP/1.0 200 OK');
+							$response->setRawHeader('Status: 200 OK');
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
@@ -355,6 +379,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$syncObject = Mage::getModel('codistosync/sync');
 						$totals = $syncObject->ProductTotals($storeId);
 
+						//@codingStandardsIgnoreStart
+						if(function_exists('http_response_code'))
+							http_response_code(200);
+						//@codingStandardsIgnoreEnd
+						$response->setHttpResponseCode(200);
+						$response->setRawHeader('HTTP/1.0 400 Security Error');
+						$response->setRawHeader('Status: 400 Security Error');
 						$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 						$response->setHeader('Pragma', 'no-cache', true);
@@ -450,6 +481,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 							}
 
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(200);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(200);
+							$response->setRawHeader('HTTP/1.0 200 OK');
+							$response->setRawHeader('Status: 200 OK');
 							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 							$response->setHeader('Pragma', 'no-cache', true);
@@ -841,6 +879,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 										$db->exec('COMMIT TRANSACTION');
 										$db = null;
 
+										//@codingStandardsIgnoreStart
+										if(function_exists('http_response_code'))
+											http_response_code(200);
+										//@codingStandardsIgnoreEnd
+										$response->setHttpResponseCode(200);
+										$response->setRawHeader('HTTP/1.0 200 OK');
+										$response->setRawHeader('Status: 200 OK');
 										$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 										$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 										$response->setHeader('Pragma', 'no-cache', true);
@@ -928,6 +973,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 								unlink($tmpDb);
 
+								//@codingStandardsIgnoreStart
+								if(function_exists('http_response_code'))
+									http_response_code(200);
+								//@codingStandardsIgnoreEnd
+								$response->setHttpResponseCode(200);
+								$response->setRawHeader('HTTP/1.0 200 OK');
+								$response->setRawHeader('Status: 200 OK');
 								$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 								$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 								$response->setHeader('Pragma', 'no-cache', true);
@@ -970,11 +1022,19 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 				default:
 
+					//@codingStandardsIgnoreStart
+					if(function_exists('http_response_code'))
+						http_response_code(400);
+					//@codingStandardsIgnoreEnd
+					$response->setHttpResponseCode(400);
+					$response->setRawHeader('HTTP/1.0 400 Bad Request No Action');
+					$response->setRawHeader('Status: 400 Bad Request No Action');
 					$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 					$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 					$response->setHeader('Pragma', 'no-cache', true);
 					$response->setBody('No Action');
 					$response->sendResponse();
+					die;
 			}
 		}
 
@@ -1069,6 +1129,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 		// TODO: read store view state and post to api.codisto.com
 
+		//@codingStandardsIgnoreStart
+		if(function_exists('http_response_code'))
+			http_response_code(200);
+		//@codingStandardsIgnoreEnd
+		$response->setHttpResponseCode(200);
+		$response->setRawHeader('HTTP/1.0 200 OK');
+		$response->setRawHeader('Status: 200 OK');
 		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 		$response->setHeader('Pragma', 'no-cache', true);
@@ -1081,6 +1148,10 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	{
 		ignore_user_abort(false);
 
+		if(function_exists('http_response_code'))
+			http_response_code(200);
+		header('HTTP/1.0 200 OK');
+		header('Status: 200 OK');
 		header('Cache-Control: no-cache, must-revalidate'); //HTTP 1.1
 		header('Pragma: no-cache'); //HTTP 1.0
 		header('Expires: Thu, 01 Jan 1970 00:00:00 GMT'); // Date in the past

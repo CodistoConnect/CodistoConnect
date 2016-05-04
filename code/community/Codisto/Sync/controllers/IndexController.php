@@ -262,6 +262,13 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		}
 
+		//@codingStandardsIgnoreStart
+		if(function_exists('http_response_code'))
+			http_response_code(200);
+		//@codingStandardsIgnoreEnd
+		$response->setHttpResponseCode(200);
+		$response->setRawHeader('HTTP/1.0 200 OK');
+		$response->setRawHeader('Status: 200 OK');
 		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 		$response->setHeader('Pragma', 'no-cache', true);
@@ -358,7 +365,17 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						catch(Exception $e)
 						{
 							$response = $this->getResponse();
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(200);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(200);
+							$response->setRawHeader('HTTP/1.0 200 OK');
+							$response->setRawHeader('Status: 200 OK');
 							$response->setHeader('Content-Type', 'application/json');
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
 							$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString())));
 							break;
 						}
@@ -395,7 +412,17 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 							}
 
 							$response = $this->getResponse();
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(200);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(200);
+							$response->setRawHeader('HTTP/1.0 200 OK');
+							$response->setRawHeader('Status: 200 OK');
 							$response->setHeader('Content-Type', 'application/json');
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
 							$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString())));
 
 							$connection->rollback();
@@ -846,7 +873,17 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$response = $this->getResponse();
 
+		//@codingStandardsIgnoreStart
+		if(function_exists('http_response_code'))
+			http_response_code(200);
+		//@codingStandardsIgnoreEnd
+		$response->setHttpResponseCode(200);
+		$response->setRawHeader('HTTP/1.0 200 OK');
+		$response->setRawHeader('Status: 200 OK');
 		$response->setHeader('Content-Type', 'application/json');
+		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+		$response->setHeader('Pragma', 'no-cache', true);
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 
 		if(!in_array($order->getId(), $orderids))
@@ -1401,7 +1438,17 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 
 		$response = $this->getResponse();
+		//@codingStandardsIgnoreStart
+		if(function_exists('http_response_code'))
+			http_response_code(200);
+		//@codingStandardsIgnoreEnd
+		$response->setHttpResponseCode(200);
+		$response->setRawHeader('HTTP/1.0 200 OK');
+		$response->setRawHeader('Status: 200 OK');
 		$response->setHeader('Content-Type', 'application/json');
+		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+		$response->setHeader('Pragma', 'no-cache', true);
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 
 		if(!in_array($order->getId(), $orderids))

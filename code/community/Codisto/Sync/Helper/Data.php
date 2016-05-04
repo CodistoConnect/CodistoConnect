@@ -311,6 +311,14 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return $MerchantID;
 	}
 
+	public function canSyncIncrementally($syncDb)
+	{
+
+
+
+		return false;
+	}
+
 	public function logExceptionCodisto(Zend_Controller_Request_Http $request, Exception $e, $endpoint)
 	{
 		try
