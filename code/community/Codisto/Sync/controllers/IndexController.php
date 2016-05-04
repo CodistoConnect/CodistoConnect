@@ -262,6 +262,14 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		}
 
+		$response->clearAllHeaders();
+		//@codingStandardsIgnoreStart
+		if(function_exists('http_response_code'))
+			http_response_code(200);
+		//@codingStandardsIgnoreEnd
+		$response->setHttpResponseCode(200);
+		$response->setRawHeader('HTTP/1.0 200 OK');
+		$response->setRawHeader('Status: 200 OK');
 		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
 		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
 		$response->setHeader('Pragma', 'no-cache', true);
@@ -291,6 +299,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				if(!Mage::helper('codistosync')->getConfig($storeId))
 				{
+					$response->clearAllHeaders();
 					//@codingStandardsIgnoreStart
 					if(function_exists('http_response_code'))
 						http_response_code(500);
@@ -309,6 +318,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				{
 					$productsToReindex = array();
 					$ordersProcessed = array();
+					$invoicesProcessed = array();
 
 					$connection = Mage::getSingleton('core/resource')->getConnection('core_write');
 
@@ -357,7 +367,19 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						catch(Exception $e)
 						{
 							$response = $this->getResponse();
+
+							$response->clearAllHeaders();
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(200);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(200);
+							$response->setRawHeader('HTTP/1.0 200 OK');
+							$response->setRawHeader('Status: 200 OK');
 							$response->setHeader('Content-Type', 'application/json');
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
 							$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString())));
 							break;
 						}
@@ -371,11 +393,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 							if($order && $order->getId())
 							{
-								$this->ProcessOrderSync($quote, $order, $xml, $productsToReindex, $ordersProcessed, $store);
+								$this->ProcessOrderSync($quote, $order, $xml, $productsToReindex, $ordersProcessed, $invoicesProcessed, $store);
 							}
 							else
 							{
-								$this->ProcessOrderCreate($quote, $xml, $productsToReindex, $ordersProcessed, $store);
+								$this->ProcessOrderCreate($quote, $xml, $productsToReindex, $ordersProcessed, $invoicesProcessed, $store);
 							}
 
 							$connection->commit();
@@ -394,7 +416,19 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 							}
 
 							$response = $this->getResponse();
+
+							$response->clearAllHeaders();
+							//@codingStandardsIgnoreStart
+							if(function_exists('http_response_code'))
+								http_response_code(200);
+							//@codingStandardsIgnoreEnd
+							$response->setHttpResponseCode(200);
+							$response->setRawHeader('HTTP/1.0 200 OK');
+							$response->setRawHeader('Status: 200 OK');
 							$response->setHeader('Content-Type', 'application/json');
+							$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+							$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+							$response->setHeader('Pragma', 'no-cache', true);
 							$response->setBody(Zend_Json::encode(array( 'ack' => 'failed', 'code' => $e->getCode(), 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString())));
 
 							$connection->rollback();
@@ -407,6 +441,18 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						if(!empty($ordersProcessed))
 						{
 							Mage::getResourceModel('sales/order')->updateGridRecords($ordersProcessed);
+						}
+					}
+					catch (Exception $e)
+					{
+
+					}
+
+					try
+					{
+						if(!empty($invoicesProcessed))
+						{
+							Mage::getResourceModel('sales/order_invoice')->updateGridRecords($invoicesProcessed);
 						}
 					}
 					catch (Exception $e)
@@ -432,6 +478,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 			else
 			{
+				$response->clearAllHeaders();
 				//@codingStandardsIgnoreStart
 				if(function_exists('http_response_code'))
 					http_response_code(400);
@@ -452,11 +499,12 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 	}
 
-	private function ProcessOrderCreate($quote, $xml, &$productsToReindex, &$orderids, $store)
+	private function ProcessOrderCreate($quote, $xml, &$productsToReindex, &$orderids, &$invoiceids, $store)
 	{
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
 		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
+		$ordernumberformat = (string)$ordercontent->ordernumberformat;
 
 		$ordertotal = floatval($ordercontent->ordertotal[0]);
 		$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
@@ -483,6 +531,19 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setPayment($quoteConverter->paymentToOrderPayment($quote->getPayment()));
 		$order->setCustomer($quote->getCustomer());
 		$order->setCodistoOrderid($ordercontent->orderid);
+
+		if(preg_match('/\{ordernumber\}/', $ordernumberformat))
+		{
+			$incrementId = preg_replace('/\{ordernumber\}/', (string)$order->getIncrementId(), $ordernumberformat);
+			$order->setIncrementId($incrementId);
+		}
+		else
+		{
+			$incrementId = $ordernumberformat.''.(string)$order->getIncrementId();
+			$order->setIncrementId($incrementId);
+		}
+
+		$weight_total = 0;
 
 		$quoteItems = $quote->getItemsCollection()->getItems();
 		$quoteIdx = 0;
@@ -541,6 +602,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$weight = floatval($orderline->weight[0]);
 				if($weight == 0)
 					$weight = 1;
+
+				$weight_total += $weight;
 
 				$orderItem = $quoteConverter->itemToOrderItem($quoteItems[$quoteIdx]);
 
@@ -684,6 +747,19 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setBaseGrandTotal($ordertotal);
 		$order->setGrandTotal($ordertotal);
 
+		$order->setWeight($weight_total);
+
+		$order->setBaseSubtotalInvoiced(0.0);
+		$order->setBaseTaxInvoiced(0.0);
+		$order->setBaseTotalInvoiced(0.0);
+		$order->setSubtotalInvoiced(0.0);
+		$order->setTaxInvoiced(0.0);
+		$order->setTotalInvoiced(0.0);
+
+		$order->setBaseTotalDue($ordertotal);
+		$order->setTotalDue($ordertotal);
+		$order->setDue($ordertotal);
+
 		$order->save();
 
 		try
@@ -698,66 +774,84 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		/* cancelled, processing, captured, inprogress, complete */
 		if($ordercontent->orderstate == 'cancelled') {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_CANCELED);
-			$order->setStatus(Mage_Sales_Model_Order::STATE_CANCELED);
-			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been cancelled");
+			$order->setData('state', Mage_Sales_Model_Order::STATE_CANCELED);
+			$order->setData('status', Mage_Sales_Model_Order::STATE_CANCELED);
+			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_CANCELED, "eBay Order $ebaysalesrecordnumber has been cancelled");
 
 		} else if($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
-			$order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
-			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is in progress");
+			$order->setData('state', Mage_Sales_Model_Order::STATE_PROCESSING);
+			$order->setData('status', Mage_Sales_Model_Order::STATE_PROCESSING);
+			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_PROCESSING, "eBay Order $ebaysalesrecordnumber is in progress");
 
 		} else if ($ordercontent->orderstate == 'complete') {
 
-			$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
-			$order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
-			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber is complete");
+			$order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
+			$order->setData('status', Mage_Sales_Model_Order::STATE_COMPLETE);
+			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE, "eBay Order $ebaysalesrecordnumber is complete");
 
 		} else {
-			$order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
-			$order->setStatus(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
-			$order->addStatusToHistory($order->getStatus(), "eBay Order $ebaysalesrecordnumber has been captured");
+
+			$order->setData('state', Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
+			$order->setData('status', Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
+			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, "eBay Order $ebaysalesrecordnumber has been captured");
 
 		}
+
+		$order->setBaseTotalPaid(0);
+		$order->setTotalPaid(0);
+		$order->setBaseTotalDue(0);
+		$order->setTotalDue(0);
+		$order->setDue(0);
 
 		$payment = $order->getPayment();
 
-		if($ordercontent->paymentstatus == 'complete')
-		{
-			$order->setBaseTotalPaid($ordertotal);
-			$order->setTotalPaid($ordertotal);
-			$order->setBaseTotalDue(0);
-			$order->setTotalDue(0);
-			$order->setDue(0);
-
-			$payment->setBaseAmountPaid($ordertotal);
-		}
-
-		$payment->setParentTransactionId(null)
-			->setIsTransactionClosed(1);
 		$payment->setMethod('ebay');
 		$payment->resetTransactionAdditionalInfo();
+		$payment->setTransactionId(0);
+
 		$transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, '');
 		if($paypaltransactionid)
 		{
-			$payment->setTransactionId($paypaltransactionid);
+			$transaction->setTxnId($paypaltransactionid);
 			$payment->setLastTransId($paypaltransactionid);
 		}
+
 		$payment->setAdditionalInformation('ebaysalesrecordnumber', $ebaysalesrecordnumber);
 		$payment->setAdditionalInformation('ebayuser', $ebayusername);
 
+		if($ordercontent->paymentstatus == 'complete')
+		{
+			$payment->setBaseAmountPaid($ordertotal);
+			$payment->setAmountPaid($ordertotal);
+			$payment->setBaseAmountAuthorized($ordertotal);
+			$payment->setBaseAmountPaidOnline($ordertotal);
+			$payment->setAmountAuthorized($ordertotal);
+			$payment->setIsTransactionClosed(1);
+
+		}
+		else
+		{
+			$payment->setBaseAmountPaid(0.0);
+			$payment->setAmountPaid(0.0);
+			$payment->setBaseAmountAuthorized($ordertotal);
+			$payment->setBaseAmountPaidOnline($ordertotal);
+			$payment->setAmountAuthorized($ordertotal);
+			$payment->setIsTransactionClosed(0);
+		}
+
+		$quote->setIsActive(false)->save();
+
+		Mage::dispatchEvent('checkout_type_onepage_save_order', array('order'=>$order, 'quote'=>$quote));
 		Mage::dispatchEvent('sales_model_service_quote_submit_before', array('order'=>$order, 'quote'=>$quote));
 
 		$payment->save();
 
-		Mage::dispatchEvent('sales_model_service_quote_submit_success', array('order'=>$order, 'quote'=>$quote));
-
 		$order->save();
 
+		Mage::dispatchEvent('sales_model_service_quote_submit_success', array('order'=>$order, 'quote'=>$quote));
 		Mage::dispatchEvent('sales_model_service_quote_submit_after', array('order'=>$order, 'quote'=>$quote));
 
-		$quote->setIsActive(false)->save();
 
 		if($ordercontent->paymentstatus == 'complete')
 		{
@@ -769,26 +863,91 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$invoice->register();
 			}
 			$invoice->save();
+
+			if(!in_array($invoice->getId(), $invoiceids))
+				$invoiceids[] = $invoice->getId();
+
+			$order->setBaseSubtotalInvoiced($ordersubtotal);
+			$order->setBaseTaxInvoiced($ordertaxtotal);
+			$order->setBaseTotalInvoiced($ordertotal);
+			$order->setSubtotalInvoiced($ordersubtotal);
+			$order->setTaxInvoiced($ordertaxtotal);
+			$order->setTotalInvoiced($ordertotal);
+			$order->save();
+
 			Mage::dispatchEvent('sales_order_payment_pay', array('payment' => $payment, 'invoice' => $invoice));
 		}
 
 		$response = $this->getResponse();
 
+		$response->clearAllHeaders();
+		//@codingStandardsIgnoreStart
+		if(function_exists('http_response_code'))
+			http_response_code(200);
+		//@codingStandardsIgnoreEnd
+		$response->setHttpResponseCode(200);
+		$response->setRawHeader('HTTP/1.0 200 OK');
+		$response->setRawHeader('Status: 200 OK');
 		$response->setHeader('Content-Type', 'application/json');
+		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+		$response->setHeader('Pragma', 'no-cache', true);
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 
 		if(!in_array($order->getId(), $orderids))
 			$orderids[] = $order->getId();
 	}
 
-	private function ProcessOrderSync($quote, $order, $xml, &$productsToReindex, &$orderids, $store)
+	private function ProcessOrderSync($quote, $order, $xml, &$productsToReindex, &$orderids, &$invoiceids, $store)
 	{
 		$orderstatus = $order->getStatus();
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
+		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
+
 		$quoteConverter =  Mage::getModel('sales/convert_quote');
 
-		$order->setCustomer($quote->getCustomer());
+		$customer = $quote->getCustomer();
+		if($customer)
+			$order->setCustomer($customer);
+
+		$orderBillingAddress = $order->getBillingAddress();
+		$quoteBillingAddress = $quote->getBillingAddress();
+
+		$orderBillingAddress->setPrefix($quoteBillingAddress->getPrefix());
+		$orderBillingAddress->setFirstname($quoteBillingAddress->getFirstname());
+		$orderBillingAddress->setMiddlename($quoteBillingAddress->getMiddlename());
+		$orderBillingAddress->setLastname($quoteBillingAddress->getLastname());
+		$orderBillingAddress->setSuffix($quoteBillingAddress->getSuffix());
+		$orderBillingAddress->setCompany($quoteBillingAddress->getCompany());
+		$orderBillingAddress->setStreet($quoteBillingAddress->getStreet());
+		$orderBillingAddress->setCity($quoteBillingAddress->getCity());
+		$orderBillingAddress->setRegion($quoteBillingAddress->getRegion());
+		$orderBillingAddress->setRegionId($quoteBillingAddress->getRegionId());
+		$orderBillingAddress->setPostcode($quoteBillingAddress->getPostcode());
+		$orderBillingAddress->setCountryId($quoteBillingAddress->getCountryId());
+		$orderBillingAddress->setTelephone($quoteBillingAddress->getTelephone());
+		$orderBillingAddress->setFax($quoteBillingAddress->getFax());
+		$orderBillingAddress->setEmail($quoteBillingAddress->getEmail());
+
+		$orderShippingAddress = $order->getShippingAddress();
+		$quoteShippingAddress = $quote->getShippingAddress();
+
+		$orderShippingAddress->setPrefix($quoteShippingAddress->getPrefix());
+		$orderShippingAddress->setFirstname($quoteShippingAddress->getFirstname());
+		$orderShippingAddress->setMiddlename($quoteShippingAddress->getMiddlename());
+		$orderShippingAddress->setLastname($quoteShippingAddress->getLastname());
+		$orderShippingAddress->setSuffix($quoteShippingAddress->getSuffix());
+		$orderShippingAddress->setCompany($quoteShippingAddress->getCompany());
+		$orderShippingAddress->setStreet($quoteShippingAddress->getStreet());
+		$orderShippingAddress->setCity($quoteShippingAddress->getCity());
+		$orderShippingAddress->setRegion($quoteShippingAddress->getRegion());
+		$orderShippingAddress->setRegionId($quoteShippingAddress->getRegionId());
+		$orderShippingAddress->setPostcode($quoteShippingAddress->getPostcode());
+		$orderShippingAddress->setCountryId($quoteShippingAddress->getCountryId());
+		$orderShippingAddress->setTelephone($quoteShippingAddress->getTelephone());
+		$orderShippingAddress->setFax($quoteShippingAddress->getFax());
+		$orderShippingAddress->setEmail($quoteShippingAddress->getEmail());
 
 		$ebaysalesrecordnumber = (string)$ordercontent->ebaysalesrecordnumber;
 		if(!$ebaysalesrecordnumber)
@@ -876,6 +1035,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$visited = array();
 
+		$weight_total = 0;
+
 		$quoteItems = $quote->getItemsCollection()->getItems();
 		$quoteIdx = 0;
 
@@ -934,6 +1095,10 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$taxamount = $priceinctax - $price;
 				$taxpercent = $price == 0 ? 0 : round($priceinctax / $price - 1.0, 2) * 100;
 				$weight = floatval($orderline->weight[0]);
+				if($weight == 0)
+					$weight = 1;
+
+				$weight_total += $weight;
 
 				$itemFound = false;
 				foreach($order->getAllItems() as $item)
@@ -1117,6 +1282,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 
 		$order->setTotalQtyOrdered((int)$totalquantity);
+		$order->setWeight($weight_total);
 
 		/* States: cancelled, processing, captured, inprogress, complete */
 		if(($ordercontent->orderstate == 'captured' ||
@@ -1225,6 +1391,17 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$order->setDue(0.0);
 
 			$payment = $order->getPayment();
+
+			if($paypaltransactionid)
+			{
+				$transaction = $payment->getTransaction(0);
+				if($transaction)
+				{
+					$transaction->setTxnId($paypaltransactionid);
+					$payment->setLastTransId($paypaltransactionid);
+				}
+			}
+
 			$payment->setMethod('ebay');
 			$payment->setParentTransactionId(null)
 				->setIsTransactionClosed(1);
@@ -1252,12 +1429,36 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					$invoice->register();
 				}
 				$invoice->save();
+
+				if(!in_array($invoice->getId(), $invoiceids))
+					$invoiceids[] = $invoice->getId();
+
+				$order->setBaseSubtotalInvoiced($ordersubtotal);
+				$order->setBaseTaxInvoiced($ordertaxtotal);
+				$order->setBaseTotalInvoiced($ordertotal);
+				$order->setSubtotalInvoiced($ordersubtotal);
+				$order->setTaxInvoiced($ordertaxtotal);
+				$order->setTotalInvoiced($ordertotal);
+				$order->save();
+
 				Mage::dispatchEvent('sales_order_payment_pay', array('payment' => $payment, 'invoice' => $invoice));
 			}
 		}
 
 		$response = $this->getResponse();
+
+		$response->clearAllHeaders();
+		//@codingStandardsIgnoreStart
+		if(function_exists('http_response_code'))
+			http_response_code(200);
+		//@codingStandardsIgnoreEnd
+		$response->setHttpResponseCode(200);
+		$response->setRawHeader('HTTP/1.0 200 OK');
+		$response->setRawHeader('Status: 200 OK');
 		$response->setHeader('Content-Type', 'application/json');
+		$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+		$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+		$response->setHeader('Pragma', 'no-cache', true);
 		$response->setBody(Zend_Json::encode(array( 'ack' => 'ok', 'orderid' => $order->getIncrementId())));
 
 		if(!in_array($order->getId(), $orderids))
@@ -1269,6 +1470,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$connection = Mage::getSingleton('core/resource')->getConnection('core_write');
 
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
+
+		$register_customer = (string)$ordercontent->register_customer == 'false' ? false : true;
 
 		$websiteId = $store->getWebsiteId();
 
@@ -1355,84 +1558,89 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			'region' => (string)$shipping_address->division
 		);
 
-		$customer = Mage::getModel('customer/customer');
-		$customer->setWebsiteId($websiteId);
-		$customer->setStoreId($store->getId());
+		$customer = null;
 
-		for($Retry = 0; ; $Retry++)
+		if($register_customer)
 		{
-			try
+			$customer = Mage::getModel('customer/customer');
+			$customer->setWebsiteId($websiteId);
+			$customer->setStoreId($store->getId());
+
+			for($Retry = 0; ; $Retry++)
 			{
-				$connection->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
-				$connection->beginTransaction();
-
-				$customer->loadByEmail($email);
-
-				if(!$customer->getId())
+				try
 				{
-					$ebayGroup = Mage::getModel('customer/group');
-					$ebayGroup->load('eBay', 'customer_group_code');
-					if(!$ebayGroup->getId())
-					{
-						$defaultGroup = Mage::getModel('customer/group')->load(1);
+					$connection->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
+					$connection->beginTransaction();
 
-						$ebayGroup->setCode('eBay');
-						$ebayGroup->setTaxClassId($defaultGroup->getTaxClassId());
-						$ebayGroup->save();
+					$customer->loadByEmail($email);
+
+					if(!$customer->getId())
+					{
+						$ebayGroup = Mage::getModel('customer/group');
+						$ebayGroup->load('eBay', 'customer_group_code');
+						if(!$ebayGroup->getId())
+						{
+							$defaultGroup = Mage::getModel('customer/group')->load(1);
+
+							$ebayGroup->setCode('eBay');
+							$ebayGroup->setTaxClassId($defaultGroup->getTaxClassId());
+							$ebayGroup->save();
+						}
+
+						$customerGroupId = $ebayGroup->getId();
+
+						$customer->setWebsiteId($websiteId);
+						$customer->setStoreId($store->getId());
+						$customer->setEmail($email);
+						$customer->setFirstname((string)$billing_first_name);
+						$customer->setLastname((string)$billing_last_name);
+						$customer->setPassword('');
+						$customer->setGroupId($customerGroupId);
+						$customer->save();
+						$customer->setConfirmation(null);
+						$customer->save();
+
+						$customerId = $customer->getId();
+
+						$customerAddress = Mage::getModel('customer/address');
+						$customerAddress->setData($addressBilling)
+							->setCustomerId($customer->getId())
+							->setIsDefaultBilling(1)
+							->setSaveInAddressBook(1);
+						$customerAddress->save();
+
+
+						$customerAddress->setData($addressShipping)
+							->setCustomerId($customer->getId())
+							->setIsDefaultShipping(1)
+							->setSaveInAddressBook(1);
+						$customerAddress->save();
+					}
+					else
+					{
+						$customerId = $customer->getId();
+						$customerGroupId = $customer->getGroupId();
 					}
 
-					$customerGroupId = $ebayGroup->getId();
-
-					$customer->setWebsiteId($websiteId);
-					$customer->setStoreId($store->getId());
-					$customer->setEmail($email);
-					$customer->setFirstname((string)$billing_first_name);
-					$customer->setLastname((string)$billing_last_name);
-					$customer->setPassword('');
-					$customer->setGroupId($customerGroupId);
-					$customer->save();
-					$customer->setConfirmation(null);
-					$customer->save();
-
-					$customerId = $customer->getId();
-
-					$customerAddress = Mage::getModel('customer/address');
-					$customerAddress->setData($addressBilling)
-						->setCustomerId($customer->getId())
-						->setIsDefaultBilling(1)
-						->setSaveInAddressBook(1);
-					$customerAddress->save();
-
-
-					$customerAddress->setData($addressShipping)
-						->setCustomerId($customer->getId())
-						->setIsDefaultShipping(1)
-						->setSaveInAddressBook(1);
-					$customerAddress->save();
+					$connection->commit();
+					break;
 				}
-				else
+				catch(Exception $e)
 				{
-					$customerId = $customer->getId();
-					$customerGroupId = $customer->getGroupId();
-				}
-
-				$connection->commit();
-				break;
-			}
-			catch(Exception $e)
-			{
-				if($Retry < 5)
-				{
-					if($e->getCode() == 40001)
+					if($Retry < 5)
 					{
-						$connection->rollback();
-						sleep($Retry * 10);
-						continue;
+						if($e->getCode() == 40001)
+						{
+							$connection->rollback();
+							sleep($Retry * 10);
+							continue;
+						}
 					}
-				}
 
-				$connection->rollback();
-				throw $e;
+					$connection->rollback();
+					throw $e;
+				}
 			}
 		}
 
@@ -1450,14 +1658,30 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$quote->setCheckoutMethod(Mage_Checkout_Model_Type_Onepage::METHOD_GUEST);
 		$quote->save();
 
-		$quote->assignCustomer($customer);
+		if($customer)
+		{
+			$quote->assignCustomer($customer);
+			$quote->setCustomerId($customerId);
+			$quote->setCustomerGroupId($customerGroupId);
+		}
+		else
+		{
+			$quote->setCustomerId(null);
+			$quote->setCustomerEmail($email);
+			$quote->setCustomerFirstName((string)$billing_first_name);
+			$quote->setCustomerLastName((string)$billing_last_name);
+			$quote->setCustomerIsGuest(true);
+			$quote->setCustomerGroupId(Mage_Customer_Model_Group::NOT_LOGGED_IN_ID);
+		}
 
 		$billingAddress = $quote->getBillingAddress();
-		$billingAddress->setCustomer($customer);
+		if($customer)
+			$billingAddress->setCustomer($customer);
 		$billingAddress->addData($addressBilling);
 
 		$shippingAddress = $quote->getShippingAddress();
-		$shippingAddress->setCustomer($customer);
+		if($customer)
+			$shippingAddress->setCustomer($customer);
 		$shippingAddress->addData($addressShipping);
 		$shippingAddress->implodeStreetAddress();
 
@@ -1598,8 +1822,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$quote->setSubtotal($ordersubtotal);
 		$quote->setBaseSubtotalWithDiscount($ordersubtotal);
 		$quote->setSubtotalWithDiscount($ordersubtotal);
-		$quote->setCustomerId($customerId);
-		$quote->setCustomerGroupId($customerGroupId);
 		$quote->setData('trigger_recollect', 0);
 		$quote->setTotalsCollectedFlag(true);
 		$quote->save();

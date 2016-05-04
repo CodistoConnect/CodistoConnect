@@ -133,6 +133,8 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 		{
 			if($event->getDataObject())
 			{
+				$helper = Mage::helper('codistosync');
+
 				$syncedCategories = Mage::registry('codisto_synced_categories');
 				if(!is_array($syncedCategories))
 				{
@@ -198,7 +200,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 					foreach($syncStores as $storeId)
 					{
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+						$syncDb = $helper->getSyncPath('sync-'.$storeId.'.db');
 
 						if(Mage_Index_Model_Event::TYPE_SAVE == $type)
 							$syncObject->UpdateCategory($syncDb, $categoryId, $storeId);
@@ -222,7 +224,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 						}
 					}
 
-					Mage::helper('codistosync')->signal($merchants, 'action=sync&categoryid='.$categoryId);
+					$helper->signal($merchants, 'action=sync&categoryid='.$categoryId);
 				}
 			}
 		}
@@ -231,6 +233,8 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 		{
 			if($event->getDataObject())
 			{
+				$helper = Mage::helper('codistosync');
+
 				$syncedProducts = Mage::registry('codisto_synced_products');
 				if(!is_array($syncedProducts))
 				{
@@ -341,7 +345,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 						}
 					}
 
-					Mage::helper('codistosync')->signal($merchants, 'action=sync&productid='.$productIds, $eventtype, $syncIds);
+					$helper->signal($merchants, 'action=sync&productid='.$productIds, $eventtype, $syncIds);
 				}
 			}
 		}
@@ -350,6 +354,8 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 		{
 			if($event->getDataObject())
 			{
+				$helper = Mage::helper('codistosync');
+
 				$syncedProducts = Mage::registry('codisto_synced_products');
 				if(!is_array($syncedProducts))
 				{
@@ -460,7 +466,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 						}
 					}
 
-					Mage::helper('codistosync')->signal($merchants, 'action=sync&productid='.$productIds, $eventtype, $syncIds);
+					$helper->signal($merchants, 'action=sync&productid='.$productIds, $eventtype, $syncIds);
 				}
 			}
 		}
@@ -469,6 +475,8 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 		{
 			if(!Mage::registry('codisto_synced_stores'))
 			{
+				$helper = Mage::helper('codistosync');
+
 				$merchants = array();
 				$visited = array();
 
@@ -497,7 +505,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 				Mage::register('codisto_synced_stores', true);
 
-				Mage::helper('codistosync')->signal($merchants, 'action=syncstores');
+				$helper->signal($merchants, 'action=syncstores');
 			}
 		}
 
@@ -510,6 +518,8 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 	public function reindexAll()
 	{
+		$helper = Mage::helper('codistosync');
+
 		$merchants = array();
 		$visited = array();
 
@@ -536,6 +546,6 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
 		unset($visited);
 
-		Mage::helper('codistosync')->signal($merchants, 'action=sync');
+		$helper->signal($merchants, 'action=sync');
 	}
 }

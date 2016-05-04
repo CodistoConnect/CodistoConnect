@@ -28,6 +28,8 @@ class Codisto_Sync_Model_Observer
 		$ConfigurableCount = 6;
 		$SimpleCount = 250;
 
+		$helper = Mage::helper('codistosync');
+
 		$file = new Varien_Io_File();
 
 		$indexer = Mage::getModel('index/process')->load('codistoebayindex', 'indexer_code');
@@ -37,8 +39,8 @@ class Codisto_Sync_Model_Observer
 			if($indexer->load('codistoebayindex', 'indexer_code')->getStatus() == 'working')
 				return;
 
-			$extSyncFailed = Mage::getBaseDir('var') . '/codisto-external-sync-failed';
-			$extTestFailed = Mage::getBaseDir('var') . '/codisto-external-test-failed';
+			$extSyncFailed = $helper->getSyncPath('codisto-external-sync-failed');
+			$extTestFailed = $helper->getSyncPath('codisto-external-test-failed');
 
 			if(!file_exists($extSyncFailed) && !file_exists($extTestFailed)) {
 				return 'External sync has not failed, manual sync not run';
@@ -128,7 +130,7 @@ class Codisto_Sync_Model_Observer
 			}
 
 
-			$file->open(array('path' => Mage::getBaseDir('var')));
+			$file->open( array('path' => $helper->getSyncPath('') ) );
 			$lastSyncTime = $file->read('codisto-external-sync-failed');
 
 			if((microtime(true) - $lastSyncTime) < 1800)
@@ -163,7 +165,7 @@ class Codisto_Sync_Model_Observer
 
 				$storeId = $merchant['storeid'];
 				$syncObject = Mage::getModel('codistosync/sync');
-				$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-cron-'.$storeId.'.db';
+				$syncDb = $helper->getSyncPath('sync-cron-'.$storeId.'.db');
 
 				$startTime = microtime(true);
 
@@ -330,15 +332,15 @@ class Codisto_Sync_Model_Observer
 		$payment = $observer->getEvent()->getPayment();
 		$paymentmethod = $payment->getMethodInstance()->getCode();
 
+		$helper = Mage::helper('codistosync');
+
 		if($paymentmethod == 'ebay' && Mage::getDesign()->getArea() == 'adminhtml')
 		{
 			$paypaltransactionid = $payment->getLastTransId();
 			$order = $payment->getOrder();
 			$orderid = $order->getCodistoOrderid();
 			$storeid = $order->getStoreId();
-			$merchantid = Mage::helper('codistosync')->getMerchantId($storeid);
-
-
+			$merchantid = $helper->getMerchantId($storeid);
 
 			if($paypaltransactionid)
 			{
@@ -373,6 +375,8 @@ class Codisto_Sync_Model_Observer
 	{
 		$merchants = array();
 		$visited = array();
+
+		$helper = Mage::helper('codistosync');
 
 		$stores = Mage::getModel('core/store')->getCollection();
 
@@ -415,7 +419,7 @@ class Codisto_Sync_Model_Observer
 
 		unset($visited);
 
-		Mage::helper('codistosync')->signal($merchants, 'action=synctax');
+		$helper->signal($merchants, 'action=synctax');
 
 		return $this;
 	}
@@ -429,6 +433,8 @@ class Codisto_Sync_Model_Observer
 
 		if($orderid)
 		{
+			$helper = Mage::helper('codistosync');
+
 			$merchants = array();
 
 			$hostkey = Mage::getStoreConfig('codisto/hostkey', $storeId);
@@ -452,7 +458,7 @@ class Codisto_Sync_Model_Observer
 
 				unset($visited);
 
-				Mage::helper('codistosync')->signal($merchants, 'action=syncorder&orderid='.$orderid);
+				$helper->signal($merchants, 'action=syncorder&orderid='.$orderid);
 			}
 		}
 
@@ -468,6 +474,8 @@ class Codisto_Sync_Model_Observer
 
 		if($orderid)
 		{
+			$helper = Mage::helper('codistosync');
+
 			$hostkey = Mage::getStoreConfig('codisto/hostkey', $storeId);
 
 			$merchantList = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', $storeId));
@@ -487,7 +495,7 @@ class Codisto_Sync_Model_Observer
 					}
 				}
 
-				Mage::helper('codistosync')->signal($merchants, 'action=syncorder&orderid='.$orderid);
+				$helper->signal($merchants, 'action=syncorder&orderid='.$orderid);
 			}
 		}
 
@@ -616,7 +624,9 @@ class Codisto_Sync_Model_Observer
 
 	public function addScript($observer)
 	{
-		$version = Mage::helper('codistosync')->getCodistoVersion();
+		$helper = Mage::helper('codistosync');
+
+		$version = $helper->getCodistoVersion();
 
 		$merchantlist = Mage::getStoreConfig('codisto/merchantid', 0);
 		if($merchantlist)
@@ -668,6 +678,8 @@ class Codisto_Sync_Model_Observer
 				{
 					if($dataObject->getResourceName() == 'cms/block')
 					{
+						$helper = Mage::helper('codistosync');
+
 						$merchants = array();
 						$visited = array();
 
@@ -694,7 +706,7 @@ class Codisto_Sync_Model_Observer
 
 						unset($visited);
 
-						Mage::helper('codistosync')->signal($merchants, 'action=syncstaticblock&id='.rawurlencode($dataObject->getId()).'&identifier='.rawurlencode($dataObject->getIdentifier()).'&content='.rawurlencode($dataObject->getContent()));
+						$helper->signal($merchants, 'action=syncstaticblock&id='.rawurlencode($dataObject->getId()).'&identifier='.rawurlencode($dataObject->getIdentifier()).'&content='.rawurlencode($dataObject->getContent()));
 					}
 				}
 			}
@@ -744,6 +756,8 @@ class Codisto_Sync_Model_Observer
 	{
 		if(!empty($stockItems))
 		{
+			$helper = Mage::helper('codistosync');
+
 			$merchants = array();
 			$visited = array();
 
@@ -801,7 +815,7 @@ class Codisto_Sync_Model_Observer
 				else
 					$productids = '['.implode(',', $syncIds).']';
 
-				Mage::helper('codistosync')->signal($merchants, 'action=sync&productid='.$productids, Mage_Index_Model_Event::TYPE_SAVE, $stockItems);
+				$helper->signal($merchants, 'action=sync&productid='.$productids, Mage_Index_Model_Event::TYPE_SAVE, $stockItems);
 			}
 		}
 	}
