@@ -13,17 +13,25 @@
  * obtain it through the world-wide-web, please send an email
  * to license@magentocommerce.com so we can send you a copy immediately.
  *
- * @category    Codisto
- * @package     Codisto_Sync
+ * @category	Codisto
+ * @package	 	Codisto_Sync
  * @copyright   Copyright (c) 2015 On Technology Pty. Ltd. (http://codisto.com/)
- * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ * @license	 	http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
 class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 {
-	private $defaultSyncTimeout = 15;
 	private $defaultConfigurableCount = 6;
 	private $defaultSimpleCount = 250;
+
+	public function preDispatch()
+	{
+		$this->setFlag('', self::FLAG_NO_START_SESSION, 1);
+		$this->setFlag('', self::FLAG_NO_PRE_DISPATCH, 1);
+		$this->setFlag('', self::FLAG_NO_POST_DISPATCH, 1);
+
+		return $this;
+	}
 
 	public function indexAction()
 	{
@@ -281,50 +289,31 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							if(!$simpleCount || !is_numeric($simpleCount))
 								$simpleCount = $this->defaultSimpleCount;
 
-							$timeout = (int)$request->getQuery('timeout');
-							if(!$timeout || !is_numeric($timeout))
-								$timeout = $this->defaultSyncTimeout;
+							$result = $syncObject->SyncChunk($syncDb, $simpleCount, $configurableCount, $storeId, false);
 
-							if($timeout < 5)
-								$timeout = 5;
-
-							$startTime = microtime(true);
-
-							for($chunkCount = 0; $chunkCount < 2; $chunkCount++)
+							if($result == 'complete')
 							{
-								$result = $syncObject->SyncChunk($syncDb, $simpleCount, $configurableCount, $storeId, false);
+								$syncObject->SyncTax($syncDb, $storeId);
+								$syncObject->SyncStaticBlocks($syncDb, $storeId);
+								$syncObject->SyncStores($syncDb, $storeId);
 
-								if($result == 'complete')
+								for($Retry = 0; ; $Retry++)
 								{
-									$syncObject->SyncTax($syncDb, $storeId);
-									$syncObject->SyncStaticBlocks($syncDb, $storeId);
-									$syncObject->SyncStores($syncDb, $storeId);
-
-									for($Retry = 0; ; $Retry++)
+									try
 									{
-										try
-										{
-											$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
-											break;
-										}
-										catch(Exception $e)
-										{
-											if($Retry >= 3)
-												break;
-
-											usleep(500000);
-											continue;
-										}
+										$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+										break;
 									}
-									break;
+									catch(Exception $e)
+									{
+										if($Retry >= 3)
+											break;
+
+										usleep(500000);
+										continue;
+									}
 								}
-
-								$duration = microtime(true) - $startTime;
-
-								if(($duration / ($chunkCount + 1)) * 2 > $timeout)
-									break;
-
-								usleep(10000);
+								break;
 							}
 
 							$response->clearAllHeaders();
@@ -451,11 +440,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							if(!$simpleCount || !is_numeric($simpleCount))
 								$simpleCount = $this->defaultSimpleCount;
 
-							$timeout = (int)$request->getQuery('timeout');
-							if(!$timeout || !is_numeric($timeout))
-								$timeout = $this->defaultSyncTimeout;
-
-							$startTime = microtime(true);
 
 							$result = $syncObject->SyncChunk($syncDb, 0, $configurableCount, $storeId, true);
 							$result = $syncObject->SyncChunk($syncDb, $simpleCount, 0, $storeId, true);

@@ -947,9 +947,9 @@ class Codisto_Sync_Model_Sync
 				$attrTypeSelect->joinLeft(
 					array('store_value' => $table),
 					'store_value.attribute_id = default_value.attribute_id AND store_value.entity_type_id = default_value.entity_type_id AND store_value.entity_id = default_value.entity_id AND store_value.store_id = :store_id ',
-					array('attr_value' => new Zend_Db_Expr('CAST(IF(store_value.value IS NULL, default_value.value, store_value.value) AS CHAR)'))
+					array('attr_value' => new Zend_Db_Expr('CAST(COALESCE(store_value.value, default_value.value) AS CHAR)'))
 				);
-				$attrTypeSelect->where('store_value.value IS NOT NULL AND default_value.value IS NOT NULL');
+				$attrTypeSelect->where('store_value.value IS NOT NULL OR default_value.value IS NOT NULL');
 			}
 
 			$attrTypeSelects[] = $attrTypeSelect;
