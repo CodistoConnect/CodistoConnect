@@ -1148,8 +1148,10 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 	{
 		ignore_user_abort(false);
 
+		//@codingStandardsIgnoreStart
 		if(function_exists('http_response_code'))
 			http_response_code(200);
+		//@codingStandardsIgnoreEnd
 		header('HTTP/1.0 200 OK');
 		header('Status: 200 OK');
 		header('Cache-Control: no-cache, must-revalidate'); //HTTP 1.1
