@@ -373,7 +373,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 		try {
 
-			$file->checkAndCreateFolder( $base_path, 0775 );
+			$file->checkAndCreateFolder( $base_path, 0777 );
 
 		} catch (Exception $e) {
 
