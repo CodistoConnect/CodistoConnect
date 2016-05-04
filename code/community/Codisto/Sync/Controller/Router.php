@@ -279,6 +279,12 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					$tabPath = preg_replace('/iframe\/\d+\//', '', $tabPath);
 					$tabURL = $request->getScheme() . '://' . $request->getHttpHost() . $tabPort . $tabPath;
 
+					$response->clearAllHeaders();
+					//@codingStandardsIgnoreStart
+					if(function_exists('http_response_code'))
+						http_response_code(200);
+					//@codingStandardsIgnoreEnd
+					$response->setHttpResponseCode(200);
 					$response->setHeader('Cache-Control', 'public, max-age=86400', true);
 					$response->setHeader('Pragma', 'cache', true);
 					$response->setBody('<!DOCTYPE html><html><head><body><iframe id="codisto-control-panel" class="codisto-iframe codisto-product" src="'.$tabURL.'" frameborder="0" onmousewheel=""></iframe></body></html>');
@@ -383,6 +389,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 					if(!$remoteResponse)
 					{
+						$response->clearAllHeaders();
 						$response->setHttpResponseCode(500);
 						$response->setHeader('Pragma', 'no-cache', true);
 						$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
@@ -391,6 +398,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					}
 
 					// set proxied status and headers
+					$response->clearAllHaders();
 					$response->setHttpResponseCode($remoteResponse->getStatus());
 					$response->setHeader('Pragma', '', true);
 					$response->setHeader('Cache-Control', '', true);

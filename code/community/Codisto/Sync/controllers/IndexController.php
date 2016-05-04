@@ -262,6 +262,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		}
 
+		$response->clearAllHeaders();
 		//@codingStandardsIgnoreStart
 		if(function_exists('http_response_code'))
 			http_response_code(200);
@@ -298,6 +299,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				if(!Mage::helper('codistosync')->getConfig($storeId))
 				{
+					$response->clearAllHeaders();
 					//@codingStandardsIgnoreStart
 					if(function_exists('http_response_code'))
 						http_response_code(500);
@@ -365,6 +367,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						catch(Exception $e)
 						{
 							$response = $this->getResponse();
+
+							$response->clearAllHeaders();
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
 								http_response_code(200);
@@ -412,6 +416,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 							}
 
 							$response = $this->getResponse();
+
+							$response->clearAllHeaders();
 							//@codingStandardsIgnoreStart
 							if(function_exists('http_response_code'))
 								http_response_code(200);
@@ -472,6 +478,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 			else
 			{
+				$response->clearAllHeaders();
 				//@codingStandardsIgnoreStart
 				if(function_exists('http_response_code'))
 					http_response_code(400);
@@ -873,6 +880,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$response = $this->getResponse();
 
+		$response->clearAllHeaders();
 		//@codingStandardsIgnoreStart
 		if(function_exists('http_response_code'))
 			http_response_code(200);
@@ -1438,6 +1446,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 
 		$response = $this->getResponse();
+
+		$response->clearAllHeaders();
 		//@codingStandardsIgnoreStart
 		if(function_exists('http_response_code'))
 			http_response_code(200);
