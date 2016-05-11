@@ -26,6 +26,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	public function preDispatch()
 	{
+		Mage::app()->loadArea(Mage_Core_Model_App_Area::AREA_ADMINHTML);
+
 		$this->setFlag('', self::FLAG_NO_START_SESSION, 1);
 		$this->setFlag('', self::FLAG_NO_PRE_DISPATCH, 1);
 		$this->setFlag('', self::FLAG_NO_POST_DISPATCH, 1);
@@ -63,6 +65,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 			if($stores->getSize() == 1)
 			{
+				$stores->setPageSize(1)->setCurPage(1);
 				$firstStore = $stores->getFirstItem();
 				if(is_object($firstStore) && $firstStore->getId())
 					$storeId = $firstStore->getId();

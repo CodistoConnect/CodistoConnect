@@ -109,44 +109,52 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				return true;
 			}
 
-			Mage::getSingleton('core/session', array('name'=>'adminhtml'));
-
-			// unlock session
-			if(class_exists('Zend_Session', false) && Zend_Session::isStarted())
-			Zend_Session::writeClose();
-			if(isset($_SESSION))
-			session_write_close();
-
-			// determine logged in state
 			$loggedIn = false;
 
 			if($request->getCookie('adminhtml'))
 			{
-				Mage::unregister('admin/session');
-				Mage::unregister('core/session');
+				Mage::unregister('_singleton/admin/session');
+				Mage::unregister('_singleton/core/session');
+
+				session_id($request->getCookie('adminhtml'));
+
 				Mage::getSingleton('core/session', array( 'name' => 'adminhtml' ));
 				if(Mage::getSingleton('admin/session')->isLoggedIn())
 				{
 					$loggedIn = true;
 				}
-				Mage::unregister('admin/session');
-				Mage::unregister('core/session');
+
+				Mage::unregister('_singleton/admin/session');
+				Mage::unregister('_singleton/core/session');
 			}
 
 			if(!$loggedIn && $request->getCookie('PHPSESSID'))
 			{
-				Mage::unregister('admin/session');
-				Mage::unregister('core/session');
+				Mage::unregister('_singleton/admin/session');
+				Mage::unregister('_singleton/core/session');
+
+				session_id($request->getCookie('PHPSESSID'));
+
 				Mage::getSingleton('core/session', array( 'name' => null ));
 				if(Mage::getSingleton('admin/session')->isLoggedIn())
 				{
 					$loggedIn = true;
 				}
-				Mage::unregister('admin/session');
-				Mage::unregister('core/session');
-			}
-			session_write_close();
 
+				Mage::unregister('_singleton/admin/session');
+				Mage::unregister('_singleton/core/session');
+			}
+
+			// unlock session
+			if(class_exists('Zend_Session', false) && Zend_Session::isStarted())
+			{
+				Zend_Session::writeClose();
+				Zend_Session::destroy();
+			}
+			if(isset($_SESSION))
+			{
+				session_write_close();
+			}
 
 			if($loggedIn)
 			{
