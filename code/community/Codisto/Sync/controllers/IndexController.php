@@ -343,6 +343,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 													->addFieldToFilter('store_id', array('gt' => 0))
 													->setOrder('store_id', 'ASC');
 
+						$stores->setPageSize(1)->setCurPage(1);
 						$firstStore = $stores->getFirstItem();
 						if(is_object($firstStore) && $firstStore->getId())
 							$storeId = $firstStore->getId();

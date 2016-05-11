@@ -170,7 +170,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 			$user = $session->getUser();
 			if(!$user)
 			{
-				$user = Mage::getModel('admin/user')->getCollection()->getFirstItem();
+				$user = Mage::getModel('admin/user')->getCollection()->setPageSize(1)->setCurPage(1)->getFirstItem();
 			}
 
 			$createLockFile = Mage::getBaseDir('var') . '/codisto-create-lock';
@@ -724,6 +724,24 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 				foreach($merchants as $merchant)
 				{
 					$storeId = $merchant['storeid'];
+					if($storeId == 0)
+					{
+						// jump the storeid to first non admin store
+						$stores = Mage::getModel('core/store')->getCollection()
+													->addFieldToFilter('is_active', array('neq' => 0))
+													->addFieldToFilter('store_id', array('gt' => 0))
+													->setOrder('store_id', 'ASC');
+
+						if($stores->getSize() == 1)
+						{
+							$stores->setPageSize(1)->setCurPage(1);
+							$firstStore = $stores->getFirstItem();
+							if(is_object($firstStore) && $firstStore->getId())
+							{
+								$storeId = $firstStore->getId();
+							}
+						}
+					}
 
 					if(!isset($storeVisited[$storeId]))
 					{

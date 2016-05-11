@@ -1538,7 +1538,7 @@ class Codisto_Sync_Model_Sync
 				$stores = Mage::getModel('core/store')->getCollection()
 							->addFieldToFilter('is_active', array('neq' => 0))
 							->setOrder('store_id', 'ASC');
-
+				$stores->setPageSize(1)->setCurPage(1);
 				$orderStoreId = $stores->getFirstItem()->getId();
 			}
 
