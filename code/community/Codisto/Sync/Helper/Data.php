@@ -135,6 +135,8 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		$lockRow = $lockQuery->fetch();
 		$timeStamp = $lockRow['id'];
 
+		$lockQuery->closeCursor();
+
 		if($timeStamp + 5000000 < microtime(true))
 		{
 			$createMerchant = true;
@@ -168,7 +170,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 			$user = $session->getUser();
 			if(!$user)
 			{
-				$user = Mage::getModel('admin/user')->getCollection()->getFirstItem();
+				$user = Mage::getModel('admin/user')->getCollection()->setPageSize(1)->setCurPage(1)->getFirstItem();
 			}
 
 			$createLockFile = Mage::getBaseDir('var') . '/codisto-create-lock';
@@ -309,6 +311,14 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return $MerchantID;
 	}
 
+	public function canSyncIncrementally($syncDb)
+	{
+
+
+
+		return false;
+	}
+
 	public function logExceptionCodisto(Zend_Controller_Request_Http $request, Exception $e, $endpoint)
 	{
 		try
@@ -353,6 +363,32 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		{
 			Mage::log($e->getMessage());
 		}
+	}
+
+	public function getSyncPath($path)
+	{
+		$file = new Varien_Io_File();
+
+		$base_path = Mage::getBaseDir('var') . '/codisto/';
+
+		try {
+
+			$file->checkAndCreateFolder( $base_path, 0777 );
+
+		} catch (Exception $e) {
+
+			return preg_replace( '/\/+/', '/', Mage::getBaseDir('var') . '/' . $path );
+
+		}
+
+		return preg_replace( '/\/+/', '/', $base_path . $path );
+	}
+
+	public function getSyncPathTemp($path)
+	{
+		$base_path = $this->getSyncPath('');
+
+		return tempnam( $base_path , $path . '-' );
 	}
 
 	private function phpTest($interpreter, $args, $script)
@@ -688,10 +724,28 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 				foreach($merchants as $merchant)
 				{
 					$storeId = $merchant['storeid'];
+					if($storeId == 0)
+					{
+						// jump the storeid to first non admin store
+						$stores = Mage::getModel('core/store')->getCollection()
+													->addFieldToFilter('is_active', array('neq' => 0))
+													->addFieldToFilter('store_id', array('gt' => 0))
+													->setOrder('store_id', 'ASC');
+
+						if($stores->getSize() == 1)
+						{
+							$stores->setPageSize(1)->setCurPage(1);
+							$firstStore = $stores->getFirstItem();
+							if(is_object($firstStore) && $firstStore->getId())
+							{
+								$storeId = $firstStore->getId();
+							}
+						}
+					}
 
 					if(!isset($storeVisited[$storeId]))
 					{
-						$syncDb = Mage::getBaseDir('var') . '/codisto-ebay-sync-'.$storeId.'.db';
+						$syncDb = $this->getSyncPath('sync-'.$storeId.'.db');
 
 						if($eventtype == Mage_Index_Model_Event::TYPE_DELETE)
 						{
