@@ -1,5 +1,25 @@
 # Change Log
 
+## [1.90.1](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.1) (2016-05-12)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.94...1.90.1)
+
+**Implemented enhancements:**
+
+- stopped session creation during sync [\#316](https://github.com/CodistoConnect/CodistoConnect/pull/316) ([lamery](https://github.com/lamery))
+- batch of changes based on client feedback [\#313](https://github.com/CodistoConnect/CodistoConnect/pull/313) ([lamery](https://github.com/lamery))
+
+**Fixed bugs:**
+
+- stopped session creation during sync [\#316](https://github.com/CodistoConnect/CodistoConnect/pull/316) ([lamery](https://github.com/lamery))
+- remove break statement from complete case - was break out of old time… [\#315](https://github.com/CodistoConnect/CodistoConnect/pull/315) ([lamery](https://github.com/lamery))
+- fix bulk attribute select [\#314](https://github.com/CodistoConnect/CodistoConnect/pull/314) ([lamery](https://github.com/lamery))
+- batch of changes based on client feedback [\#313](https://github.com/CodistoConnect/CodistoConnect/pull/313) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#318](https://github.com/CodistoConnect/CodistoConnect/pull/318) ([lamery](https://github.com/lamery))
+- only delete old var content if the path actually switched to new var … [\#317](https://github.com/CodistoConnect/CodistoConnect/pull/317) ([lamery](https://github.com/lamery))
+
 ## [1.1.94](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.94) (2016-04-08)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.93...1.1.94)
 
