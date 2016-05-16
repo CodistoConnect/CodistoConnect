@@ -81,7 +81,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		$store = Mage::app()->getStore($storeId);
 
 		Mage::app()->setCurrentStore($store);
-Mage::log($server['REQUEST_URI'].' '.$server['HTTP_X_ACTION'], null, 'codisto.log');
+
 		if(isset($server['HTTP_X_SYNC']) &&
 			isset($server['HTTP_X_ACTION']))
 		{
