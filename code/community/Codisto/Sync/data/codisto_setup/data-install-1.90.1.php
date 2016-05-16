@@ -55,7 +55,7 @@ if(!isset($MerchantID) || !isset($HostKey))
 			if($e->getCode() != "HY000")
 			{
 				//Otherwise report  other exception details to Codisto regarding register
-				Mage::helper('codistosync')->logExceptionCodisto($request, $e, "https://ui.codisto.com/installed");
+				Mage::helper('codistosync')->logExceptionCodisto($e, "https://ui.codisto.com/installed");
 			}
 		}
 

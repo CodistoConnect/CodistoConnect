@@ -76,21 +76,42 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return (string) Mage::getConfig()->getNode()->modules->Codisto_Sync->version;
 	}
 
-	public function checkHash($Response, $HostKey, $Nonce, $Hash)
+	public function checkRequestHash($key, $server)
 	{
-		$hashOK = false;
+		if(!isset($server['HTTP_X_NONCE']))
+			return false;
 
-		if(isset($Response)) {
+		if(!isset($server['HTTP_X_HASH']))
+			return false;
 
-			$r = $HostKey . $Nonce;
-			$base = hash('sha256', $r, true);
-			$checkHash = base64_encode($base);
+		$nonce = $server['HTTP_X_NONCE'];
+		$hash = $server['HTTP_X_HASH'];
 
-			$hashOK = hash_equals($Hash ,$checkHash);
+		try
+		{
+			$nonceDbPath = $this->getSyncPath('nonce.db');
+
+			$nonceDb = new PDO('sqlite:' . $nonceDbPath);
+			$nonceDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+			$nonceDb->exec('CREATE TABLE IF NOT EXISTS nonce (value text NOT NULL PRIMARY KEY)');
+			$qry = $nonceDb->prepare('INSERT OR IGNORE INTO nonce (value) VALUES(?)');
+			$qry->execute( array( $nonce ) );
+			if($qry->rowCount() !== 1)
+				return false;
+		}
+		catch(Exception $e)
+		{
+			$this->logExceptionCodisto($e, 'https://ui.codisto.com/installed');
 		}
 
-		return $hashOK;
+		return $this->checkHash($key, $nonce, $hash);
+	}
 
+	private function checkHash($Key, $Nonce, $Hash)
+	{
+		$Sig = base64_encode( hash('sha256', $Key . $Nonce, true) );
+
+		return hash_equals( $Hash, $Sig );
 	}
 
 	public function getConfig($storeId)
@@ -311,16 +332,305 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return $MerchantID;
 	}
 
-	public function canSyncIncrementally($syncDb)
+	public function canSyncIncrementally($syncDbPath, $storeId)
 	{
+		$adapter = Mage::getModel('core/resource')->getConnection(Mage_Core_Model_Resource::DEFAULT_WRITE_RESOURCE);
 
+		$tablePrefix = Mage::getConfig()->getTablePrefix();
 
+		// change tables
+		$changeTableDefs = array(
+			'codisto_product_change' => 'CREATE TABLE `'.$tablePrefix.'codisto_product_change` (product_id int(10) unsigned NOT NULL PRIMARY KEY, stamp datetime NOT NULL)',
+			'codisto_order_change' => 'CREATE TABLE `'.$tablePrefix.'codisto_order_change` (order_id int(10) unsigned NOT NULL PRIMARY KEY, stamp datetime NOT NULL)',
+			'codisto_category_change' => 'CREATE TABLE `'.$tablePrefix.'codisto_category_change` (category_id int(10) unsigned NOT NULL PRIMARY KEY, stamp datetime NOT NULL)'
+		);
 
-		return false;
+		$changeTablesExist = true;
+
+		$changeTables = $adapter->fetchCol('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE \''.$tablePrefix.'codisto_%_change\'');
+		if(is_array($changeTables))
+		{
+			$changeTables = array_flip( $changeTables );
+
+			foreach($changeTableDefs as $table => $createStatement)
+			{
+				if(!isset($changeTables[$tablePrefix.$table]))
+				{
+					$adapter->query($changeTableDefs[$table]);
+
+					$changeTablesExist = false;
+				}
+			}
+		}
+
+		// trigger management
+		$stdCodistoProductChangeStmt = 'INSERT INTO `'.$tablePrefix.'codisto_product_change` SET product_id = NEW.entity_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE product_id = product_id, stamp = UTC_TIMESTAMP();';
+		$stdCodistoProductDeleteStmt = 'INSERT INTO `'.$tablePrefix.'codisto_product_change` SET product_id = OLD.entity_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE product_id = product_id, stamp = UTC_TIMESTAMP();';
+		$stdCodistoCategoryChangeStmt = 'INSERT INTO `'.$tablePrefix.'codisto_category_change` SET category_id = NEW.entity_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE category_id = category_id, stamp = UTC_TIMESTAMP();';
+		$stdCodistoCategoryDeleteStmt = 'INSERT INTO `'.$tablePrefix.'codisto_category_change` SET category_id = OLD.entity_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE category_id = category_id, stamp = UTC_TIMESTAMP();';
+
+		$triggerStaticRules = array(
+							'catalog_product_entity' => array( $stdCodistoProductChangeStmt, $stdCodistoProductChangeStmt, $stdCodistoProductDeleteStmt ),
+							'catalog_product_entity_datetime' => array( $stdCodistoProductChangeStmt, $stdCodistoProductChangeStmt, $stdCodistoProductDeleteStmt ),
+							'catalog_product_entity_decimal' => array( $stdCodistoProductChangeStmt, $stdCodistoProductChangeStmt, $stdCodistoProductDeleteStmt ),
+							'catalog_product_entity_gallery' => array( $stdCodistoProductChangeStmt, $stdCodistoProductChangeStmt, $stdCodistoProductDeleteStmt ),
+							'catalog_product_entity_group_price' => array( $stdCodistoProductChangeStmt, $stdCodistoProductChangeStmt, $stdCodistoProductDeleteStmt ),
+							'catalog_product_entity_int' => array( $stdCodistoProductChangeStmt, $stdCodistoProductChangeStmt, $stdCodistoProductDeleteStmt ),
+							'catalog_product_entity_media_gallery' => array( $stdCodistoProductChangeStmt, $stdCodistoProductChangeStmt, $stdCodistoProductDeleteStmt ),
+							'catalog_product_entity_text' => array( $stdCodistoProductChangeStmt, $stdCodistoProductChangeStmt, $stdCodistoProductDeleteStmt ),
+							'catalog_product_entity_varchar' => array( $stdCodistoProductChangeStmt, $stdCodistoProductChangeStmt, $stdCodistoProductDeleteStmt ),
+							'cataloginventory_stock_item' => array(
+								'INSERT INTO `'.$tablePrefix.'codisto_product_change` SET product_id = NEW.product_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE product_id = product_id, stamp = UTC_TIMESTAMP();',
+								'INSERT INTO `'.$tablePrefix.'codisto_product_change` SET product_id = NEW.product_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE product_id = product_id, stamp = UTC_TIMESTAMP();',
+								'INSERT INTO `'.$tablePrefix.'codisto_product_change` SET product_id = OLD.product_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE product_id = product_id, stamp = UTC_TIMESTAMP();'
+							),
+							'cataloginventory_stock_status' => array(
+								'INSERT INTO `'.$tablePrefix.'codisto_product_change` SET product_id = NEW.product_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE product_id = product_id, stamp = UTC_TIMESTAMP();',
+								'INSERT INTO `'.$tablePrefix.'codisto_product_change` SET product_id = NEW.product_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE product_id = product_id, stamp = UTC_TIMESTAMP();',
+								'INSERT INTO `'.$tablePrefix.'codisto_product_change` SET product_id = OLD.product_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE product_id = product_id, stamp = UTC_TIMESTAMP();'
+							),
+							'catalog_category_entity' => array( $stdCodistoCategoryChangeStmt, $stdCodistoCategoryChangeStmt, $stdCodistoCategoryDeleteStmt ),
+							'catalog_category_entity_datetime' => array( $stdCodistoCategoryChangeStmt, $stdCodistoCategoryChangeStmt, $stdCodistoCategoryDeleteStmt ),
+							'catalog_category_entity_decimal' => array( $stdCodistoCategoryChangeStmt, $stdCodistoCategoryChangeStmt, $stdCodistoCategoryDeleteStmt ),
+							'catalog_category_entity_int' => array( $stdCodistoCategoryChangeStmt, $stdCodistoCategoryChangeStmt, $stdCodistoCategoryDeleteStmt ),
+							'catalog_category_entity_text' => array( $stdCodistoCategoryChangeStmt, $stdCodistoCategoryChangeStmt, $stdCodistoCategoryDeleteStmt ),
+							'catalog_category_entity_varchar' => array( $stdCodistoCategoryChangeStmt, $stdCodistoCategoryChangeStmt, $stdCodistoCategoryDeleteStmt ),
+							'catalog_category_product' => array(
+								'INSERT INTO `'.$tablePrefix.'codisto_product_change` SET product_id = NEW.product_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE product_id = product_id, stamp = UTC_TIMESTAMP();'.
+								'INSERT INTO `'.$tablePrefix.'codisto_category_change` SET category_id = NEW.category_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE category_id = category_id, stamp = UTC_TIMESTAMP();',
+								'INSERT INTO `'.$tablePrefix.'codisto_product_change` SET product_id = NEW.product_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE product_id = product_id, stamp = UTC_TIMESTAMP();'.
+								'INSERT INTO `'.$tablePrefix.'codisto_category_change` SET category_id = NEW.category_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE category_id = category_id, stamp = UTC_TIMESTAMP();',
+								'INSERT INTO `'.$tablePrefix.'codisto_product_change` SET product_id = OLD.product_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE product_id = product_id, stamp = UTC_TIMESTAMP();'.
+								'INSERT INTO `'.$tablePrefix.'codisto_category_change` SET category_id = OLD.category_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE category_id = category_id, stamp = UTC_TIMESTAMP();'
+							),
+							'sales_flat_order' => array(
+								'IF COALESCE(NEW.codisto_orderid, \'\') != \'\' THEN INSERT INTO `'.$tablePrefix.'codisto_order_change` SET order_id = NEW.entity_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE order_id = order_id, stamp = UTC_TIMESTAMP(); END IF;',
+								'IF COALESCE(NEW.codisto_orderid, \'\') != \'\' THEN INSERT INTO `'.$tablePrefix.'codisto_order_change` SET order_id = NEW.entity_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE order_id = order_id, stamp = UTC_TIMESTAMP(); END IF;',
+								'IF COALESCE(OLD.codisto_orderid, \'\') != \'\' THEN INSERT INTO `'.$tablePrefix.'codisto_order_change` SET order_id = OLD.entity_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE order_id = order_id, stamp = UTC_TIMESTAMP(); END IF;'
+							),
+							'sales_flat_invoice' => array(
+								'IF EXISTS(SELECT 1 FROM `'.$tablePrefix.'sales_flat_order` WHERE entity_id = NEW.order_id AND COALESCE(codisto_orderid, \'\') != \'\') THEN INSERT INTO `'.$tablePrefix.'codisto_order_change` SET order_id = NEW.order_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE order_id = order_id, stamp = UTC_TIMESTAMP(); END IF;',
+								'IF EXISTS(SELECT 1 FROM `'.$tablePrefix.'sales_flat_order` WHERE entity_id = NEW.order_id AND COALESCE(codisto_orderid, \'\') != \'\') THEN INSERT INTO `'.$tablePrefix.'codisto_order_change` SET order_id = NEW.order_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE order_id = order_id, stamp = UTC_TIMESTAMP(); END IF;',
+								'IF EXISTS(SELECT 1 FROM `'.$tablePrefix.'sales_flat_order` WHERE entity_id = OLD.order_id AND COALESCE(codisto_orderid, \'\') != \'\') THEN INSERT INTO `'.$tablePrefix.'codisto_order_change` SET order_id = OLD.order_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE order_id = order_id, stamp = UTC_TIMESTAMP(); END IF;'
+							),
+							'sales_flat_shipment' => array(
+								'IF EXISTS(SELECT 1 FROM `'.$tablePrefix.'sales_flat_order` WHERE entity_id = NEW.order_id AND COALESCE(codisto_orderid, \'\') != \'\') THEN INSERT INTO `'.$tablePrefix.'codisto_order_change` SET order_id = NEW.order_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE order_id = order_id, stamp = UTC_TIMESTAMP(); END IF;',
+								'IF EXISTS(SELECT 1 FROM `'.$tablePrefix.'sales_flat_order` WHERE entity_id = NEW.order_id AND COALESCE(codisto_orderid, \'\') != \'\') THEN INSERT INTO `'.$tablePrefix.'codisto_order_change` SET order_id = NEW.order_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE order_id = order_id, stamp = UTC_TIMESTAMP(); END IF;',
+								'IF EXISTS(SELECT 1 FROM `'.$tablePrefix.'sales_flat_order` WHERE entity_id = OLD.order_id AND COALESCE(codisto_orderid, \'\') != \'\') THEN INSERT INTO `'.$tablePrefix.'codisto_order_change` SET order_id = OLD.order_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE order_id = order_id, stamp = UTC_TIMESTAMP(); END IF;'
+							),
+							'sales_flat_shipment_track' => array(
+								'IF EXISTS(SELECT 1 FROM `'.$tablePrefix.'sales_flat_order` WHERE entity_id = NEW.order_id AND COALESCE(codisto_orderid, \'\') != \'\') THEN INSERT INTO `'.$tablePrefix.'codisto_order_change` SET order_id = NEW.order_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE order_id = order_id, stamp = UTC_TIMESTAMP(); END IF;',
+								'IF EXISTS(SELECT 1 FROM `'.$tablePrefix.'sales_flat_order` WHERE entity_id = NEW.order_id AND COALESCE(codisto_orderid, \'\') != \'\') THEN INSERT INTO `'.$tablePrefix.'codisto_order_change` SET order_id = NEW.order_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE order_id = order_id, stamp = UTC_TIMESTAMP(); END IF;',
+								'IF EXISTS(SELECT 1 FROM `'.$tablePrefix.'sales_flat_order` WHERE entity_id = OLD.order_id AND COALESCE(codisto_orderid, \'\') != \'\') THEN INSERT INTO `'.$tablePrefix.'codisto_order_change` SET order_id = OLD.order_id, stamp = UTC_TIMESTAMP() ON DUPLICATE KEY UPDATE order_id = order_id, stamp = UTC_TIMESTAMP(); END IF;'
+							)
+						);
+
+		$triggerRules = array();
+		foreach($triggerStaticRules as $table => $statements)
+		{
+			$triggerRules[$tablePrefix.$table] = array( 'table' => $table, 'statements' => $statements );
+		}
+
+		$adapter->query('CREATE TEMPORARY TABLE `codisto_triggers` ( `table` varchar(100) NOT NULL PRIMARY KEY, `insert_statement` varchar(2000) NOT NULL, `update_statement` varchar(2000) NOT NULL, `delete_statement` varchar(2000) NOT NULL )');
+		foreach($triggerRules as $table => $tableData)
+		{
+			$adapter->insert('codisto_triggers', array( 'table' => $table, 'insert_statement' => $tableData['statements'][0], 'update_statement' => $tableData['statements'][1], 'delete_statement' => $tableData['statements'][2] ) );
+		}
+
+		$missingTriggers = $adapter->fetchAll(
+			'SELECT T.`table`, '.
+					'TYPE.`type`, '.
+					'CASE WHEN TRIGGER_NAME IS NULL THEN 0 ELSE -1 END AS `exists`, '.
+					'COALESCE(EXISTING.TRIGGER_CATALOG, \'\') AS `current_catalog`, '.
+					'COALESCE(EXISTING.TRIGGER_SCHEMA, \'\') AS `current_schema`, '.
+					'COALESCE(EXISTING.TRIGGER_NAME, \'\') AS `current_name`, '.
+					'COALESCE(EXISTING.ACTION_STATEMENT, \'\') AS `current_statement`, '.
+					'COALESCE(EXISTING.DEFINER, \'\') AS `current_definer` '.
+					'FROM `codisto_triggers` AS T '.
+						'CROSS JOIN (SELECT \'UPDATE\' AS `type` UNION ALL SELECT \'INSERT\' UNION ALL SELECT \'DELETE\') AS TYPE '.
+						'LEFT JOIN INFORMATION_SCHEMA.TRIGGERS AS EXISTING ON EXISTING.EVENT_OBJECT_TABLE = T.`table` AND EXISTING.ACTION_TIMING = \'AFTER\' AND EXISTING.EVENT_MANIPULATION = TYPE.`type` '.
+					'WHERE NOT EXISTS(SELECT 1 FROM INFORMATION_SCHEMA.TRIGGERS WHERE EVENT_OBJECT_TABLE = T.`table` AND ACTION_TIMING = \'AFTER\' AND EVENT_MANIPULATION = TYPE.`type` AND ACTION_STATEMENT LIKE CONCAT(\'%\', CASE WHEN TYPE.`type` = \'INSERT\' THEN T.`insert_statement` WHEN TYPE.`type` = \'UPDATE\' THEN T.`update_statement` WHEN TYPE.`type` = \'DELETE\' THEN T.`delete_statement` END, \'%\'))');
+
+		$changeTriggersExist = true;
+
+		if(count($missingTriggers) > 0)
+		{
+			$changeTriggersExist = false;
+
+			$triggerTypeMap = array( 'INSERT' => 0, 'UPDATE' => 1, 'DELETE' => 2 );
+
+			$existingTriggers = array();
+			foreach($missingTriggers as $trigger)
+			{
+				if(isset($trigger['current_name']) && $trigger['current_name'] &&
+					$trigger['current_statement'])
+				{
+					$existingTriggers[] = array(
+						'current_definer' => $trigger['current_definer'],
+						'current_schema' => $trigger['current_schema'],
+						'current_name' => $trigger['current_name'],
+						'current_statement' => $trigger['current_statement'],
+						'type' => $trigger['type'],
+						'table' => $trigger['table']
+					);
+				}
+			}
+
+			if(!empty($existingTriggers))
+			{
+				try {
+
+					$adapter->beginTransaction();
+					$adapter->query('CREATE TABLE IF NOT EXISTS `'.$tablePrefix.'codisto_trigger_history` (definer text NOT NULL, current_schema text NOT NULL, current_name text NOT NULL, current_statement text NOT NULL, type text NOT NULL, `table` text NOT NULL, stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+
+					foreach($existingTriggers as $trigger)
+					{
+						$adapter->insert($tablePrefix.'codisto_trigger_history', array(
+							'definer' => $trigger['current_definer'],
+							'current_schema' => $trigger['current_schema'],
+							'current_name' => $trigger['current_name'],
+							'current_statement' => $trigger['current_statement'],
+							'type' => $trigger['type'],
+							'table' => $trigger['table']
+						));
+					}
+
+					$adapter->commit();
+
+				} catch (Exception $e) {
+
+					$adapter->rollback();
+					throw $e;
+					
+				}
+			}
+
+			$adapter->beginTransaction();
+
+			foreach($missingTriggers as $trigger)
+			{
+				$triggerRule = $triggerRules[$trigger['table']];
+
+				$table = $triggerRule['table'];
+				$statement = $triggerRule['statements'][$triggerTypeMap[$trigger['type']]];
+
+				try
+				{
+					$adapter->query('CREATE DEFINER = CURRENT_USER TRIGGER codisto_'.$table.'_'.strtolower($trigger['type']).' AFTER '.$trigger['type'].' ON '.$trigger['table'].' FOR EACH ROW BEGIN '."\n/* start codisto change tracking trigger */\n".$statement."\n/* end codisto change tracking trigger */\nEND");
+				}
+				catch(Exception $e)
+				{
+					if($e->hasChainedException() &&
+						$e->getChainedException() instanceof PDOException &&
+						is_array($e->getChainedException()->errorInfo) &&
+						$e->getChainedException()->errorInfo[1] == 1235)
+					{
+						// this version of mysql doens't support multiple triggers so let's modify the existing trigger
+
+						$definer = $trigger['current_definer'];
+						if(strpos($definer, '@') !== false)
+						{
+							$definer = explode('@', $definer);
+							$definer[0] = '\''.$definer[0].'\'';
+							$definer[1] = '\''.$definer[1].'\'';
+							$definer = implode('@', $definer);
+						}
+
+						try
+						{
+							$adapter->query('DROP TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'`');
+							$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON '.$trigger['table'].' FOR EACH ROW BEGIN '.preg_replace('/;\s*;/', ';', preg_replace('/^BEGIN|END$/i', '', $trigger['current_statement']).'; '."\n/* start codisto change tracking trigger */\n".$statement)."\n/* end codisto change tracking trigger */\n".' END');
+						}
+						catch(Exception $e2)
+						{
+							$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON '.$trigger['table'].' FOR EACH ROW '.$trigger['current_statement']);
+							$adapter->rollback();
+							throw $e;
+						}
+					}
+					else
+					{
+						$adapter->rollback();
+						throw $e;
+					}
+				}
+			}
+
+			$adapter->commit();
+		}
+
+		$adapter->query('DROP TABLE codisto_triggers');
+
+		// check sync db exists
+		$syncDbExists = false;
+		$syncDb = null;
+
+		try
+		{
+			$syncDb = new PDO('sqlite:' . $syncDbPath);
+
+			$this->prepareSqliteDatabase($syncDb);
+
+			$qry = $syncDb->query('PRAGMA quick_check');
+
+			$checkResult = $qry->fetchColumn();
+
+			$qry->closeCursor();
+
+			if($checkResult == 'ok')
+				$syncDbExists = true;
+		}
+		catch(Exception $e)
+		{
+
+		}
+
+		// check sync db uuid and mage uuid
+		$changeToken = null;
+		try
+		{
+			$changeToken = $adapter->fetchOne('SELECT token FROM `'.$tablePrefix.'codisto_sync` WHERE store_id = '.(int)$storeId);
+		}
+		catch(Exception $e)
+		{
+
+		}
+
+		$syncToken = null;
+		if($syncDb)
+		{
+			$qry = null;
+			try
+			{
+				try
+				{
+					$qry = $syncDb->query('SELECT token FROM sync');
+
+					$syncToken = $qry->fetchColumn();
+				}
+				catch(Exception $e)
+				{
+					if($qry)
+						$qry->closeCursor();
+				}
+			}
+			catch(Exception $e)
+			{
+
+			}
+		}
+
+		return (!is_null($changeToken) && $changeToken != '') &&
+					($changeToken == $syncToken) &&
+					$changeTablesExist &&
+					$changeTriggersExist &&
+					$syncDbExists;
 	}
 
-	public function logExceptionCodisto(Zend_Controller_Request_Http $request, Exception $e, $endpoint)
+	public function logExceptionCodisto(Exception $e, $endpoint)
 	{
+		$request = Mage::app()->getRequest();
+
 		try
 		{
 
@@ -389,6 +699,19 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		$base_path = $this->getSyncPath('');
 
 		return tempnam( $base_path , $path . '-' );
+	}
+
+	public function prepareSqliteDatabase($db, $pagesize = 65536, $timeout = 60)
+	{
+		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		$db->setAttribute(PDO::ATTR_TIMEOUT, $timeout);
+		$db->exec('PRAGMA synchronous=OFF');
+		$db->exec('PRAGMA temp_store=MEMORY');
+		$db->exec('PRAGMA page_size='.$pagesize);
+		$db->exec('PRAGMA encoding=\'UTF-8\'');
+		$db->exec('PRAGMA cache_size=15000');
+		$db->exec('PRAGMA soft_heap_limit=67108864');
+		$db->exec('PRAGMA journal_mode=MEMORY');
 	}
 
 	private function phpTest($interpreter, $args, $script)
@@ -724,27 +1047,28 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 				foreach($merchants as $merchant)
 				{
 					$storeId = $merchant['storeid'];
-					if($storeId == 0)
-					{
-						// jump the storeid to first non admin store
-						$stores = Mage::getModel('core/store')->getCollection()
-													->addFieldToFilter('is_active', array('neq' => 0))
-													->addFieldToFilter('store_id', array('gt' => 0))
-													->setOrder('store_id', 'ASC');
-
-						if($stores->getSize() == 1)
-						{
-							$stores->setPageSize(1)->setCurPage(1);
-							$firstStore = $stores->getFirstItem();
-							if(is_object($firstStore) && $firstStore->getId())
-							{
-								$storeId = $firstStore->getId();
-							}
-						}
-					}
 
 					if(!isset($storeVisited[$storeId]))
 					{
+						if($storeId == 0)
+						{
+							// jump the storeid to first non admin store
+							$stores = Mage::getModel('core/store')->getCollection()
+														->addFieldToFilter('is_active', array('neq' => 0))
+														->addFieldToFilter('store_id', array('gt' => 0))
+														->setOrder('store_id', 'ASC');
+
+							if($stores->getSize() == 1)
+							{
+								$stores->setPageSize(1)->setCurPage(1);
+								$firstStore = $stores->getFirstItem();
+								if(is_object($firstStore) && $firstStore->getId())
+								{
+									$storeId = $firstStore->getId();
+								}
+							}
+						}
+
 						$syncDb = $this->getSyncPath('sync-'.$storeId.'.db');
 
 						if($eventtype == Mage_Index_Model_Event::TYPE_DELETE)
