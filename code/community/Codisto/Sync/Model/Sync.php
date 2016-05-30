@@ -174,15 +174,8 @@ class Codisto_Sync_Model_Sync
 		try
 		{
 			$db = new PDO('sqlite:' . $templateDb);
-			$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-			$db->exec('PRAGMA synchronous=0');
-			$db->exec('PRAGMA temp_store=2');
-			$db->exec('PRAGMA page_size=65536');
-			$db->exec('PRAGMA encoding=\'UTF-8\'');
-			$db->exec('PRAGMA cache_size=15000');
-			$db->exec('PRAGMA soft_heap_limit=67108864');
-			$db->exec('PRAGMA journal_mode=MEMORY');
+			Mage::helper('codistosync')->prepareSqliteDatabase($db);
 
 			$files = $db->prepare('SELECT Name, Content FROM File');
 			$files->execute();
@@ -269,7 +262,6 @@ class Codisto_Sync_Model_Sync
 		$insertSKULink = $db->prepare('INSERT OR REPLACE INTO SKULink (SKUExternalReference, ProductExternalReference, Price) VALUES (?, ?, ?)');
 		$insertSKUMatrix = $db->prepare('INSERT INTO SKUMatrix(SKUExternalReference, ProductExternalReference, Code, OptionName, OptionValue, ProductOptionExternalReference, ProductOptionValueExternalReference) VALUES(?,?,?,?,?,?,?)');
 		$insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
-		$insertSKUImage = $db->prepare('INSERT INTO SKUImage(SKUExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
 		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence) VALUES (?,?)');
 		$insertProductHTML = $db->prepare('INSERT OR IGNORE INTO ProductHTML(ProductExternalReference, Tag, HTML) VALUES (?, ?, ?)');
 		$clearAttribute = $db->prepare('DELETE FROM ProductAttributeValue WHERE ProductExternalReference = ?');
@@ -315,7 +307,6 @@ class Codisto_Sync_Model_Sync
 		$db->exec('DELETE FROM ProductImage WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM ProductHTML WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM SKUMatrix WHERE ProductExternalReference IN ('.implode(',', $ids).')');
-		$db->exec('DELETE FROM SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
 		$db->exec('DELETE FROM SKULink WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
@@ -333,7 +324,6 @@ class Codisto_Sync_Model_Sync
 				'preparedskumatrixStatement' => $insertSKUMatrix,
 				'preparedcategoryproductStatement' => $insertCategoryProduct,
 				'preparedimageStatement' => $insertImage,
-				'preparedskuimageStatement' => $insertSKUImage,
 				'preparedproductoptionvalueStatement' => $insertProductOptionValue,
 				'preparedproducthtmlStatement' => $insertProductHTML,
 				'preparedclearattributeStatement' => $clearAttribute,
@@ -402,7 +392,6 @@ class Codisto_Sync_Model_Sync
 						'DELETE FROM ProductHTML WHERE ProductExternalReference = '.$id.';'.
 						'DELETE FROM SKULink WHERE ProductExternalReference = '.$id.';'.
 						'DELETE FROM SKUMatrix WHERE ProductExternalReference = '.$id.';'.
-						'DELETE FROM SKUImage WHERE SKUExternalReference IN (SELECT ExternalReference FROM SKU WHERE ProductExternalReference = '.$id.');'.
 						'DELETE FROM SKU WHERE ProductExternalReference = '.$id.';'.
 						'DELETE FROM CategoryProduct WHERE ProductExternalReference = '.$id);
 		}
@@ -563,7 +552,6 @@ class Codisto_Sync_Model_Sync
 		$insertSQL = $args['preparedskuStatement'];
 		$insertSKULinkSQL = $args['preparedskulinkStatement'];
 		$insertCategorySQL = $args['preparedcategoryproductStatement'];
-		$insertImageSQL = $args['preparedskuimageStatement'];
 		$insertSKUMatrixSQL = $args['preparedskumatrixStatement'];
 
 		$this->SyncSimpleProductData(array_merge($args, array('row' => $productData)));
@@ -592,7 +580,6 @@ class Codisto_Sync_Model_Sync
 				'preparedskulinkStatement' => $insertSKULinkSQL,
 				'preparedskumatrixStatement' => $insertSKUMatrixSQL,
 				'preparedcategoryproductStatement' => $insertCategorySQL,
-				'preparedimageStatement' => $insertImageSQL,
 				'store' => $store )
 		);
 
@@ -708,15 +695,17 @@ class Codisto_Sync_Model_Sync
 
 		$product_id = $productData['entity_id'];
 
-		$checkProductSQL = $args['preparedcheckproductStatement'];
-		$checkProductSQL->execute(array($product_id));
-		if($checkProductSQL->fetchColumn())
+		if(isset($args['preparedcheckproductStatement']))
 		{
+			$checkProductSQL = $args['preparedcheckproductStatement'];
+			$checkProductSQL->execute(array($product_id));
+			if($checkProductSQL->fetchColumn())
+			{
+				$checkProductSQL->closeCursor();
+				return;
+			}
 			$checkProductSQL->closeCursor();
-			return;
 		}
-
-		$checkProductSQL->closeCursor();
 
 		$product = Mage::getModel('catalog/product');
 		$product->setData($productData)
@@ -1267,9 +1256,6 @@ class Codisto_Sync_Model_Sync
 
 		$db = $this->GetSyncDb($syncDb);
 
-		//Log Table for data visibility
-		$insertlog = $db->prepare('INSERT INTO Log(ID, Type, Content) VALUES(?,?,?)');
-
 		$insertCategory = $db->prepare('INSERT OR REPLACE INTO Category(ExternalReference, Name, ParentExternalReference, LastModified, Enabled, Sequence) VALUES(?,?,?,?,?,?)');
 		$insertCategoryProduct = $db->prepare('INSERT OR IGNORE INTO CategoryProduct(ProductExternalReference, CategoryExternalReference, Sequence) VALUES(?,?,?)');
 		$insertProduct = $db->prepare('INSERT INTO Product(ExternalReference, Type, Code, Name, Price, ListPrice, TaxClass, Description, Enabled, StockControl, StockLevel, Weight, InStore) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -1278,7 +1264,6 @@ class Codisto_Sync_Model_Sync
 		$insertSKULink = $db->prepare('INSERT OR REPLACE INTO SKULink (SKUExternalReference, ProductExternalReference, Price) VALUES (?, ?, ?)');
 		$insertSKUMatrix = $db->prepare('INSERT INTO SKUMatrix(SKUExternalReference, ProductExternalReference, Code, OptionName, OptionValue, ProductOptionExternalReference, ProductOptionValueExternalReference) VALUES(?,?,?,?,?,?,?)');
 		$insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
-		$insertSKUImage = $db->prepare('INSERT INTO SKUImage(SKUExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
 		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence) VALUES (?,?)');
 		$insertProductHTML = $db->prepare('INSERT OR IGNORE INTO ProductHTML(ProductExternalReference, Tag, HTML) VALUES (?, ?, ?)');
 		$clearAttribute = $db->prepare('DELETE FROM ProductAttributeValue WHERE ProductExternalReference = ?');
@@ -1306,6 +1291,8 @@ class Codisto_Sync_Model_Sync
 		$state = $qry->fetchColumn();
 
 		$qry->closeCursor();
+
+		$tablePrefix = Mage::getConfig()->getTablePrefix();
 
 		if(!$state)
 		{
@@ -1441,7 +1428,6 @@ class Codisto_Sync_Model_Sync
 					'preparedskumatrixStatement' => $insertSKUMatrix,
 					'preparedcategoryproductStatement' => $insertCategoryProduct,
 					'preparedimageStatement' => $insertImage,
-					'preparedskuimageStatement' => $insertSKUImage,
 					'preparedproducthtmlStatement' => $insertProductHTML,
 					'preparedclearattributeStatement' => $clearAttribute,
 					'preparedattributeStatement' => $insertAttribute,
@@ -1467,7 +1453,7 @@ class Codisto_Sync_Model_Sync
 
 		if($state == 'grouped')
 		{
-			// Configurable products
+			// Grouped products
 			$groupedProducts = $this->getProductCollection()
 								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'grouped'))
@@ -1490,7 +1476,6 @@ class Codisto_Sync_Model_Sync
 					'preparedskumatrixStatement' => $insertSKUMatrix,
 					'preparedcategoryproductStatement' => $insertCategoryProduct,
 					'preparedimageStatement' => $insertImage,
-					'preparedskuimageStatement' => $insertSKUImage,
 					'preparedproducthtmlStatement' => $insertProductHTML,
 					'preparedclearattributeStatement' => $clearAttribute,
 					'preparedattributeStatement' => $insertAttribute,
@@ -1518,11 +1503,11 @@ class Codisto_Sync_Model_Sync
 		{
 			if($this->currentEntityId == 0)
 			{
-				$connection = $coreResource->getConnection('core_write');
+				$connection = $coreResource->getConnection(Mage_Core_Model_Resource::DEFAULT_WRITE_RESOURCE);
 				try
 				{
 					$connection->addColumn(
-							Mage::getConfig()->getTablePrefix() . 'sales_flat_order',
+							$tablePrefix . 'sales_flat_order',
 							'codisto_orderid',
 							'varchar(10)'
 						);
@@ -1537,6 +1522,7 @@ class Codisto_Sync_Model_Sync
 			{
 				$stores = Mage::getModel('core/store')->getCollection()
 							->addFieldToFilter('is_active', array('neq' => 0))
+							->addFieldToFilter('store_id', array( 'gt' => 0))
 							->setOrder('store_id', 'ASC');
 				$stores->setPageSize(1)->setCurPage(1);
 				$orderStoreId = $stores->getFirstItem()->getId();
@@ -1892,15 +1878,8 @@ class Codisto_Sync_Model_Sync
 	private function GetSyncDb($syncDb)
 	{
 		$db = new PDO('sqlite:' . $syncDb);
-		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-		$db->exec('PRAGMA synchronous=OFF');
-		$db->exec('PRAGMA temp_store=MEMORY');
-		$db->exec('PRAGMA page_size=65536');
-		$db->exec('PRAGMA encoding=\'UTF-8\'');
-		$db->exec('PRAGMA cache_size=15000');
-		$db->exec('PRAGMA soft_heap_limit=67108864');
-		$db->exec('PRAGMA journal_mode=MEMORY');
+		Mage::helper('codistosync')->prepareSqliteDatabase($db);
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 		$db->exec('CREATE TABLE IF NOT EXISTS Progress(entity_id integer NOT NULL, State text NOT NULL, Sentinel integer NOT NULL PRIMARY KEY AUTOINCREMENT, CHECK(Sentinel=1))');
@@ -1930,8 +1909,6 @@ class Codisto_Sync_Model_Sync
 
 		$db->exec('CREATE TABLE IF NOT EXISTS ProductImage (ProductExternalReference text NOT NULL, URL text NOT NULL, Tag text NOT NULL DEFAULT \'\', Sequence integer NOT NULL, Enabled bit NOT NULL DEFAULT -1)');
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_ProductImage_ProductExternalReference ON ProductImage(ProductExternalReference)');
-		$db->exec('CREATE TABLE IF NOT EXISTS SKUImage (SKUExternalReference text NOT NULL, URL text NOT NULL, Tag text NOT NULL DEFAULT \'\', Sequence integer NOT NULL, Enabled bit NOT NULL DEFAULT -1)');
-		$db->exec('CREATE INDEX IF NOT EXISTS IX_SKUImage_SKUExternalReference ON SKUImage(SKUExternalReference)');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS ProductHTML (ProductExternalReference text NOT NULL, Tag text NOT NULL, HTML text NOT NULL, PRIMARY KEY (ProductExternalReference, Tag))');
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_ProductHTML_ProductExternalReference ON ProductHTML(ProductExternalReference)');
@@ -1955,7 +1932,6 @@ class Codisto_Sync_Model_Sync
 		$db->exec('CREATE TABLE IF NOT EXISTS StaticBlock(BlockID integer NOT NULL PRIMARY KEY, Title text NOT NULL, Identifier text NOT NULL, Content text NOT NULL)');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS Configuration (configuration_id integer, configuration_title text, configuration_key text, configuration_value text, configuration_description text, configuration_group_id integer, sort_order integer, last_modified datetime, date_added datetime, use_function text, set_function text)');
-		$db->exec('CREATE TABLE IF NOT EXISTS Log (ID, Type text NOT NULL, Content text NOT NULL)');
 
 		try
 		{
@@ -2004,21 +1980,6 @@ class Codisto_Sync_Model_Sync
 			try
 			{
 				$db->exec('ALTER TABLE ProductImage ADD COLUMN Enabled bit NOT NULL DEFAULT -1');
-			}
-			catch(Exception $e2)
-			{
-			}
-		}
-
-		try
-		{
-			$db->exec('SELECT 1 FROM SKUImage WHERE Enabled IS NULL LIMIT 1');
-		}
-		catch(Exception $e)
-		{
-			try
-			{
-				$db->exec('ALTER TABLE SKUImage ADD COLUMN Enabled bit NOT NULL DEFAULT -1');
 			}
 			catch(Exception $e2)
 			{
@@ -2109,16 +2070,8 @@ class Codisto_Sync_Model_Sync
 	private function GetTemplateDb($templateDb)
 	{
 		$db = new PDO('sqlite:' . $templateDb);
-		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-		$db->setAttribute(PDO::ATTR_TIMEOUT, 60);
 
-		$db->exec('PRAGMA synchronous=0');
-		$db->exec('PRAGMA temp_store=2');
-		$db->exec('PRAGMA page_size=65536');
-		$db->exec('PRAGMA encoding=\'UTF-8\'');
-		$db->exec('PRAGMA cache_size=15000');
-		$db->exec('PRAGMA soft_heap_limit=67108864');
-		$db->exec('PRAGMA journal_mode=MEMORY');
+		Mage::helper('codistosync')->prepareSqliteDatabase($db);
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 		$db->exec('CREATE TABLE IF NOT EXISTS File(Name text NOT NULL PRIMARY KEY, Content blob NOT NULL, LastModified datetime NOT NULL, Changed bit NOT NULL DEFAULT -1)');

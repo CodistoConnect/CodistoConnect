@@ -49,7 +49,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			if($e->getCode() != "HY000")
 			{
 				//Otherwise report  other exception details to Codisto regarding register
-				Mage::helper('codistosync')->logExceptionCodisto($request, $e, "https://ui.codisto.com/installed");
+				Mage::helper('codistosync')->logExceptionCodisto($e, "https://ui.codisto.com/installed");
 			}
 			throw $e;
 		}
