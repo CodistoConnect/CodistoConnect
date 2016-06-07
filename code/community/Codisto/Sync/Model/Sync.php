@@ -903,7 +903,7 @@ class Codisto_Sync_Model_Sync
 							}
 							catch(Exception $e)
 							{
-Mage::log('exception: '.$e->getMessage(), null, 'codisto.log');
+
 							}
 						}
 					}
