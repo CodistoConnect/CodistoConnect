@@ -897,7 +897,7 @@ class Codisto_Sync_Model_Sync
 						{
 							try
 							{
-								$attributeData['source'] = $attribute->getSource();
+								$attributeData['source'] = Mage::getModel( $attributeData['source_model'] );
 
 								$this->optionCache[$store->getId().'-'.$attribute->getId()] = $attributeData['source'];
 							}
@@ -995,7 +995,8 @@ class Codisto_Sync_Model_Sync
 			{
 				if(is_array($attributeValue))
 				{
-					if(isset($attributeData['source']))
+					if(isset($attributeData['source']) &&
+						method_exists( $attributeData['source'], 'getOptionText') )
 					{
 						$attributeValueSet = array();
 
@@ -1027,7 +1028,8 @@ class Codisto_Sync_Model_Sync
 				}
 				else
 				{
-					if(isset($attributeData['source']))
+					if(isset($attributeData['source'])  &&
+						method_exists( $attributeData['source'], 'getOptionText') )
 					{
 						if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue]))
 						{
