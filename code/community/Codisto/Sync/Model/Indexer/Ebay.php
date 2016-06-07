@@ -37,13 +37,13 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 	{
 		$data = $event->getNewData();
 		$type = $event->getType();
-
+Mage::log('match event', null, 'codisto.log');
 		if (isset($data[self::EVENT_MATCH_RESULT_KEY])) {
 			return $data[self::EVENT_MATCH_RESULT_KEY];
 		}
 
 		$entity = $event->getEntity();
-
+Mage::log('match event '.$entity, null, 'codisto.log');
 		if($entity == Mage_Catalog_Model_Product::ENTITY)
 		{
 			if($type == Mage_Index_Model_Event::TYPE_SAVE ||
@@ -93,7 +93,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 		$event->addNewData(self::EVENT_MATCH_RESULT_KEY, true);
 
 		$entity = $event->getEntity();
-
+Mage::log('register event '.$entity, null, 'codisto.log');
 		switch ($entity) {
 			case Mage_Catalog_Model_Product::ENTITY:
 
@@ -133,6 +133,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 		{
 			if($event->getDataObject())
 			{
+Mage::log('processing category', null, 'codisto.log');
 				$helper = Mage::helper('codistosync');
 
 				$syncedCategories = Mage::registry('codisto_synced_categories');
@@ -233,6 +234,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 		{
 			if($event->getDataObject())
 			{
+Mage::log('processing stock', null, 'codisto.log');
 				$helper = Mage::helper('codistosync');
 
 				$syncedProducts = Mage::registry('codisto_synced_products');
@@ -354,6 +356,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 		{
 			if($event->getDataObject())
 			{
+Mage::log('processing product', null, 'codisto.log');
 				$helper = Mage::helper('codistosync');
 
 				$syncedProducts = Mage::registry('codisto_synced_products');
@@ -475,6 +478,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 		{
 			if(!Mage::registry('codisto_synced_stores'))
 			{
+Mage::log('processing store', null, 'codisto.log');
 				$helper = Mage::helper('codistosync');
 
 				$merchants = array();

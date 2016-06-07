@@ -895,9 +895,16 @@ class Codisto_Sync_Model_Sync
 						}
 						else
 						{
-							$attributeData['source'] = $attribute->getSource();
+							try
+							{
+								$attributeData['source'] = $attribute->getSource();
 
-							$this->optionCache[$store->getId().'-'.$attribute->getId()] = $attributeData['source'];
+								$this->optionCache[$store->getId().'-'.$attribute->getId()] = $attributeData['source'];
+							}
+							catch(Exception $e)
+							{
+Mage::log('exception: '.$e->getMessage(), null, 'codisto.log');
+							}
 						}
 					}
 					else
@@ -988,52 +995,58 @@ class Codisto_Sync_Model_Sync
 			{
 				if(is_array($attributeValue))
 				{
-					$attributeValueSet = array();
-
-					foreach($attributeValue as $attributeOptionId)
+					if(isset($attributeData['source']))
 					{
-						if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId]))
+						$attributeValueSet = array();
+
+						foreach($attributeValue as $attributeOptionId)
 						{
-							$attributeValueSet[] = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId];
+							if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId]))
+							{
+								$attributeValueSet[] = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId];
+							}
+							else
+							{
+								try
+								{
+									$attributeText = $attributeData['source']->getOptionText($attributeOptionId);
+
+									$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId] = $attributeText;
+
+									$attributeValueSet[] = $attributeText;
+								}
+								catch(Exception $e)
+								{
+
+								}
+							}
+						}
+
+						$attributeValue = $attributeValueSet;
+					}
+				}
+				else
+				{
+					if(isset($attributeData['source']))
+					{
+						if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue]))
+						{
+							$attributeValue = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue];
 						}
 						else
 						{
 							try
 							{
-								$attributeText = $attributeData['source']->getOptionText($attributeOptionId);
+								$attributeText = $attributeData['source']->getOptionText($attributeValue);
 
-								$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId] = $attributeText;
+								$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue] = $attributeText;
 
-								$attributeValueSet[] = $attributeText;
+								$attributeValue = $attributeText;
 							}
 							catch(Exception $e)
 							{
-
+								$attributeValue = null;
 							}
-						}
-					}
-
-					$attributeValue = $attributeValueSet;
-				}
-				else
-				{
-					if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue]))
-					{
-						$attributeValue = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue];
-					}
-					else
-					{
-						try
-						{
-							$attributeText = $attributeData['source']->getOptionText($attributeValue);
-
-							$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue] = $attributeText;
-
-							$attributeValue = $attributeText;
-						}
-						catch(Exception $e)
-						{
-							$attributeValue = null;
 						}
 					}
 				}
