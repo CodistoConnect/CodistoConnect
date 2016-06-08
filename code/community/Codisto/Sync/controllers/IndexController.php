@@ -33,6 +33,20 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$response = $this->getResponse();
 
 			$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
+
+			if($storeId == 0)
+			{
+				// jump the storeid to first non admin store
+				$stores = Mage::getModel('core/store')->getCollection()
+											->addFieldToFilter('is_active', array('neq' => 0))
+											->addFieldToFilter('store_id', array('gt' => 0))
+											->setOrder('store_id', 'ASC');
+
+				$firstStore = $stores->getFirstItem();
+				if(is_object($firstStore) && $firstStore->getId())
+					$storeId = $firstStore->getId();
+			}
+
 			$store = Mage::app()->getStore($storeId);
 
 			$currencyCode = $request->getPost('CURRENCY');
