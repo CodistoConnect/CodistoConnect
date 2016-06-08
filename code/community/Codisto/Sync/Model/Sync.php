@@ -486,9 +486,11 @@ class Codisto_Sync_Model_Sync
 
 		$price = $this->getExTaxPrice($parentProduct, $parentProduct->getFinalPrice(), $store);
 
-		$store->setStoreId($currentStoreId);
-		$store->setWebsiteId($currentStoreWebsiteId);
-		$parentProduct->setWebsiteId($currentProductWebsiteId);
+		if ($currentProductWebsiteId == 0) {
+			$store->setStoreId($currentStoreId);
+			$store->setWebsiteId($currentStoreWebsiteId);
+			$parentProduct->setWebsiteId($currentProductWebsiteId);
+		}
 
 		return $price;
 	}
