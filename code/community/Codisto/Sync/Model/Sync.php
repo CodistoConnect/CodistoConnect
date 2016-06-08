@@ -442,6 +442,18 @@ class Codisto_Sync_Model_Sync
 
 	public function SyncProductPrice($store, $parentProduct, $options = null)
 	{
+		$currentStoreId = $store->getStoreId();
+		$currentStoreWebsiteId = $store->getWebsiteId();
+		$currentProductWebsiteId = $parentProduct->getWebsiteId();
+
+		if ($currentProductWebsiteId == 0) {
+			$tempStoreId = Mage::app()->getWebsite(true)->getDefaultGroup()->getDefaultStoreId();
+			$store->setStoreId($tempStoreId);
+			$tempWebsiteId = Mage::app()->getStore($tempStoreId)->getWebsiteId();
+			$store->setWebsiteId($tempWebsiteId);
+			$parentProduct->setWebsiteId($tempWebsiteId);
+		}
+
 		$addInfo = new Varien_Object();
 
 		if(is_array($options))
@@ -463,6 +475,12 @@ class Codisto_Sync_Model_Sync
 
 		$price = $this->getExTaxPrice($parentProduct, $parentProduct->getFinalPrice(), $store);
 
+		if ($currentProductWebsiteId == 0) {
+			$store->setStoreId($currentStoreId);
+			$store->setWebsiteId($currentStoreWebsiteId);
+			$parentProduct->setWebsiteId($currentProductWebsiteId);
+		}
+
 		return $price;
 	}
 
@@ -482,6 +500,7 @@ class Codisto_Sync_Model_Sync
 		$product->setData($skuData)
 				->setStore($store)
 				->setStoreId($store->getId())
+				->setWebsiteId($store->getWebsiteId())
 				->setCustomerGroupId($this->ebayGroupId);
 
 		$stockItem = Mage::getModel('cataloginventory/stock_item');
@@ -560,6 +579,7 @@ class Codisto_Sync_Model_Sync
 					->setData($productData)
 					->setStore($store)
 					->setStoreId($store->getId())
+					->setWebsiteId($store->getWebsiteId())
 					->setCustomerGroupId($this->ebayGroupId)
 					->setIsSuperMode(true);
 
@@ -604,6 +624,7 @@ class Codisto_Sync_Model_Sync
 					->setData($productData)
 					->setStore($store)
 					->setStoreId($store->getId())
+					->setWebsiteId($store->getWebsiteId())
 					->setCustomerGroupId($this->ebayGroupId)
 					->setIsSuperMode(true);
 
@@ -624,6 +645,7 @@ class Codisto_Sync_Model_Sync
 			$childProduct
 				->setStore($store)
 				->setStoreId($store->getId())
+				->setWebsiteId($store->getWebsiteId())
 				->setCustomerGroupId($this->ebayGroupId)
 				->setIsSuperMode(true);
 
@@ -711,6 +733,7 @@ class Codisto_Sync_Model_Sync
 		$product->setData($productData)
 				->setStore($store)
 				->setStoreId($store->getId())
+				->setWebsiteId($store->getWebsiteId())
 				->setCustomerGroupId($this->ebayGroupId)
 				->setIsSuperMode(true);
 
