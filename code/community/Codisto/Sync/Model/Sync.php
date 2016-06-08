@@ -899,7 +899,12 @@ class Codisto_Sync_Model_Sync
 							{
 								$attributeData['source'] = Mage::getModel( $attributeData['source_model'] );
 
-								$this->optionCache[$store->getId().'-'.$attribute->getId()] = $attributeData['source'];
+								if($attributeData['source'])
+								{
+									$attributeData['source']->setAttribute($attribute);
+
+									$this->optionCache[$store->getId().'-'.$attribute->getId()] = $attributeData['source'];
+								}
 							}
 							catch(Exception $e)
 							{
