@@ -76,21 +76,42 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return (string) Mage::getConfig()->getNode()->modules->Codisto_Sync->version;
 	}
 
-	public function checkHash($Response, $HostKey, $Nonce, $Hash)
+	public function checkRequestHash($key, $server)
 	{
-		$hashOK = false;
+		if(!isset($server['HTTP_X_NONCE']))
+			return false;
 
-		if(isset($Response)) {
+		if(!isset($server['HTTP_X_HASH']))
+			return false;
 
-			$r = $HostKey . $Nonce;
-			$base = hash('sha256', $r, true);
-			$checkHash = base64_encode($base);
+		$nonce = $server['HTTP_X_NONCE'];
+		$hash = $server['HTTP_X_HASH'];
 
-			$hashOK = hash_equals($Hash ,$checkHash);
+		try
+		{
+			$nonceDbPath = $this->getSyncPath('nonce.db');
+
+			$nonceDb = new PDO('sqlite:' . $nonceDbPath);
+			$nonceDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+			$nonceDb->exec('CREATE TABLE IF NOT EXISTS nonce (value text NOT NULL PRIMARY KEY)');
+			$qry = $nonceDb->prepare('INSERT OR IGNORE INTO nonce (value) VALUES(?)');
+			$qry->execute( array( $nonce ) );
+			if($qry->rowCount() !== 1)
+				return false;
+		}
+		catch(Exception $e)
+		{
+			$this->logExceptionCodisto($e, 'https://ui.codisto.com/installed');
 		}
 
-		return $hashOK;
+		return $this->checkHash($key, $nonce, $hash);
+	}
 
+	private function checkHash($Key, $Nonce, $Hash)
+	{
+		$Sig = base64_encode( hash('sha256', $Key . $Nonce, true) );
+
+		return hash_equals( $Hash, $Sig );
 	}
 
 	public function getConfig($storeId)
@@ -311,7 +332,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return $MerchantID;
 	}
 
-	public function canSyncIncrementally($syncDb)
+	public function canSyncIncrementally($syncDbPath, $storeId)
 	{
 
 
@@ -319,8 +340,10 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return false;
 	}
 
-	public function logExceptionCodisto(Zend_Controller_Request_Http $request, Exception $e, $endpoint)
+	public function logExceptionCodisto(Exception $e, $endpoint)
 	{
+		$request = Mage::app()->getRequest();
+
 		try
 		{
 
@@ -389,6 +412,19 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		$base_path = $this->getSyncPath('');
 
 		return tempnam( $base_path , $path . '-' );
+	}
+
+	public function prepareSqliteDatabase($db, $pagesize = 65536, $timeout = 60)
+	{
+		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		$db->setAttribute(PDO::ATTR_TIMEOUT, $timeout);
+		$db->exec('PRAGMA synchronous=OFF');
+		$db->exec('PRAGMA temp_store=MEMORY');
+		$db->exec('PRAGMA page_size='.$pagesize);
+		$db->exec('PRAGMA encoding=\'UTF-8\'');
+		$db->exec('PRAGMA cache_size=15000');
+		$db->exec('PRAGMA soft_heap_limit=67108864');
+		$db->exec('PRAGMA journal_mode=MEMORY');
 	}
 
 	private function phpTest($interpreter, $args, $script)
@@ -724,27 +760,28 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 				foreach($merchants as $merchant)
 				{
 					$storeId = $merchant['storeid'];
-					if($storeId == 0)
-					{
-						// jump the storeid to first non admin store
-						$stores = Mage::getModel('core/store')->getCollection()
-													->addFieldToFilter('is_active', array('neq' => 0))
-													->addFieldToFilter('store_id', array('gt' => 0))
-													->setOrder('store_id', 'ASC');
-
-						if($stores->getSize() == 1)
-						{
-							$stores->setPageSize(1)->setCurPage(1);
-							$firstStore = $stores->getFirstItem();
-							if(is_object($firstStore) && $firstStore->getId())
-							{
-								$storeId = $firstStore->getId();
-							}
-						}
-					}
 
 					if(!isset($storeVisited[$storeId]))
 					{
+						if($storeId == 0)
+						{
+							// jump the storeid to first non admin store
+							$stores = Mage::getModel('core/store')->getCollection()
+														->addFieldToFilter('is_active', array('neq' => 0))
+														->addFieldToFilter('store_id', array('gt' => 0))
+														->setOrder('store_id', 'ASC');
+
+							if($stores->getSize() == 1)
+							{
+								$stores->setPageSize(1)->setCurPage(1);
+								$firstStore = $stores->getFirstItem();
+								if(is_object($firstStore) && $firstStore->getId())
+								{
+									$storeId = $firstStore->getId();
+								}
+							}
+						}
+
 						$syncDb = $this->getSyncPath('sync-'.$storeId.'.db');
 
 						if($eventtype == Mage_Index_Model_Event::TYPE_DELETE)

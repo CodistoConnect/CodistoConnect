@@ -332,10 +332,10 @@ class Codisto_Sync_Model_Observer
 		$payment = $observer->getEvent()->getPayment();
 		$paymentmethod = $payment->getMethodInstance()->getCode();
 
-		$helper = Mage::helper('codistosync');
-
 		if($paymentmethod == 'ebay' && Mage::getDesign()->getArea() == 'adminhtml')
 		{
+			$helper = Mage::helper('codistosync');
+
 			$paypaltransactionid = $payment->getLastTransId();
 			$order = $payment->getOrder();
 			$orderid = $order->getCodistoOrderid();
@@ -433,33 +433,7 @@ class Codisto_Sync_Model_Observer
 
 		if($orderid)
 		{
-			$helper = Mage::helper('codistosync');
-
-			$merchants = array();
-
-			$hostkey = Mage::getStoreConfig('codisto/hostkey', $storeId);
-
-			$merchantList = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', $storeId));
-			if($merchantList)
-			{
-				if(!is_array($merchantList))
-					$merchantList = array($merchantList);
-
-				$visited = array();
-
-				foreach($merchantList as $merchantId)
-				{
-					if(!in_array($merchantId, $visited, true))
-					{
-						$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $hostkey, 'storeid' => $storeId );
-						$visited[] = $merchantId;
-					}
-				}
-
-				unset($visited);
-
-				$helper->signal($merchants, 'action=syncorder&orderid='.$orderid);
-			}
+			$this->signalOrderChange( array( $orderid ), $storeId );
 		}
 
 		return $this;
@@ -474,32 +448,24 @@ class Codisto_Sync_Model_Observer
 
 		if($orderid)
 		{
-			$helper = Mage::helper('codistosync');
-
-			$hostkey = Mage::getStoreConfig('codisto/hostkey', $storeId);
-
-			$merchantList = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', $storeId));
-			if($merchantList)
-			{
-				if(!is_array($merchantList))
-					$merchantList = array($merchantList);
-
-				$visited = array();
-
-				foreach($merchantList as $merchantId)
-				{
-					if(!in_array($merchantId, $visited, true))
-					{
-						$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $hostkey, 'storeid' => $storeId );
-						$visited[] = $merchantId;
-					}
-				}
-
-				$helper->signal($merchants, 'action=syncorder&orderid='.$orderid);
-			}
+			$this->signalOrderChange( array( $orderid ), $storeId );
 		}
 
 		return $this;
+	}
+
+	public function salesOrderShipmentTrackSaveAfter(Varien_Event_Observer $observer)
+	{
+		$track = $this->getEvent()->getTrack();
+		$shipment = $track->getShipment();
+		$order = $shipment->getOrder();
+		$orderid = $order->getCodistoOrderid();
+		$storeId = $order->getStoreId();
+
+		if($orderid)
+		{
+			$this->signalOrderChange( array( $orderid ), $storeId );
+		}
 	}
 
 	public function checkoutAllSubmitAfter($observer)
@@ -530,52 +496,19 @@ class Codisto_Sync_Model_Observer
 		return $this;
 	}
 
-	public function stockRevertProductsSale($observer)
-	{
-		$items = $observer->getEvent()->getItems();
-
-		$stockItems = array();
-		foreach ($items as $productId => $item) {
-
-			$stockItems[] = $productId;
-
-		}
-
-		$this->signalStockChange($stockItems);
-
-		return $this;
-	}
-
-
 	public function catalogProductImportFinishBefore($observer)
 	{
 		$stockItems = array();
 		$adapter = $observer->getEvent()->getAdapter();
 
-		if ($adapter instanceof Mage_Catalog_Model_Convert_Adapter_Product) {
+		if( $adapter &&
+				method_exists( $adapter, 'getAffectedEntityIds' ) )
+		{
 			$stockItems = $adapter->getAffectedEntityIds();
-		} else {
-
 		}
 
 		$this->signalStockChange($stockItems);
 
-		return $this;
-	}
-
-	public function cancelOrderItem($observer)
-	{
-		$item = $observer->getEvent()->getItem();
-		$children = $item->getChildrenItems();
-		$qty = $item->getQtyOrdered() - max($item->getQtyShipped(), $item->getQtyInvoiced()) - $item->getQtyCanceled();
-		if ($item->getId() && ($productId = $item->getProductId()) && empty($children) && $qty) {
-
-			$stockItems = array();
-			$stockItems[] = $item->getProductId();
-
-			$this->signalStockChange($stockItems);
-
-		}
 		return $this;
 	}
 
@@ -752,6 +685,33 @@ class Codisto_Sync_Model_Observer
 
 	}
 
+	private function signalOrderChange($orderIds, $storeId)
+	{
+		$helper = Mage::helper('codistosync');
+
+		$hostkey = Mage::getStoreConfig('codisto/hostkey', $storeId);
+
+		$merchantList = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', $storeId));
+		if($merchantList)
+		{
+			if(!is_array($merchantList))
+				$merchantList = array($merchantList);
+
+			$visited = array();
+
+			foreach($merchantList as $merchantId)
+			{
+				if(!in_array($merchantId, $visited, true))
+				{
+					$merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $hostkey, 'storeid' => $storeId );
+					$visited[] = $merchantId;
+				}
+			}
+
+			$helper->signal($merchants, 'action=syncorder&orderid='.$orderid);
+		}
+	}
+
 	private function signalStockChange($stockItems)
 	{
 		if(!empty($stockItems))
@@ -818,5 +778,18 @@ class Codisto_Sync_Model_Observer
 				$helper->signal($merchants, 'action=sync&productid='.$productids, Mage_Index_Model_Event::TYPE_SAVE, $stockItems);
 			}
 		}
+	}
+
+
+
+	/* deprecated */
+	public function stockRevertProductsSale($observer)
+	{
+
+	}
+
+	public function cancelOrderItem($observer)
+	{
+		
 	}
 }
