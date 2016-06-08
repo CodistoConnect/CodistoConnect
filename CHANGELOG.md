@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.90.2](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.2) (2016-06-08)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.1...1.90.2)
+
+**Implemented enhancements:**
+
+- sync improvements [\#322](https://github.com/CodistoConnect/CodistoConnect/pull/322) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#325](https://github.com/CodistoConnect/CodistoConnect/pull/325) ([lamery](https://github.com/lamery))
+- price by website [\#324](https://github.com/CodistoConnect/CodistoConnect/pull/324) ([jlivas](https://github.com/jlivas))
+- first non admin store for freight calc action [\#321](https://github.com/CodistoConnect/CodistoConnect/pull/321) ([jlivas](https://github.com/jlivas))
+
 ## [1.90.1](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.1) (2016-05-12)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.94...1.90.1)
 
