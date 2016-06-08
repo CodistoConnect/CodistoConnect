@@ -460,7 +460,7 @@ class Codisto_Sync_Model_Sync
 		if ($currentProductWebsiteId == 0) {
 			$tempStoreId = Mage::app()->getWebsite(true)->getDefaultGroup()->getDefaultStoreId();
 			$store->setStoreId($tempStoreId);
-			$tempWebsiteId = Mage::getModel('core/store')->load($tempStoreId)->getWebsiteId();
+			$tempWebsiteId = Mage::app()->getStore($tempStoreId)->getWebsiteId();
 			$store->setWebsiteId($tempWebsiteId);
 			$parentProduct->setWebsiteId($tempWebsiteId);
 		}
