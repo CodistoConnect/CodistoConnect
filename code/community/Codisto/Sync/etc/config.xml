@@ -119,6 +119,15 @@
 					</codisto>
 				</observers>
 			</sales_order_shipment_save_after>
+			<sales_order_shipment_track_save_after>
+				<observers>
+					<codisto_shipping>
+						<type>singleton</type>
+						<class>Codisto_Sync_Model_Observer</class>
+						<method>salesOrderShipmentTrackSaveAfter</method>
+					</codisto_shipping>
+				</observers>
+			</sales_order_shipment_track_save_after>
 			<sales_order_invoice_save_commit_after>
 				<observers>
 					<codisto_save_invoice>
@@ -136,14 +145,6 @@
 					</codisto_stockmovements>
 				</observers>
 			</checkout_submit_all_after>
-			<cataloginventory_stock_revert_products_sale>
-				<observers>
-					<codisto_stockmovements>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>stockRevertProductsSale</method>
-					</codisto_stockmovements>
-				</observers>
-			</cataloginventory_stock_revert_products_sale>
 			<catalog_product_import_finish_before>
 				<observers>
 					<codisto_stockmovements>
@@ -152,15 +153,7 @@
 					</codisto_stockmovements>
 				</observers>
 			</catalog_product_import_finish_before>
-			<sales_order_item_cancel>
-				<observers>
-					<inventory><type>disabled</type></inventory>
-					<codisto_stockmovements>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>cancelOrderItem</method>
-					</codisto_stockmovements>
-				</observers>
-			</sales_order_item_cancel>
+
 			<tax_settings_change_after>
 				<observers>
 					<codisto_taxsync>

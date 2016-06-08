@@ -303,6 +303,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		if($method == 'POST')
 		{
+			$helper = Mage::helper('codistosync');
+
 			if($contenttype == 'text/xml')
 			{
 				$xml = simplexml_load_string(file_get_contents('php://input'));
@@ -311,7 +313,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				$storeId = @count($ordercontent->storeid) ? (int)$ordercontent->storeid : 0;
 
-				if(!Mage::helper('codistosync')->getConfig($storeId))
+				if(!$helper->getConfig($storeId))
 				{
 					$response->clearAllHeaders();
 					//@codingStandardsIgnoreStart
@@ -328,7 +330,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					return;
 				}
 
-				if(Mage::helper('codistosync')->checkHash($response, Mage::getStoreConfig('codisto/hostkey', $storeId), $server['HTTP_X_NONCE'], $server['HTTP_X_HASH']))
+				if($helper->checkRequestHash(Mage::getStoreConfig('codisto/hostkey', $storeId), $server))
 				{
 					$productsToReindex = array();
 					$ordersProcessed = array();
@@ -489,6 +491,22 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					{
 
 					}
+				}
+				else
+				{
+					$response->clearAllHeaders();
+					//@codingStandardsIgnoreStart
+					if(function_exists('http_response_code'))
+						http_response_code(400);
+					//@codingStandardsIgnoreEnd
+					$response->setHttpResponseCode(400);
+					$response->setRawHeader('HTTP/1.0 400 Security Error');
+					$response->setRawHeader('Status: 400 Security Error');
+					$response->setHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT', true);
+					$response->setHeader('Cache-Control', 'no-cache, must-revalidate', true);
+					$response->setHeader('Pragma', 'no-cache', true);
+					$response->setBody('Security Error');
+					return;
 				}
 			}
 			else
