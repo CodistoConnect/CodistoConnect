@@ -197,9 +197,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						$item->setBaseRowTotalInclTax($productpriceincltax * $productqty);
 						$item->setWeeeTaxApplied(serialize(array()));
 
-						$total += $productpriceincltax;
+						$total += $productpriceincltax * $productqty;
 						$itemqty += $productqty;
-						$totalweight += $product->getWeight();
+						$totalweight += $product->getWeight() * $productqty;
 
 						$quote->getItemsCollection()->addItem($item);
 					}
