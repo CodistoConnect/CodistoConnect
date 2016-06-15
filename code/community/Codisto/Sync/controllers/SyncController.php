@@ -633,7 +633,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 						}
 
-						$this->sendPlainResponse($response, 200, 'OK', $result);
+						$this->sendPlainResponse($response, 200, 'OK', '');
 						$response->sendResponse();
 					}
 					else
