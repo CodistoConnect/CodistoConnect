@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.90.3](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.3) (2016-06-16)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.2...1.90.3)
+
+**Merged pull requests:**
+
+- Release [\#333](https://github.com/CodistoConnect/CodistoConnect/pull/333) ([lamery](https://github.com/lamery))
+- add complete in response [\#332](https://github.com/CodistoConnect/CodistoConnect/pull/332) ([jlivas](https://github.com/jlivas))
+- set totalweight with productquantity [\#331](https://github.com/CodistoConnect/CodistoConnect/pull/331) ([lamery](https://github.com/lamery))
+- fix getevent to call off observer not this [\#330](https://github.com/CodistoConnect/CodistoConnect/pull/330) ([lamery](https://github.com/lamery))
+- stop result undefined warning [\#329](https://github.com/CodistoConnect/CodistoConnect/pull/329) ([lamery](https://github.com/lamery))
+- select only available product fields [\#326](https://github.com/CodistoConnect/CodistoConnect/pull/326) ([jlivas](https://github.com/jlivas))
+
 ## [1.90.2](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.2) (2016-06-08)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.1...1.90.2)
 
