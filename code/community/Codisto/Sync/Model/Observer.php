@@ -456,7 +456,7 @@ class Codisto_Sync_Model_Observer
 
 	public function salesOrderShipmentTrackSaveAfter(Varien_Event_Observer $observer)
 	{
-		$track = $this->getEvent()->getTrack();
+		$track = $observer->getEvent()->getTrack();
 		$shipment = $track->getShipment();
 		$order = $shipment->getOrder();
 		$orderid = $order->getCodistoOrderid();
@@ -790,6 +790,6 @@ class Codisto_Sync_Model_Observer
 
 	public function cancelOrderItem($observer)
 	{
-		
+
 	}
 }
