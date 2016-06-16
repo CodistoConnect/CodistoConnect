@@ -36,6 +36,8 @@ class Codisto_Sync_Model_Sync
 	private $optionCache;
 	private $optionTextCache;
 
+	private $availableProductFields;
+
 	public function __construct()
 	{
 		if(method_exists('Mage', 'getEdition'))
@@ -72,6 +74,27 @@ class Codisto_Sync_Model_Sync
 		$this->ebayGroupId = $ebayGroup->getId();
 		if(!$this->ebayGroupId)
 			$this->ebayGroupId = Mage_Customer_Model_Group::NOT_LOGGED_IN_ID;
+
+		$productSelectArray = array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight');
+		$this->availableProductFields = $this->AvailableProductFields($productSelectArray);
+
+	}
+
+	private function AvailableProductFields($selectArr) {
+
+		$attributes = array();
+        $productAttrs = Mage::getResourceModel('catalog/product_attribute_collection');
+        foreach ($productAttrs as $productAttr) {
+            $attributes[] = $productAttr->getAttributeCode();
+        }
+		$selectAvailable = array();
+		foreach($attributes as $attr){
+			if (in_array($attr, $selectArr)) {
+			    $selectAvailable[] = $attr;
+			}
+		}
+		return $selectAvailable;
+
 	}
 
 	private function FilesInDir($dir, $prefix = '')
@@ -283,7 +306,7 @@ class Codisto_Sync_Model_Sync
 
 		// Configurable products
 		$configurableProducts = $this->getProductCollection()
-							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+							->addAttributeToSelect($this->availableProductFields, 'left')
 							->addAttributeToFilter('type_id', array('eq' => 'configurable'));
 
 		$sqlCheckModified = '(`e`.entity_id IN ('.implode(',', $ids).') OR `e`.entity_id IN (SELECT parent_id FROM `'.$superLinkName.'` WHERE product_id IN ('.implode(',', $ids).')))';
@@ -294,7 +317,7 @@ class Codisto_Sync_Model_Sync
 
 		// Simple Products not participating as configurable skus
 		$simpleProducts = $this->getProductCollection()
-							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+							->addAttributeToSelect($this->availableProductFields, 'left')
 							->addAttributeToFilter('type_id', array('eq' => 'simple'))
 							->addAttributeToFilter('entity_id', array('in' => $ids));
 
@@ -1405,8 +1428,8 @@ class Codisto_Sync_Model_Sync
 		if($state == 'simple')
 		{
 			// Simple Products not participating as configurable skus
-			$simpleProducts = $this->getProductCollection()
-								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+
+			$simpleProducts = $this->getProductCollection()->addAttributeToSelect($this->availableProductFields, 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'simple'))
 								->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId));
 
@@ -1450,7 +1473,7 @@ class Codisto_Sync_Model_Sync
 		{
 			// Configurable products
 			$configurableProducts = $this->getProductCollection()
-								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+								->addAttributeToSelect($this->availableProductFields, 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 								->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId));
 
@@ -1498,7 +1521,7 @@ class Codisto_Sync_Model_Sync
 		{
 			// Grouped products
 			$groupedProducts = $this->getProductCollection()
-								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+								->addAttributeToSelect($this->availableProductFields, 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'grouped'))
 								->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId));
 
