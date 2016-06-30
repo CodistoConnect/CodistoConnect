@@ -885,89 +885,101 @@ class Codisto_Sync_Model_Sync
 			{
 				$attributeID = $attribute->getId();
 				$attributeCode = $attribute->getAttributeCode();
-				$attributeLabel = $attribute->getStoreLabel();
 				$attributeTable = $backend->getTable();
+
+				$attributeLabel = $attribute->getStoreLabel($store->getId());
+				if(!isset($attributeLabel) || is_null($attributeLabel) || !$attributeLabel)
+				{
+					if($store->getId() != Mage_Catalog_Model_Abstract::DEFAULT_STORE_ID)
+						$attributeLabel = $attribute->getStoreLabel(Mage_Catalog_Model_Abstract::DEFAULT_STORE_ID);
+					if(!isset($attributeLabel) || is_null($attributeLabel) || !$attributeLabel)
+					{
+						$attributeLabel = $attribute->getFrontendLabel();
+						if(!isset($attributeLabel) || is_null($attributeLabel) || !$attributeLabel)
+						{
+							$attributeLabel = $attribute->getName();
+							if(!isset($attributeLabel) || is_null($attributeLabel) || !$attributeLabel)
+								$attributeLabel = '';
+						}
+					}
+				}
 
 				$attributeCodeIDMap[$attributeID] = $attributeCode;
 
 				$attributeTypes[$attributeTable][$attributeID] = $attributeCode;
 
-				if($attributeLabel)
+				$attributeGroupID = $attribute->getAttributeGroupId();
+				$attributeGroupName = '';
+
+				if($attributeGroupID)
 				{
-					$attributeGroupID = $attribute->getAttributeGroupId();
-					$attributeGroupName = '';
-
-					if($attributeGroupID)
+					if(isset($this->groupCache[$attributeGroupID]))
 					{
-						if(isset($this->groupCache[$attributeGroupID]))
-						{
-							$attributeGroupName = $this->groupCache[$attributeGroupID];
-						}
-						else
-						{
-							$attributeGroup = Mage::getModel('catalog/product_attribute_group')->load($attributeGroupID);
-
-							$attributeGroupName = html_entity_decode($attributeGroup->getAttributeGroupName());
-
-							$this->groupCache[$attributeGroupID] = $attributeGroupName;
-						}
-					}
-
-					$attributeFrontEnd = $attribute->getFrontend();
-
-					$attributeData = array(
-							'id' => $attributeID,
-							'code' => $attributeCode,
-							'name' => $attribute->getName(),
-							'label' => $attributeLabel,
-							'backend_type' => $attribute->getBackendType(),
-							'frontend_type' => $attributeFrontEnd->getInputType(),
-							'groupid' => $attributeGroupID,
-							'groupname' => $attributeGroupName,
-							'html' => ($attribute->getIsHtmlAllowedOnFront() && $attribute->getIsWysiwygEnabled()) ? true : false,
-							'source_model' => $attribute->getSourceModel()
-					);
-
-					if(!isset($attributeData['frontend_type']) || is_null($attributeData['frontend_type']))
-					{
-						$attributeData['frontend_type'] = '';
-					}
-
-					if($attributeData['source_model'])
-					{
-						if(isset($this->optionCache[$store->getId().'-'.$attribute->getId()]))
-						{
-							$attributeData['source'] = $this->optionCache[$store->getId().'-'.$attribute->getId()];
-						}
-						else
-						{
-							try
-							{
-								$attributeData['source'] = Mage::getModel( $attributeData['source_model'] );
-
-								if($attributeData['source'])
-								{
-									$attributeData['source']->setAttribute($attribute);
-
-									$this->optionCache[$store->getId().'-'.$attribute->getId()] = $attributeData['source'];
-								}
-							}
-							catch(Exception $e)
-							{
-
-							}
-						}
+						$attributeGroupName = $this->groupCache[$attributeGroupID];
 					}
 					else
 					{
-						$attributeData['source'] = $attribute->getSource();
+						$attributeGroup = Mage::getModel('catalog/product_attribute_group')->load($attributeGroupID);
+
+						$attributeGroupName = html_entity_decode($attributeGroup->getAttributeGroupName());
+
+						$this->groupCache[$attributeGroupID] = $attributeGroupName;
 					}
-
-					$attributeSet[] = $attributeData;
-					$attributeCodes[] = $attributeCode;
 				}
-			}
 
+				$attributeFrontEnd = $attribute->getFrontend();
+
+				$attributeData = array(
+						'id' => $attributeID,
+						'code' => $attributeCode,
+						'name' => $attribute->getName(),
+						'label' => $attributeLabel,
+						'backend_type' => $attribute->getBackendType(),
+						'frontend_type' => $attributeFrontEnd->getInputType(),
+						'groupid' => $attributeGroupID,
+						'groupname' => $attributeGroupName,
+						'html' => ($attribute->getIsHtmlAllowedOnFront() && $attribute->getIsWysiwygEnabled()) ? true : false,
+						'source_model' => $attribute->getSourceModel()
+				);
+
+				if(!isset($attributeData['frontend_type']) || is_null($attributeData['frontend_type']))
+				{
+					$attributeData['frontend_type'] = '';
+				}
+
+				if($attributeData['source_model'])
+				{
+					if(isset($this->optionCache[$store->getId().'-'.$attribute->getId()]))
+					{
+						$attributeData['source'] = $this->optionCache[$store->getId().'-'.$attribute->getId()];
+					}
+					else
+					{
+						try
+						{
+							$attributeData['source'] = Mage::getModel( $attributeData['source_model'] );
+
+							if($attributeData['source'])
+							{
+								$attributeData['source']->setAttribute($attribute);
+
+								$this->optionCache[$store->getId().'-'.$attribute->getId()] = $attributeData['source'];
+							}
+						}
+						catch(Exception $e)
+						{
+
+						}
+					}
+				}
+				else
+				{
+					$attributeData['source'] = $attribute->getSource();
+				}
+
+				$attributeSet[] = $attributeData;
+				$attributeCodes[] = $attributeCode;
+			}
 		}
 
 		$adapter = Mage::getModel('core/resource')->getConnection(Mage_Core_Model_Resource::DEFAULT_READ_RESOURCE);
