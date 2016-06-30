@@ -743,6 +743,8 @@ class Codisto_Sync_Model_Observer
 			}
 
 			$MerchantID = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', 0));
+			if(is_array($MerchantID))
+				$MerchantID = $MerchantID[0];
 			$HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 			if(!in_array($MerchantID, $visited, true))
 				$merchants[] = array( 'merchantid' => $MerchantID, 'hostkey' => $HostKey, 'storeid' => 0);
