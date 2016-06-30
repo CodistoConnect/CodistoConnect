@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.90.5](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.5) (2016-06-30)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.4...1.90.5)
+
+**Merged pull requests:**
+
+- Release [\#337](https://github.com/CodistoConnect/CodistoConnect/pull/337) ([lamery](https://github.com/lamery))
+- fix lookup of store label attribute [\#336](https://github.com/CodistoConnect/CodistoConnect/pull/336) ([lamery](https://github.com/lamery))
+
 ## [1.90.4](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.4) (2016-06-30)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.3...1.90.4)
 
