@@ -1415,45 +1415,36 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 		}
 
-		if($ordercontent->paymentstatus == 'complete')
-		{
-			$order->setBaseTotalPaid($ordertotal);
-			$order->setTotalPaid($ordertotal);
-			$order->setBaseTotalDue(0.0);
-			$order->setTotalDue(0.0);
-			$order->setDue(0.0);
-
-			$payment = $order->getPayment();
-
-			if($paypaltransactionid)
-			{
-				$transaction = $payment->getTransaction(0);
-				if($transaction)
-				{
-					$transaction->setTxnId($paypaltransactionid);
-					$payment->setLastTransId($paypaltransactionid);
-				}
-			}
-
-			$payment->setMethod('ebay');
-			$payment->setParentTransactionId(null)
-				->setIsTransactionClosed(1);
-
-			$payment->save();
-		}
-		else
-		{
-			$payment = $order->getPayment();
-			$payment->setMethod('ebay');
-			$payment->save();
-		}
-
 		$order->save();
 
 		if(!$order->hasInvoices())
 		{
 			if($ordercontent->paymentstatus == 'complete' && $order->canInvoice())
 			{
+				$order->setBaseTotalPaid($ordertotal);
+				$order->setTotalPaid($ordertotal);
+				$order->setBaseTotalDue(0.0);
+				$order->setTotalDue(0.0);
+				$order->setDue(0.0);
+
+				$payment = $order->getPayment();
+
+				if($paypaltransactionid)
+				{
+					$transaction = $payment->getTransaction(0);
+					if($transaction)
+					{
+						$transaction->setTxnId($paypaltransactionid);
+						$payment->setLastTransId($paypaltransactionid);
+					}
+				}
+
+				$payment->setMethod('ebay');
+				$payment->setParentTransactionId(null)
+					->setIsTransactionClosed(1);
+
+				$payment->save();
+
 				$invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
 
 				if($invoice->getTotalQty())
