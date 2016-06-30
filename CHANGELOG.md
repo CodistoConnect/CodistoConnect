@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.90.4](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.4) (2016-06-30)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.3...1.90.4)
+
+**Merged pull requests:**
+
+- Release [\#335](https://github.com/CodistoConnect/CodistoConnect/pull/335) ([lamery](https://github.com/lamery))
+- fix use of merchantid array in stock signal handler [\#334](https://github.com/CodistoConnect/CodistoConnect/pull/334) ([lamery](https://github.com/lamery))
+
 ## [1.90.3](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.3) (2016-06-16)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.2...1.90.3)
 
