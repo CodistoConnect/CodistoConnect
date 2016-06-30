@@ -131,6 +131,7 @@ code/
 design/
 locale/
 Mage.php
+bootstrap.php
 
 #Allow Codisto Plugin whitelist
 !code/community/Codisto/*
