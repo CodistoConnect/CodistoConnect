@@ -907,8 +907,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$order->setTaxInvoiced($ordertaxtotal);
 			$order->setTotalInvoiced($ordertotal);
 			$order->save();
-
-			Mage::dispatchEvent('sales_order_payment_pay', array('payment' => $payment, 'invoice' => $invoice));
 		}
 
 		$response = $this->getResponse();
@@ -1464,8 +1462,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$order->setTaxInvoiced($ordertaxtotal);
 				$order->setTotalInvoiced($ordertotal);
 				$order->save();
-
-				Mage::dispatchEvent('sales_order_payment_pay', array('payment' => $payment, 'invoice' => $invoice));
 			}
 		}
 

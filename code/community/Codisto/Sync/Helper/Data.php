@@ -143,31 +143,53 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 	public function createMerchantwithLock()
 	{
 		$createMerchant = false;
+
 		$lockFile = Mage::getBaseDir('var') . '/codisto-lock';
 
-		$lockDb = new PDO('sqlite:' . $lockFile);
-		$lockDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-		$lockDb->setAttribute(PDO::ATTR_TIMEOUT, 1);
-		$lockDb->exec('BEGIN EXCLUSIVE TRANSACTION');
-		$lockDb->exec('CREATE TABLE IF NOT EXISTS Lock (id real NOT NULL)');
-
-		$lockQuery = $lockDb->query('SELECT id FROM Lock UNION SELECT 0 WHERE NOT EXISTS(SELECT 1 FROM Lock)');
-		$lockQuery->execute();
-		$lockRow = $lockQuery->fetch();
-		$timeStamp = $lockRow['id'];
-
-		$lockQuery->closeCursor();
-
-		if($timeStamp + 5000000 < microtime(true))
+		for($retry = 0;;$retry++)
 		{
-			$createMerchant = true;
+			try
+			{
+				$lockDb = new PDO('sqlite:' . $lockFile);
+				$lockDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+				$lockDb->setAttribute(PDO::ATTR_TIMEOUT, 1);
+				$lockDb->exec('BEGIN EXCLUSIVE TRANSACTION');
+				$lockDb->exec('CREATE TABLE IF NOT EXISTS Lock (id real NOT NULL)');
 
-			$lockDb->exec('DELETE FROM Lock');
-			$lockDb->exec('INSERT INTO Lock (id) VALUES('. microtime(true) .')');
+				$lockQuery = $lockDb->query('SELECT id FROM Lock UNION SELECT 0 WHERE NOT EXISTS(SELECT 1 FROM Lock)');
+				$lockQuery->execute();
+				$lockRow = $lockQuery->fetch();
+				$timeStamp = $lockRow['id'];
+
+				$lockQuery->closeCursor();
+
+				if($timeStamp + 5000000 < microtime(true))
+				{
+					$createMerchant = true;
+
+					$lockDb->exec('DELETE FROM Lock');
+					$lockDb->exec('INSERT INTO Lock (id) VALUES('. microtime(true) .')');
+				}
+
+				$lockDb->exec('COMMIT TRANSACTION');
+				$lockDb = null;
+			}
+			catch(Exception $e)
+			{
+				if($retry > 3)
+				{
+					throw $e;
+					break;
+				}
+
+				@unlink($lockFile);
+				sleep(1);
+				continue;
+			}
+
+			break;
 		}
 
-		$lockDb->exec('COMMIT TRANSACTION');
-		$lockDb = null;
 		return $createMerchant;
 	}
 
