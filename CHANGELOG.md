@@ -1,5 +1,46 @@
 # Change Log
 
+## [1.90.5](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.5) (2016-06-30)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.4...1.90.5)
+
+**Merged pull requests:**
+
+- Release [\#337](https://github.com/CodistoConnect/CodistoConnect/pull/337) ([lamery](https://github.com/lamery))
+- fix lookup of store label attribute [\#336](https://github.com/CodistoConnect/CodistoConnect/pull/336) ([lamery](https://github.com/lamery))
+
+## [1.90.4](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.4) (2016-06-30)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.3...1.90.4)
+
+**Merged pull requests:**
+
+- Release [\#335](https://github.com/CodistoConnect/CodistoConnect/pull/335) ([lamery](https://github.com/lamery))
+- fix use of merchantid array in stock signal handler [\#334](https://github.com/CodistoConnect/CodistoConnect/pull/334) ([lamery](https://github.com/lamery))
+
+## [1.90.3](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.3) (2016-06-16)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.2...1.90.3)
+
+**Merged pull requests:**
+
+- Release [\#333](https://github.com/CodistoConnect/CodistoConnect/pull/333) ([lamery](https://github.com/lamery))
+- add complete in response [\#332](https://github.com/CodistoConnect/CodistoConnect/pull/332) ([jlivas](https://github.com/jlivas))
+- set totalweight with productquantity [\#331](https://github.com/CodistoConnect/CodistoConnect/pull/331) ([lamery](https://github.com/lamery))
+- fix getevent to call off observer not this [\#330](https://github.com/CodistoConnect/CodistoConnect/pull/330) ([lamery](https://github.com/lamery))
+- stop result undefined warning [\#329](https://github.com/CodistoConnect/CodistoConnect/pull/329) ([lamery](https://github.com/lamery))
+- select only available product fields [\#326](https://github.com/CodistoConnect/CodistoConnect/pull/326) ([jlivas](https://github.com/jlivas))
+
+## [1.90.2](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.2) (2016-06-08)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.1...1.90.2)
+
+**Implemented enhancements:**
+
+- sync improvements [\#322](https://github.com/CodistoConnect/CodistoConnect/pull/322) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#325](https://github.com/CodistoConnect/CodistoConnect/pull/325) ([lamery](https://github.com/lamery))
+- price by website [\#324](https://github.com/CodistoConnect/CodistoConnect/pull/324) ([jlivas](https://github.com/jlivas))
+- first non admin store for freight calc action [\#321](https://github.com/CodistoConnect/CodistoConnect/pull/321) ([jlivas](https://github.com/jlivas))
+
 ## [1.90.1](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.1) (2016-05-12)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.94...1.90.1)
 

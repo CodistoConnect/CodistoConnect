@@ -33,6 +33,20 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$response = $this->getResponse();
 
 			$storeId = $request->getQuery('storeid') == null ? 0 : (int)$request->getQuery('storeid');
+
+			if($storeId == 0)
+			{
+				// jump the storeid to first non admin store
+				$stores = Mage::getModel('core/store')->getCollection()
+											->addFieldToFilter('is_active', array('neq' => 0))
+											->addFieldToFilter('store_id', array('gt' => 0))
+											->setOrder('store_id', 'ASC');
+
+				$firstStore = $stores->getFirstItem();
+				if(is_object($firstStore) && $firstStore->getId())
+					$storeId = $firstStore->getId();
+			}
+
 			$store = Mage::app()->getStore($storeId);
 
 			$currencyCode = $request->getPost('CURRENCY');
@@ -183,9 +197,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						$item->setBaseRowTotalInclTax($productpriceincltax * $productqty);
 						$item->setWeeeTaxApplied(serialize(array()));
 
-						$total += $productpriceincltax;
+						$total += $productpriceincltax * $productqty;
 						$itemqty += $productqty;
-						$totalweight += $product->getWeight();
+						$totalweight += $product->getWeight() * $productqty;
 
 						$quote->getItemsCollection()->addItem($item);
 					}
@@ -893,8 +907,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$order->setTaxInvoiced($ordertaxtotal);
 			$order->setTotalInvoiced($ordertotal);
 			$order->save();
-
-			Mage::dispatchEvent('sales_order_payment_pay', array('payment' => $payment, 'invoice' => $invoice));
 		}
 
 		$response = $this->getResponse();
@@ -1401,45 +1413,36 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 		}
 
-		if($ordercontent->paymentstatus == 'complete')
-		{
-			$order->setBaseTotalPaid($ordertotal);
-			$order->setTotalPaid($ordertotal);
-			$order->setBaseTotalDue(0.0);
-			$order->setTotalDue(0.0);
-			$order->setDue(0.0);
-
-			$payment = $order->getPayment();
-
-			if($paypaltransactionid)
-			{
-				$transaction = $payment->getTransaction(0);
-				if($transaction)
-				{
-					$transaction->setTxnId($paypaltransactionid);
-					$payment->setLastTransId($paypaltransactionid);
-				}
-			}
-
-			$payment->setMethod('ebay');
-			$payment->setParentTransactionId(null)
-				->setIsTransactionClosed(1);
-
-			$payment->save();
-		}
-		else
-		{
-			$payment = $order->getPayment();
-			$payment->setMethod('ebay');
-			$payment->save();
-		}
-
 		$order->save();
 
 		if(!$order->hasInvoices())
 		{
 			if($ordercontent->paymentstatus == 'complete' && $order->canInvoice())
 			{
+				$order->setBaseTotalPaid($ordertotal);
+				$order->setTotalPaid($ordertotal);
+				$order->setBaseTotalDue(0.0);
+				$order->setTotalDue(0.0);
+				$order->setDue(0.0);
+
+				$payment = $order->getPayment();
+
+				if($paypaltransactionid)
+				{
+					$transaction = $payment->getTransaction(0);
+					if($transaction)
+					{
+						$transaction->setTxnId($paypaltransactionid);
+						$payment->setLastTransId($paypaltransactionid);
+					}
+				}
+
+				$payment->setMethod('ebay');
+				$payment->setParentTransactionId(null)
+					->setIsTransactionClosed(1);
+
+				$payment->save();
+
 				$invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
 
 				if($invoice->getTotalQty())
@@ -1459,8 +1462,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$order->setTaxInvoiced($ordertaxtotal);
 				$order->setTotalInvoiced($ordertotal);
 				$order->save();
-
-				Mage::dispatchEvent('sales_order_payment_pay', array('payment' => $payment, 'invoice' => $invoice));
 			}
 		}
 

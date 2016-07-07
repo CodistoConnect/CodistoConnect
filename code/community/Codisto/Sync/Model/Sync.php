@@ -36,6 +36,8 @@ class Codisto_Sync_Model_Sync
 	private $optionCache;
 	private $optionTextCache;
 
+	private $availableProductFields;
+
 	public function __construct()
 	{
 		if(method_exists('Mage', 'getEdition'))
@@ -72,6 +74,27 @@ class Codisto_Sync_Model_Sync
 		$this->ebayGroupId = $ebayGroup->getId();
 		if(!$this->ebayGroupId)
 			$this->ebayGroupId = Mage_Customer_Model_Group::NOT_LOGGED_IN_ID;
+
+		$productSelectArray = array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight');
+		$this->availableProductFields = $this->AvailableProductFields($productSelectArray);
+
+	}
+
+	private function AvailableProductFields($selectArr) {
+
+		$attributes = array();
+        $productAttrs = Mage::getResourceModel('catalog/product_attribute_collection');
+        foreach ($productAttrs as $productAttr) {
+            $attributes[] = $productAttr->getAttributeCode();
+        }
+		$selectAvailable = array();
+		foreach($attributes as $attr){
+			if (in_array($attr, $selectArr)) {
+			    $selectAvailable[] = $attr;
+			}
+		}
+		return $selectAvailable;
+
 	}
 
 	private function FilesInDir($dir, $prefix = '')
@@ -283,7 +306,7 @@ class Codisto_Sync_Model_Sync
 
 		// Configurable products
 		$configurableProducts = $this->getProductCollection()
-							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+							->addAttributeToSelect($this->availableProductFields, 'left')
 							->addAttributeToFilter('type_id', array('eq' => 'configurable'));
 
 		$sqlCheckModified = '(`e`.entity_id IN ('.implode(',', $ids).') OR `e`.entity_id IN (SELECT parent_id FROM `'.$superLinkName.'` WHERE product_id IN ('.implode(',', $ids).')))';
@@ -294,7 +317,7 @@ class Codisto_Sync_Model_Sync
 
 		// Simple Products not participating as configurable skus
 		$simpleProducts = $this->getProductCollection()
-							->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+							->addAttributeToSelect($this->availableProductFields, 'left')
 							->addAttributeToFilter('type_id', array('eq' => 'simple'))
 							->addAttributeToFilter('entity_id', array('in' => $ids));
 
@@ -442,6 +465,18 @@ class Codisto_Sync_Model_Sync
 
 	public function SyncProductPrice($store, $parentProduct, $options = null)
 	{
+		$currentStoreId = $store->getStoreId();
+		$currentStoreWebsiteId = $store->getWebsiteId();
+		$currentProductWebsiteId = $parentProduct->getWebsiteId();
+
+		if ($currentProductWebsiteId == 0) {
+			$tempStoreId = Mage::app()->getWebsite(true)->getDefaultGroup()->getDefaultStoreId();
+			$store->setStoreId($tempStoreId);
+			$tempWebsiteId = Mage::app()->getStore($tempStoreId)->getWebsiteId();
+			$store->setWebsiteId($tempWebsiteId);
+			$parentProduct->setWebsiteId($tempWebsiteId);
+		}
+
 		$addInfo = new Varien_Object();
 
 		if(is_array($options))
@@ -463,6 +498,12 @@ class Codisto_Sync_Model_Sync
 
 		$price = $this->getExTaxPrice($parentProduct, $parentProduct->getFinalPrice(), $store);
 
+		if ($currentProductWebsiteId == 0) {
+			$store->setStoreId($currentStoreId);
+			$store->setWebsiteId($currentStoreWebsiteId);
+			$parentProduct->setWebsiteId($currentProductWebsiteId);
+		}
+
 		return $price;
 	}
 
@@ -482,6 +523,7 @@ class Codisto_Sync_Model_Sync
 		$product->setData($skuData)
 				->setStore($store)
 				->setStoreId($store->getId())
+				->setWebsiteId($store->getWebsiteId())
 				->setCustomerGroupId($this->ebayGroupId);
 
 		$stockItem = Mage::getModel('cataloginventory/stock_item');
@@ -560,6 +602,7 @@ class Codisto_Sync_Model_Sync
 					->setData($productData)
 					->setStore($store)
 					->setStoreId($store->getId())
+					->setWebsiteId($store->getWebsiteId())
 					->setCustomerGroupId($this->ebayGroupId)
 					->setIsSuperMode(true);
 
@@ -604,6 +647,7 @@ class Codisto_Sync_Model_Sync
 					->setData($productData)
 					->setStore($store)
 					->setStoreId($store->getId())
+					->setWebsiteId($store->getWebsiteId())
 					->setCustomerGroupId($this->ebayGroupId)
 					->setIsSuperMode(true);
 
@@ -624,6 +668,7 @@ class Codisto_Sync_Model_Sync
 			$childProduct
 				->setStore($store)
 				->setStoreId($store->getId())
+				->setWebsiteId($store->getWebsiteId())
 				->setCustomerGroupId($this->ebayGroupId)
 				->setIsSuperMode(true);
 
@@ -711,6 +756,7 @@ class Codisto_Sync_Model_Sync
 		$product->setData($productData)
 				->setStore($store)
 				->setStoreId($store->getId())
+				->setWebsiteId($store->getWebsiteId())
 				->setCustomerGroupId($this->ebayGroupId)
 				->setIsSuperMode(true);
 
@@ -839,77 +885,101 @@ class Codisto_Sync_Model_Sync
 			{
 				$attributeID = $attribute->getId();
 				$attributeCode = $attribute->getAttributeCode();
-				$attributeLabel = $attribute->getStoreLabel();
 				$attributeTable = $backend->getTable();
+
+				$attributeLabel = $attribute->getStoreLabel($store->getId());
+				if(!isset($attributeLabel) || is_null($attributeLabel) || !$attributeLabel)
+				{
+					if($store->getId() != Mage_Catalog_Model_Abstract::DEFAULT_STORE_ID)
+						$attributeLabel = $attribute->getStoreLabel(Mage_Catalog_Model_Abstract::DEFAULT_STORE_ID);
+					if(!isset($attributeLabel) || is_null($attributeLabel) || !$attributeLabel)
+					{
+						$attributeLabel = $attribute->getFrontendLabel();
+						if(!isset($attributeLabel) || is_null($attributeLabel) || !$attributeLabel)
+						{
+							$attributeLabel = $attribute->getName();
+							if(!isset($attributeLabel) || is_null($attributeLabel) || !$attributeLabel)
+								$attributeLabel = '';
+						}
+					}
+				}
 
 				$attributeCodeIDMap[$attributeID] = $attributeCode;
 
 				$attributeTypes[$attributeTable][$attributeID] = $attributeCode;
 
-				if($attributeLabel)
+				$attributeGroupID = $attribute->getAttributeGroupId();
+				$attributeGroupName = '';
+
+				if($attributeGroupID)
 				{
-					$attributeGroupID = $attribute->getAttributeGroupId();
-					$attributeGroupName = '';
-
-					if($attributeGroupID)
+					if(isset($this->groupCache[$attributeGroupID]))
 					{
-						if(isset($this->groupCache[$attributeGroupID]))
-						{
-							$attributeGroupName = $this->groupCache[$attributeGroupID];
-						}
-						else
-						{
-							$attributeGroup = Mage::getModel('catalog/product_attribute_group')->load($attributeGroupID);
-
-							$attributeGroupName = html_entity_decode($attributeGroup->getAttributeGroupName());
-
-							$this->groupCache[$attributeGroupID] = $attributeGroupName;
-						}
-					}
-
-					$attributeFrontEnd = $attribute->getFrontend();
-
-					$attributeData = array(
-							'id' => $attributeID,
-							'code' => $attributeCode,
-							'name' => $attribute->getName(),
-							'label' => $attributeLabel,
-							'backend_type' => $attribute->getBackendType(),
-							'frontend_type' => $attributeFrontEnd->getInputType(),
-							'groupid' => $attributeGroupID,
-							'groupname' => $attributeGroupName,
-							'html' => ($attribute->getIsHtmlAllowedOnFront() && $attribute->getIsWysiwygEnabled()) ? true : false,
-							'source_model' => $attribute->getSourceModel()
-					);
-
-					if(!isset($attributeData['frontend_type']) || is_null($attributeData['frontend_type']))
-					{
-						$attributeData['frontend_type'] = '';
-					}
-
-					if($attributeData['source_model'])
-					{
-						if(isset($this->optionCache[$store->getId().'-'.$attribute->getId()]))
-						{
-							$attributeData['source'] = $this->optionCache[$store->getId().'-'.$attribute->getId()];
-						}
-						else
-						{
-							$attributeData['source'] = $attribute->getSource();
-
-							$this->optionCache[$store->getId().'-'.$attribute->getId()] = $attributeData['source'];
-						}
+						$attributeGroupName = $this->groupCache[$attributeGroupID];
 					}
 					else
 					{
-						$attributeData['source'] = $attribute->getSource();
+						$attributeGroup = Mage::getModel('catalog/product_attribute_group')->load($attributeGroupID);
+
+						$attributeGroupName = html_entity_decode($attributeGroup->getAttributeGroupName());
+
+						$this->groupCache[$attributeGroupID] = $attributeGroupName;
 					}
-
-					$attributeSet[] = $attributeData;
-					$attributeCodes[] = $attributeCode;
 				}
-			}
 
+				$attributeFrontEnd = $attribute->getFrontend();
+
+				$attributeData = array(
+						'id' => $attributeID,
+						'code' => $attributeCode,
+						'name' => $attribute->getName(),
+						'label' => $attributeLabel,
+						'backend_type' => $attribute->getBackendType(),
+						'frontend_type' => $attributeFrontEnd->getInputType(),
+						'groupid' => $attributeGroupID,
+						'groupname' => $attributeGroupName,
+						'html' => ($attribute->getIsHtmlAllowedOnFront() && $attribute->getIsWysiwygEnabled()) ? true : false,
+						'source_model' => $attribute->getSourceModel()
+				);
+
+				if(!isset($attributeData['frontend_type']) || is_null($attributeData['frontend_type']))
+				{
+					$attributeData['frontend_type'] = '';
+				}
+
+				if($attributeData['source_model'])
+				{
+					if(isset($this->optionCache[$store->getId().'-'.$attribute->getId()]))
+					{
+						$attributeData['source'] = $this->optionCache[$store->getId().'-'.$attribute->getId()];
+					}
+					else
+					{
+						try
+						{
+							$attributeData['source'] = Mage::getModel( $attributeData['source_model'] );
+
+							if($attributeData['source'])
+							{
+								$attributeData['source']->setAttribute($attribute);
+
+								$this->optionCache[$store->getId().'-'.$attribute->getId()] = $attributeData['source'];
+							}
+						}
+						catch(Exception $e)
+						{
+
+						}
+					}
+				}
+				else
+				{
+					$attributeData['source'] = $attribute->getSource();
+				}
+
+				$attributeSet[] = $attributeData;
+				$attributeCodes[] = $attributeCode;
+			}
 		}
 
 		$adapter = Mage::getModel('core/resource')->getConnection(Mage_Core_Model_Resource::DEFAULT_READ_RESOURCE);
@@ -988,52 +1058,60 @@ class Codisto_Sync_Model_Sync
 			{
 				if(is_array($attributeValue))
 				{
-					$attributeValueSet = array();
-
-					foreach($attributeValue as $attributeOptionId)
+					if(isset($attributeData['source']) &&
+						method_exists( $attributeData['source'], 'getOptionText') )
 					{
-						if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId]))
+						$attributeValueSet = array();
+
+						foreach($attributeValue as $attributeOptionId)
 						{
-							$attributeValueSet[] = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId];
+							if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId]))
+							{
+								$attributeValueSet[] = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId];
+							}
+							else
+							{
+								try
+								{
+									$attributeText = $attributeData['source']->getOptionText($attributeOptionId);
+
+									$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId] = $attributeText;
+
+									$attributeValueSet[] = $attributeText;
+								}
+								catch(Exception $e)
+								{
+
+								}
+							}
+						}
+
+						$attributeValue = $attributeValueSet;
+					}
+				}
+				else
+				{
+					if(isset($attributeData['source'])  &&
+						method_exists( $attributeData['source'], 'getOptionText') )
+					{
+						if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue]))
+						{
+							$attributeValue = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue];
 						}
 						else
 						{
 							try
 							{
-								$attributeText = $attributeData['source']->getOptionText($attributeOptionId);
+								$attributeText = $attributeData['source']->getOptionText($attributeValue);
 
-								$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId] = $attributeText;
+								$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue] = $attributeText;
 
-								$attributeValueSet[] = $attributeText;
+								$attributeValue = $attributeText;
 							}
 							catch(Exception $e)
 							{
-
+								$attributeValue = null;
 							}
-						}
-					}
-
-					$attributeValue = $attributeValueSet;
-				}
-				else
-				{
-					if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue]))
-					{
-						$attributeValue = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue];
-					}
-					else
-					{
-						try
-						{
-							$attributeText = $attributeData['source']->getOptionText($attributeValue);
-
-							$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue] = $attributeText;
-
-							$attributeValue = $attributeText;
-						}
-						catch(Exception $e)
-						{
-							$attributeValue = null;
 						}
 					}
 				}
@@ -1793,8 +1871,8 @@ class Codisto_Sync_Model_Sync
 		if($state == 'simple')
 		{
 			// Simple Products not participating as configurable skus
-			$simpleProducts = $this->getProductCollection()
-								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+
+			$simpleProducts = $this->getProductCollection()->addAttributeToSelect($this->availableProductFields, 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'simple'))
 								->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId));
 
@@ -1838,7 +1916,7 @@ class Codisto_Sync_Model_Sync
 		{
 			// Configurable products
 			$configurableProducts = $this->getProductCollection()
-								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+								->addAttributeToSelect($this->availableProductFields, 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 								->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId));
 
@@ -1886,7 +1964,7 @@ class Codisto_Sync_Model_Sync
 		{
 			// Grouped products
 			$groupedProducts = $this->getProductCollection()
-								->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+								->addAttributeToSelect($this->availableProductFields, 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'grouped'))
 								->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId));
 
