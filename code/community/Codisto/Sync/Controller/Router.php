@@ -194,6 +194,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						else
 						{
 							$response->setBody('<!DOCTYPE html><html><head></head><body><h1>Unable to Register</h1><p>Sorry, we are currently unable to register your Codisto account.
+							In most cases, this is due to your server configuration being unable to make outbound communication to the Codisto servers.</p>
+							<p>This is usually easily fixed - please contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p></body></html>');
 						}
 
 						return true;
@@ -203,6 +205,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				if($MerchantID == null)
 				{
 					$response->setBody('<!DOCTYPE html><html><head></head><body><h1>Unable to Register</h1><p>Sorry, we are currently unable to register your Codisto account.
+					In most cases, this is due to your server configuration being unable to make outbound communication to the Codisto servers.</p>
+					<p>This is usually easily fixed - please contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p></body></html>');
 
 					return true;
 				}
