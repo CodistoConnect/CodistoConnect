@@ -2113,17 +2113,8 @@ class Codisto_Sync_Model_Sync
 
 			$adapter = $coreResource->getConnection(Mage_Core_Model_Resource::DEFAULT_WRITE_RESOURCE);
 
-			$adapter->beginTransaction();
-			try
-			{
-				$adapter->query('REPLACE INTO `'.$tablePrefix.'codisto_sync` ( store_id, token ) VALUES ('.$storeId.', \''.$uniqueId.'\')');
-			}
-			catch(Exception $e)
-			{
-				$adapter->query('CREATE TABLE `'.$tablePrefix.'codisto_sync` (store_id smallint(5) unsigned PRIMARY KEY NOT NULL, token varchar(20) NOT NULL)');
-				$adapter->insert($tablePrefix.'codisto_sync', array( 'token' => $uniqueId, 'store_id' => $storeId ));
-			}
-			$adapter->commit();
+			$adapter->query('CREATE TABLE IF NOT EXISTS `'.$tablePrefix.'codisto_sync` (store_id smallint(5) unsigned PRIMARY KEY NOT NULL, token varchar(20) NOT NULL)');
+			$adapter->query('REPLACE INTO `'.$tablePrefix.'codisto_sync` ( store_id, token ) VALUES ('.$storeId.', \''.$uniqueId.'\')');
 
 			$db->exec('CREATE TABLE IF NOT EXISTS Sync (token text NOT NULL, sentinel NOT NULL PRIMARY KEY DEFAULT 1, CHECK(sentinel = 1))');
 			$db->exec('INSERT OR REPLACE INTO Sync (token) VALUES (\''.$uniqueId.'\')');
