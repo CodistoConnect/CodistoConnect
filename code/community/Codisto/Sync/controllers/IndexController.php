@@ -565,9 +565,10 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setCustomer($quote->getCustomer());
 		$order->setCodistoOrderid($ordercontent->orderid);
 
-		if(preg_match('/\{ordernumber\}/', $ordernumberformat))
+		if(preg_match('/\{ordernumber\}|\{ebaysalesrecordnumber\}/', $ordernumberformat))
 		{
 			$incrementId = preg_replace('/\{ordernumber\}/', (string)$order->getIncrementId(), $ordernumberformat);
+			$incrementId = preg_replace('/\{ebaysalesrecordnumber\}/', $ebaysalesrecordnumber, $incrementId);
 			$order->setIncrementId($incrementId);
 		}
 		else
@@ -892,6 +893,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 			if($invoice->getTotalQty())
 			{
+				$payment->setBaseAmountPaid(0.0);
+				$payment->setAmountPaid(0.0);
+
 				$invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
 				$invoice->register();
 			}
@@ -1447,6 +1451,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				if($invoice->getTotalQty())
 				{
+					$payment->setBaseAmountPaid(0.0);
+					$payment->setAmountPaid(0.0);
+
 					$invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
 					$invoice->register();
 				}

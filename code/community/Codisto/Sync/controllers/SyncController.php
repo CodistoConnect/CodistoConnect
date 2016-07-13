@@ -37,7 +37,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 	public function indexAction()
 	{
-
 		set_time_limit(0);
 
 		@ini_set('zlib.output_compression', 'Off');
@@ -88,7 +87,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			switch ( $server['HTTP_X_ACTION'] ) {
 
 				case 'GET':
-
+Mage::log('running GET '.$_SERVER['QUERY_STRING'], null, 'codisto.log');
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -289,7 +288,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					die;
 
 				case 'PRODUCTCOUNT':
-
+Mage::log('running PRODUCTCOUNT', null, 'codisto.log');
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						$syncObject = Mage::getModel('codistosync/sync');
@@ -306,7 +305,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					die;
 
 				case 'EXECUTEFIRST':
-
+Mage::log('running EXECUTEFIRST', null, 'codisto.log');
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -389,7 +388,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 				case 'EXECUTECHUNK':
 				case 'EXECUTEINCREMENT':
-
+Mage::log('running '.$server['HTTP_X_ACTION'], null, 'codisto.log');
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -497,7 +496,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					die;
 
 				case 'CHANGECOMPLETE':
-
+Mage::log('running CHANGECOMPLETE', null, 'codisto.log');
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -531,7 +530,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					die;
 
 				case 'TAX':
-
+Mage::log('running TAX', null, 'codisto.log');
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -576,7 +575,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					die;
 
 				case 'STOREVIEW':
-
+Mage::log('running STOREVIEW', null, 'codisto.log');
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -618,7 +617,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					die;
 
 				case 'BLOCKS':
-
+Mage::log('running BLOCKS', null, 'codisto.log');
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						$syncObject = Mage::getModel('codistosync/sync');
@@ -645,7 +644,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					die;
 
 				case 'ORDERS':
-
+Mage::log('running ORDERS', null, 'codisto.log');
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -693,7 +692,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					die;
 
 				case 'TEMPLATE':
-
+Mage::log('running TEMPLATE', null, 'codisto.log');
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
