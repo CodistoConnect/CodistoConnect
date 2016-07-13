@@ -690,6 +690,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						catch(Exception $e)
 						{
 							$this->sendExceptionError($response, $e);
+							$response->sendResponse();
 						}
 					}
 					else
