@@ -300,7 +300,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					return true;
 				}
 
-				$remotePath = preg_replace('/^\/codisto\/\/?|key\/[a-zA-z0-9]*\//', '', $path);
+				$remotePath = preg_replace('/^\/codisto\/\/?|key\/[a-zA-z0-9]*\/?/', '', $path);
 				if($MerchantID)
 				{
 					$remoteUrl = 'https://ui.codisto.com/' . $MerchantID . '/' . $remotePath;
