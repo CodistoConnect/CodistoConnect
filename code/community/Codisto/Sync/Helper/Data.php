@@ -73,7 +73,12 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 	public function getCodistoVersion()
 	{
-		return (string) Mage::getConfig()->getNode()->modules->Codisto_Sync->version;
+		return (string)Mage::getConfig()->getNode()->modules->Codisto_Sync->version;
+	}
+
+	public function getTriggerMode()
+	{
+		return (string)Mage::getConfig()->getNode()->modules->Codisto_Sync->trigger_mode != 'false';
 	}
 
 	public function checkRequestHash($key, $server)
@@ -356,6 +361,9 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 	public function canSyncIncrementally($syncDbPath, $storeId)
 	{
+		if(!$this->getTriggerMode())
+			return false;
+
 		$adapter = Mage::getModel('core/resource')->getConnection(Mage_Core_Model_Resource::DEFAULT_WRITE_RESOURCE);
 
 		$tablePrefix = Mage::getConfig()->getTablePrefix();
@@ -535,79 +543,59 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 				$table = $triggerRule['table'];
 				$statement = $triggerRule['statements'][$triggerTypeMap[$trigger['type']]];
 
-				if(!$trigger['current_statement'])
+				try
 				{
-					try
-					{
-						$final_statement = "\n/* start codisto change tracking trigger */\n".$statement."\n/* end codisto change tracking trigger */\n";
+					$final_statement = "\n/* start codisto change tracking trigger */\n".$statement."\n/* end codisto change tracking trigger */\n";
 
-						$adapter->query('CREATE DEFINER = CURRENT_USER TRIGGER codisto_'.$table.'_'.strtolower($trigger['type']).' AFTER '.$trigger['type'].' ON '.$trigger['table'].' FOR EACH ROW BEGIN '.$final_statement.'END');
-					}
-					catch(Exception $e)
+					$adapter->query('DROP TRIGGER IF EXISTS codisto_'.$table.'_'.strtolower($trigger['type']));
+					$adapter->query('CREATE DEFINER = CURRENT_USER TRIGGER codisto_'.$table.'_'.strtolower($trigger['type']).' AFTER '.$trigger['type'].' ON '.$trigger['table'].' FOR EACH ROW BEGIN '.$final_statement.'END');
+
+					// TODO: loop on existing triggers for this class that match /* start codisto change tracking trigger */ and remove
+				}
+				catch(Exception $e)
+				{
+					if($e->hasChainedException() &&
+						$e->getChainedException() instanceof PDOException &&
+						is_array($e->getChainedException()->errorInfo) &&
+						$e->getChainedException()->errorInfo[1] == 1235)
 					{
-						if($e->hasChainedException() &&
-							$e->getChainedException() instanceof PDOException &&
-							is_array($e->getChainedException()->errorInfo) &&
-							$e->getChainedException()->errorInfo[1] == 1235)
+						// this version of mysql doesn't support multiple triggers so let's modify the existing trigger
+
+						$current_statement = preg_replace('/^BEGIN|END$/i', '', $trigger['current_statement']);
+						$cleaned_statement = preg_replace('/\s*\/\*\s+start\s+codisto\s+change\s+tracking\s+trigger\s+\*\/.*\/\*\s+end\s+codisto\s+change\s+tracking\s+trigger\s+\*\/\n?\s*/is', '', $current_statement);
+						$final_statement = preg_replace('/;\s*;/', ';', $cleaned_statement."\n/* start codisto change tracking trigger */\n".$statement)
+											."\n/* end codisto change tracking trigger */\n";
+
+						$definer = $trigger['current_definer'];
+						if(strpos($definer, '@') !== false)
 						{
-							// this version of mysql doesn't support multiple triggers so let's modify the existing trigger
+							$definer = explode('@', $definer);
+							$definer[0] = '\''.$definer[0].'\'';
+							$definer[1] = '\''.$definer[1].'\'';
+							$definer = implode('@', $definer);
+						}
 
-							$current_statement = preg_replace('/^BEGIN|END$/i', '', $trigger['current_statement']);
-							$cleaned_statement = preg_replace('/\s*\/\*\s+start\s+codisto\s+change\s+tracking\s+trigger\s+\*\/.*\/\*\s+end\s+codisto\s+change\s+tracking\s+trigger\s+\*\/\n?\s*/is', '', $current_statement);
-							$final_statement = preg_replace('/;\s*;/', ';', $cleaned_statement."\n/* start codisto change tracking trigger */\n".$statement)
-												."\n/* end codisto change tracking trigger */\n";
-
-							$definer = $trigger['current_definer'];
-							if(strpos($definer, '@') !== false)
-							{
-								$definer = explode('@', $definer);
-								$definer[0] = '\''.$definer[0].'\'';
-								$definer[1] = '\''.$definer[1].'\'';
-								$definer = implode('@', $definer);
-							}
-
+						try
+						{
+							$adapter->query('DROP TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'`');
+							$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON '.$trigger['table'].' FOR EACH ROW BEGIN '.$final_statement.' END');
+						}
+						catch(Exception $e2)
+						{
 							try
 							{
-								$adapter->query('DROP TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'`');
-								$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON '.$trigger['table'].' FOR EACH ROW BEGIN '.$final_statement.' END');
-							}
-							catch(Exception $e2)
-							{
 								$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON '.$trigger['table'].' FOR EACH ROW '.$trigger['current_statement']);
-								throw $e;
 							}
+							catch(Exception $e3)
+							{
+								throw new Exception($e2->getMessage().' '.$e3->getMessage());
+							}
+
+							throw $e2;
 						}
-						else
-						{
-							throw $e;
-						}
 					}
-				}
-				else
-				{
-					$current_statement = preg_replace('/^BEGIN|END$/i', '', $trigger['current_statement']);
-					$cleaned_statement = preg_replace('/\s*\/\*\s*start\s+codisto\s+change\s+tracking\s+trigger\s*\*\/.*\/\*\s*end\s+codisto\s+change\s+tracking\s+trigger\s*\*\/\n?/is', '', $current_statement);
-
-					$final_statement = preg_replace('/;\s*;/', ';', $cleaned_statement."\n/* start codisto change tracking trigger */\n".$statement)
-										."\n/* end codisto change tracking trigger */\n";
-
-					$definer = $trigger['current_definer'];
-					if(strpos($definer, '@') !== false)
+					else
 					{
-						$definer = explode('@', $definer);
-						$definer[0] = '\''.$definer[0].'\'';
-						$definer[1] = '\''.$definer[1].'\'';
-						$definer = implode('@', $definer);
-					}
-
-					try
-					{
-						$adapter->query('DROP TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'`');
-						$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON '.$trigger['table'].' FOR EACH ROW BEGIN '.$final_statement.' END');
-					}
-					catch(Exception $e2)
-					{
-						$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON '.$trigger['table'].' FOR EACH ROW '.$trigger['current_statement']);
 						throw $e;
 					}
 				}

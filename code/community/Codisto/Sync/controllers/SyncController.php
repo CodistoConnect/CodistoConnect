@@ -87,7 +87,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			switch ( $server['HTTP_X_ACTION'] ) {
 
 				case 'GET':
-Mage::log('running GET '.$_SERVER['QUERY_STRING'], null, 'codisto.log');
+
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -288,7 +288,7 @@ Mage::log('running GET '.$_SERVER['QUERY_STRING'], null, 'codisto.log');
 					die;
 
 				case 'PRODUCTCOUNT':
-Mage::log('running PRODUCTCOUNT', null, 'codisto.log');
+
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						$syncObject = Mage::getModel('codistosync/sync');
@@ -305,7 +305,7 @@ Mage::log('running PRODUCTCOUNT', null, 'codisto.log');
 					die;
 
 				case 'EXECUTEFIRST':
-Mage::log('running EXECUTEFIRST', null, 'codisto.log');
+
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -386,9 +386,17 @@ Mage::log('running EXECUTEFIRST', null, 'codisto.log');
 					}
 					die;
 
-				case 'EXECUTECHUNK':
 				case 'EXECUTEINCREMENT':
-Mage::log('running '.$server['HTTP_X_ACTION'], null, 'codisto.log');
+
+					if(!$helper->getTriggerMode())
+					{
+						$this->sendPlainResponse($response, 400, 'Bad Request', 'No Action');
+						$response->sendResponse();
+						die;
+					}
+
+				case 'EXECUTECHUNK':
+
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -496,7 +504,7 @@ Mage::log('running '.$server['HTTP_X_ACTION'], null, 'codisto.log');
 					die;
 
 				case 'CHANGECOMPLETE':
-Mage::log('running CHANGECOMPLETE', null, 'codisto.log');
+
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -530,7 +538,7 @@ Mage::log('running CHANGECOMPLETE', null, 'codisto.log');
 					die;
 
 				case 'TAX':
-Mage::log('running TAX', null, 'codisto.log');
+
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -575,7 +583,7 @@ Mage::log('running TAX', null, 'codisto.log');
 					die;
 
 				case 'STOREVIEW':
-Mage::log('running STOREVIEW', null, 'codisto.log');
+
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -617,7 +625,7 @@ Mage::log('running STOREVIEW', null, 'codisto.log');
 					die;
 
 				case 'BLOCKS':
-Mage::log('running BLOCKS', null, 'codisto.log');
+
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						$syncObject = Mage::getModel('codistosync/sync');
@@ -644,7 +652,7 @@ Mage::log('running BLOCKS', null, 'codisto.log');
 					die;
 
 				case 'ORDERS':
-Mage::log('running ORDERS', null, 'codisto.log');
+
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
@@ -692,7 +700,7 @@ Mage::log('running ORDERS', null, 'codisto.log');
 					die;
 
 				case 'TEMPLATE':
-Mage::log('running TEMPLATE', null, 'codisto.log');
+
 					if($this->checkHash($helper, $server, $storeId))
 					{
 						try
