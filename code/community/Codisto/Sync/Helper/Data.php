@@ -508,31 +508,18 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 			if(!empty($existingTriggers))
 			{
-				try
+				$adapter->query('CREATE TABLE IF NOT EXISTS `'.$tablePrefix.'codisto_trigger_history` (definer text NOT NULL, current_schema text NOT NULL, current_name text NOT NULL, current_statement text NOT NULL, type text NOT NULL, `table` text NOT NULL, stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+
+				foreach($existingTriggers as $trigger)
 				{
-					$adapter->query('CREATE TABLE IF NOT EXISTS `'.$tablePrefix.'codisto_trigger_history` (definer text NOT NULL, current_schema text NOT NULL, current_name text NOT NULL, current_statement text NOT NULL, type text NOT NULL, `table` text NOT NULL, stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)');
-
-					$adapter->beginTransaction();
-					foreach($existingTriggers as $trigger)
-					{
-						$adapter->insert($tablePrefix.'codisto_trigger_history', array(
-							'definer' => $trigger['current_definer'],
-							'current_schema' => $trigger['current_schema'],
-							'current_name' => $trigger['current_name'],
-							'current_statement' => $trigger['current_statement'],
-							'type' => $trigger['type'],
-							'table' => $trigger['table']
-						));
-					}
-					$adapter->commit();
-
-				}
-				catch (Exception $e)
-				{
-
-					$adapter->rollback();
-					throw $e;
-
+					$adapter->insert($tablePrefix.'codisto_trigger_history', array(
+						'definer' => $trigger['current_definer'],
+						'current_schema' => $trigger['current_schema'],
+						'current_name' => $trigger['current_name'],
+						'current_statement' => $trigger['current_statement'],
+						'type' => $trigger['type'],
+						'table' => $trigger['table']
+					));
 				}
 			}
 
