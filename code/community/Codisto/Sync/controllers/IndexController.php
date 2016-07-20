@@ -892,6 +892,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 			if($invoice->getTotalQty())
 			{
+				$payment->setBaseAmountPaid(0.0);
+				$payment->setAmountPaid(0.0);
+
 				$invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
 				$invoice->register();
 			}
@@ -1447,6 +1450,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				if($invoice->getTotalQty())
 				{
+					$payment->setBaseAmountPaid(0.0);
+					$payment->setAmountPaid(0.0);
+
 					$invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
 					$invoice->register();
 				}
