@@ -229,7 +229,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$shippingRequest->setPackageWeight($totalweight);
 			$shippingRequest->setPackageQty($itemqty);
 			$shippingRequest->setPackagePhysicalValue($total);
-			$shippingRequest->setFreeMethodWeight(0);
+			$shippingRequest->setFreeMethodWeight($totalweight);
 			$shippingRequest->setStoreId($store->getId());
 			$shippingRequest->setWebsiteId($store->getWebsiteId());
 			$shippingRequest->setFreeShipping(0);
