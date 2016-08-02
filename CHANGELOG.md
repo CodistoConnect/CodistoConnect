@@ -1,5 +1,23 @@
 # Change Log
 
+## [1.90.6](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.6) (2016-07-20)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.5...1.90.6)
+
+**Implemented enhancements:**
+
+- stop double pay event [\#338](https://github.com/CodistoConnect/CodistoConnect/pull/338) ([lamery](https://github.com/lamery))
+
+**Fixed bugs:**
+
+- stop double pay event [\#338](https://github.com/CodistoConnect/CodistoConnect/pull/338) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#344](https://github.com/CodistoConnect/CodistoConnect/pull/344) ([lamery](https://github.com/lamery))
+- clear payment amount due to updateTotals doubling base\_amountpaid and… [\#343](https://github.com/CodistoConnect/CodistoConnect/pull/343) ([lamery](https://github.com/lamery))
+- set free method weight [\#342](https://github.com/CodistoConnect/CodistoConnect/pull/342) ([jlivas](https://github.com/jlivas))
+- change register message [\#339](https://github.com/CodistoConnect/CodistoConnect/pull/339) ([jlivas](https://github.com/jlivas))
+
 ## [1.90.5](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.5) (2016-06-30)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.4...1.90.5)
 
