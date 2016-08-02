@@ -351,7 +351,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 								{
 									try
 									{
-										$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+										if($indexer)
+											$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
 										break;
 									}
 									catch(Exception $e)
@@ -473,7 +474,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 								{
 									try
 									{
-										$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
+										if($indexer)
+											$indexer->changeStatus(Mage_Index_Model_Process::STATUS_PENDING);
 										break;
 									}
 									catch(Exception $e)

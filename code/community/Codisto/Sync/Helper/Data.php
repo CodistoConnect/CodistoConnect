@@ -535,7 +535,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 					$final_statement = "\n/* start codisto change tracking trigger */\n".$statement."\n/* end codisto change tracking trigger */\n";
 
 					$adapter->query('DROP TRIGGER IF EXISTS codisto_'.$table.'_'.strtolower($trigger['type']));
-					$adapter->query('CREATE DEFINER = CURRENT_USER TRIGGER codisto_'.$table.'_'.strtolower($trigger['type']).' AFTER '.$trigger['type'].' ON '.$trigger['table'].' FOR EACH ROW BEGIN '.$final_statement.'END');
+					$adapter->query('CREATE DEFINER = CURRENT_USER TRIGGER codisto_'.$table.'_'.strtolower($trigger['type']).' AFTER '.$trigger['type'].' ON `'.$trigger['table'].'`'."\n".'FOR EACH ROW BEGIN '.$final_statement.'END');
 
 					// TODO: loop on existing triggers for this class that match /* start codisto change tracking trigger */ and remove
 				}
@@ -565,13 +565,13 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 						try
 						{
 							$adapter->query('DROP TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'`');
-							$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON '.$trigger['table'].' FOR EACH ROW BEGIN '.$final_statement.' END');
+							$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON `'.$trigger['table'].'`'."\n".'FOR EACH ROW BEGIN '.$final_statement.' END');
 						}
 						catch(Exception $e2)
 						{
 							try
 							{
-								$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON '.$trigger['table'].' FOR EACH ROW '.$trigger['current_statement']);
+								$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON `'.$trigger['table'].'`'."\n".'FOR EACH ROW '.$trigger['current_statement']);
 							}
 							catch(Exception $e3)
 							{
