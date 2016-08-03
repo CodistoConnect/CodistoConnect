@@ -198,7 +198,7 @@ class Codisto_Sync_Model_Sync
 		{
 			$db = new PDO('sqlite:' . $templateDb);
 
-			Mage::helper('codistosync')->prepareSqliteDatabase($db, true /* wait */);
+			Mage::helper('codistosync')->prepareSqliteDatabase( $db, 60 );
 
 			$files = $db->prepare('SELECT Name, Content FROM File');
 			$files->execute();
@@ -240,7 +240,7 @@ class Codisto_Sync_Model_Sync
 	{
 		$store = Mage::app()->getStore($storeId);
 
-		$db = $this->GetSyncDb($syncDb, true /* wait */ );
+		$db = $this->GetSyncDb($syncDb, 60 );
 
 		$insertCategory = $db->prepare('INSERT OR REPLACE INTO Category(ExternalReference, Name, ParentExternalReference, LastModified, Enabled, Sequence) VALUES(?,?,?,?,?,?)');
 
@@ -257,7 +257,7 @@ class Codisto_Sync_Model_Sync
 
 	public function DeleteCategory($syncDb, $id, $storeId)
 	{
-		$db = $this->GetSyncDb($syncDb, true /* wait */);
+		$db = $this->GetSyncDb($syncDb, 60 );
 
 		$args = array();
 		$args[] = $id;
@@ -276,7 +276,7 @@ class Codisto_Sync_Model_Sync
 	{
 		$store = Mage::app()->getStore($storeId);
 
-		$db = $this->GetSyncDb($syncDb, true /* wait */ );
+		$db = $this->GetSyncDb($syncDb, 60 );
 
 		$insertCategoryProduct = $db->prepare('INSERT OR IGNORE INTO CategoryProduct(ProductExternalReference, CategoryExternalReference, Sequence) VALUES(?,?,?)');
 		$insertProduct = $db->prepare('INSERT INTO Product(ExternalReference, Type, Code, Name, Price, ListPrice, TaxClass, Description, Enabled, StockControl, StockLevel, Weight, InStore) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -397,7 +397,7 @@ class Codisto_Sync_Model_Sync
 
 	public function DeleteProduct($syncDb, $ids, $storeId)
 	{
-		$db = $this->GetSyncDb($syncDb, true /* wait */);
+		$db = $this->GetSyncDb($syncDb, 60 );
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
@@ -1338,7 +1338,7 @@ class Codisto_Sync_Model_Sync
 
 		if(file_exists($syncDbPath))
 		{
-			$syncDb = $this->GetSyncDb($syncDbPath, false /* don't wait */);
+			$syncDb = $this->GetSyncDb($syncDbPath, 5 );
 		}
 
 		return array( 'id' => $storeId, 'path' => $syncDbPath, 'db' => $syncDb );
@@ -1703,7 +1703,7 @@ class Codisto_Sync_Model_Sync
 
 	public function SyncChangeComplete($syncDb, $changeDb, $storeId)
 	{
-		$db = $this->GetSyncDb($syncDb, false /* don't wait */);
+		$db = $this->GetSyncDb($syncDb, 5 );
 
 		$db->exec('ATTACH DATABASE \''.$changeDb.'\' AS ChangeDb');
 
@@ -1767,7 +1767,7 @@ class Codisto_Sync_Model_Sync
 	{
 		$store = Mage::app()->getStore($storeId);
 
-		$db = $this->GetSyncDb($syncDb, false /* don't wait */);
+		$db = $this->GetSyncDb($syncDb, 5 );
 
 		$insertCategory = $db->prepare('INSERT OR REPLACE INTO Category(ExternalReference, Name, ParentExternalReference, LastModified, Enabled, Sequence) VALUES(?,?,?,?,?,?)');
 		$insertCategoryProduct = $db->prepare('INSERT OR IGNORE INTO CategoryProduct(ProductExternalReference, CategoryExternalReference, Sequence) VALUES(?,?,?)');
@@ -2155,7 +2155,7 @@ class Codisto_Sync_Model_Sync
 
 	public function SyncStaticBlocks($syncDb, $storeId)
 	{
-		$db = $this->GetSyncDb($syncDb, false /* don't wait */);
+		$db = $this->GetSyncDb($syncDb, 5 );
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
@@ -2184,7 +2184,7 @@ class Codisto_Sync_Model_Sync
 
 	public function SyncTax($syncDb, $storeId)
 	{
-		$db = $this->GetSyncDb($syncDb, false /* don't wait */);
+		$db = $this->GetSyncDb($syncDb, 5 );
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
@@ -2306,7 +2306,7 @@ class Codisto_Sync_Model_Sync
 
 	public function SyncStores($syncDb, $storeId)
 	{
-		$db = $this->GetSyncDb($syncDb, false /* don't wait */);
+		$db = $this->GetSyncDb($syncDb, 5 );
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 		$db->exec('DELETE FROM Store');
@@ -2371,7 +2371,7 @@ class Codisto_Sync_Model_Sync
 	{
 		$store = Mage::app()->getStore($storeId);
 
-		$db = $this->GetSyncDb($syncDb, false /* don't wait */);
+		$db = $this->GetSyncDb($syncDb, 5 );
 
 		$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber) VALUES (?, ?, ?, ?, ?, ?)');
 
@@ -2399,11 +2399,11 @@ class Codisto_Sync_Model_Sync
 		$db->exec('COMMIT TRANSACTION');
 	}
 
-	private function GetSyncDb($syncDb, $wait = true)
+	private function GetSyncDb($syncDb, $timeout = 60)
 	{
 		$db = new PDO('sqlite:' . $syncDb);
 
-		Mage::helper('codistosync')->prepareSqliteDatabase($db, $wait);
+		Mage::helper('codistosync')->prepareSqliteDatabase( $db, $timeout );
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 		$db->exec('CREATE TABLE IF NOT EXISTS Progress(entity_id integer NOT NULL, State text NOT NULL, Sentinel integer NOT NULL PRIMARY KEY AUTOINCREMENT, CHECK(Sentinel=1))');
@@ -2595,7 +2595,7 @@ class Codisto_Sync_Model_Sync
 	{
 		$db = new PDO('sqlite:' . $templateDb);
 
-		Mage::helper('codistosync')->prepareSqliteDatabase($db, true /* wait */);
+		Mage::helper('codistosync')->prepareSqliteDatabase( $db, 60 );
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 		$db->exec('CREATE TABLE IF NOT EXISTS File(Name text NOT NULL PRIMARY KEY, Content blob NOT NULL, LastModified datetime NOT NULL, Changed bit NOT NULL DEFAULT -1)');

@@ -620,7 +620,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		{
 			$syncDb = new PDO('sqlite:' . $syncDbPath);
 
-			$this->prepareSqliteDatabase($syncDb);
+			$this->prepareSqliteDatabase( $syncDb, 60 );
 
 			$qry = $syncDb->query('PRAGMA quick_check');
 
@@ -773,19 +773,10 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return tempnam( $base_path , $path . '-' );
 	}
 
-	public function prepareSqliteDatabase($db, $wait = false, $pagesize = 65536, $timeout = 60)
+	public function prepareSqliteDatabase($db, $timeout = 60, $pagesize = 65536)
 	{
 		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-		if($wait)
-		{
-			$db->setAttribute(PDO::ATTR_TIMEOUT, $timeout);
-		}
-		else
-		{
-			$db->setAttribute(PDO::ATTR_TIMEOUT, 5);
-		}
-
+		$db->setAttribute(PDO::ATTR_TIMEOUT, $timeout);
 		$db->exec('PRAGMA synchronous=OFF');
 		$db->exec('PRAGMA temp_store=MEMORY');
 		$db->exec('PRAGMA page_size='.$pagesize);
@@ -793,7 +784,6 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		$db->exec('PRAGMA cache_size=15000');
 		$db->exec('PRAGMA soft_heap_limit=67108864');
 		$db->exec('PRAGMA journal_mode=MEMORY');
-		$db->setAttribute(PDO::ATTR_TIMEOUT, $timeout);
 	}
 
 	private function phpTest($interpreter, $args, $script)

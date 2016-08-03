@@ -117,7 +117,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 								$db = new PDO('sqlite:' . $tmpDb);
 
-								$helper->prepareSqliteDatabase($db);
+								$helper->prepareSqliteDatabase($db, 60 );
 
 								$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
 
@@ -190,7 +190,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 									$db = new PDO('sqlite:' . $tmpDb);
 
-									$helper->prepareSqliteDatabase($db);
+									$helper->prepareSqliteDatabase( $db, 60 );
 
 									$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
 
@@ -579,7 +579,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 							$db = new PDO('sqlite:' . $tmpDb);
 
-							$helper->prepareSqliteDatabase($db);
+							$helper->prepareSqliteDatabase( $db, 60 );
 
 							$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
 
@@ -624,7 +624,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 							$db = new PDO('sqlite:' . $tmpDb);
 
-							$helper->prepareSqliteDatabase($db);
+							$helper->prepareSqliteDatabase( $db, 60 );
 
 							$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
 
@@ -700,7 +700,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 							$db = new PDO('sqlite:' . $tmpDb);
 
-							$helper->prepareSqliteDatabase($db);
+							$helper->prepareSqliteDatabase( $db, 60 );
 
 							$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
 
@@ -788,7 +788,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 									$db = new PDO('sqlite:' . $tmpDb);
 
-									$helper->prepareSqliteDatabase($db, 1024);
+									$helper->prepareSqliteDatabase( $db, 60, 4096 );
 
 									$db->exec('ATTACH DATABASE \''.$templateDb.'\' AS Source');
 									$db->exec('CREATE TABLE File AS SELECT * FROM Source.File WHERE Changed != 0');
