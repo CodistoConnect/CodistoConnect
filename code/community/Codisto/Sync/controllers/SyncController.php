@@ -333,14 +333,19 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							if(!$configurableCount || !is_numeric($configurableCount))
 								$configurableCount = $this->defaultConfigurableCount;
 
-
 							$simpleCount = (int)$request->getQuery('simplecount');
 							if(!$simpleCount || !is_numeric($simpleCount))
 								$simpleCount = $this->defaultSimpleCount;
 
+							if($configurableCount > 0)
+							{
+								$result = $syncObject->SyncChunk($syncDb, 0, $configurableCount, $storeId, true);
+							}
 
-							$result = $syncObject->SyncChunk($syncDb, 0, $configurableCount, $storeId, true);
-							$result = $syncObject->SyncChunk($syncDb, $simpleCount, 0, $storeId, true);
+							if($simpleCount > 0)
+							{
+								$result = $syncObject->SyncChunk($syncDb, $simpleCount, 0, $storeId, true);
+							}
 
 							if($result == 'complete')
 							{
@@ -487,6 +492,14 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 										continue;
 									}
 								}
+
+								try
+								{
+									$helper->cleanSyncFolder();
+								}
+								catch(Exception $e)
+								{
+								}
 							}
 
 							$this->sendPlainResponse($response, 200, 'OK', $result);
@@ -494,8 +507,19 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						}
 						catch(Exception $e)
 						{
-							$this->sendExceptionError($response, $e);
-							$response->sendResponse();
+							if(property_exists($e, 'errorInfo') &&
+								$e->errorInfo[0] == 'HY000' &&
+								$e->errorInfo[1] == 5 &&
+								$e->errorInfo[2] == 'database is locked')
+							{
+								$this->sendPlainResponse($response, 200, 'OK', 'throttle');
+								$response->sendResponse();
+							}
+							else
+							{
+								$this->sendExceptionError($response, $e);
+								$response->sendResponse();
+							}
 						}
 					}
 					else

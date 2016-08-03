@@ -149,7 +149,19 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 	{
 		$createMerchant = false;
 
-		$lockFile = Mage::getBaseDir('var') . '/codisto-lock';
+		$lockFile;
+
+		try
+		{
+			$file = new Varien_Io_File();
+			$file->checkAndCreateFolder( Mage::getBaseDir('var') . '/codisto/', 0777 );
+
+			$lockFile = Mage::getBaseDir('var') . '/codisto/lock';
+		}
+		catch(Exception $e)
+		{
+			$lockFile = Mage::getBaseDir('var') . '/codisto-lock';
+		}
 
 		for($retry = 0;;$retry++)
 		{
@@ -475,7 +487,8 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 					'COALESCE(EXISTING.TRIGGER_SCHEMA, \'\') AS `current_schema`, '.
 					'COALESCE(EXISTING.TRIGGER_NAME, \'\') AS `current_name`, '.
 					'COALESCE(EXISTING.ACTION_STATEMENT, \'\') AS `current_statement`, '.
-					'COALESCE(EXISTING.DEFINER, \'\') AS `current_definer` '.
+					'COALESCE(EXISTING.DEFINER, \'\') AS `current_definer`, '.
+					'COALESCE(EXISTING.SQL_MODE, \'\') AS `current_sqlmode` '.
 					'FROM `codisto_triggers` AS T '.
 						'CROSS JOIN (SELECT \'UPDATE\' AS `type` UNION ALL SELECT \'INSERT\' UNION ALL SELECT \'DELETE\') AS TYPE '.
 						'LEFT JOIN INFORMATION_SCHEMA.TRIGGERS AS EXISTING ON EXISTING.EVENT_OBJECT_TABLE = T.`table` AND EXISTING.ACTION_TIMING = \'AFTER\' AND EXISTING.EVENT_MANIPULATION = TYPE.`type` '.
@@ -500,6 +513,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 						'current_schema' => $trigger['current_schema'],
 						'current_name' => $trigger['current_name'],
 						'current_statement' => $trigger['current_statement'],
+						'current_sqlmode' => $trigger['current_sqlmode'],
 						'type' => $trigger['type'],
 						'table' => $trigger['table']
 					);
@@ -541,7 +555,8 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 				}
 				catch(Exception $e)
 				{
-					if($e->hasChainedException() &&
+					if(method_exists($e, 'hasChainedException') &&
+						$e->hasChainedException() &&
 						$e->getChainedException() instanceof PDOException &&
 						is_array($e->getChainedException()->errorInfo) &&
 						$e->getChainedException()->errorInfo[1] == 1235)
@@ -564,14 +579,20 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 						try
 						{
+							$adapter->query('SET @saved_sql_mode = @@sql_mode');
+							$adapter->query('SET sql_mode = \''.$trigger['current_sqlmode'].'\'');
 							$adapter->query('DROP TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'`');
 							$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON `'.$trigger['table'].'`'."\n".'FOR EACH ROW BEGIN '.$final_statement.' END');
+							$adapter->query('SET sql_mode = @saved_sql_mode');
 						}
 						catch(Exception $e2)
 						{
 							try
 							{
+								$adapter->query('SET @saved_sql_mode = @@sql_mode');
+								$adapter->query('SET sql_mode = \''.$trigger['current_sqlmode'].'\'');
 								$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON `'.$trigger['table'].'`'."\n".'FOR EACH ROW '.$trigger['current_statement']);
+								$adapter->query('SET sql_mode = @saved_sql_mode');
 							}
 							catch(Exception $e3)
 							{
@@ -657,6 +678,27 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 					$syncDbExists;
 	}
 
+	public function cleanSyncFolder()
+	{
+		$file = new Varien_Io_File();
+
+		$syncFolder = Mage::getBaseDir('var') . '/codisto/';
+
+		if($file->fileExists($syncFolder, false /* dirs as well */))
+		{
+			foreach(@glob($syncFolder.'sync-*', GLOB_NOESCAPE|GLOB_NOSORT) as $filePath)
+			{
+				if(preg_match('/-first-\d+\.db$/', $filePath) === 1 || preg_match('/\.db$/', $filePath) === 0)
+				{
+					if(@filemtime($filePath) < time() - 86400)
+					{
+						@unlink($filePath);
+					}
+				}
+			}
+		}
+	}
+
 	public function logExceptionCodisto(Exception $e, $endpoint)
 	{
 		$request = Mage::app()->getRequest();
@@ -731,10 +773,19 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		return tempnam( $base_path , $path . '-' );
 	}
 
-	public function prepareSqliteDatabase($db, $pagesize = 65536, $timeout = 60)
+	public function prepareSqliteDatabase($db, $wait = false, $pagesize = 65536, $timeout = 60)
 	{
 		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-		$db->setAttribute(PDO::ATTR_TIMEOUT, $timeout);
+
+		if($wait)
+		{
+			$db->setAttribute(PDO::ATTR_TIMEOUT, $timeout);
+		}
+		else
+		{
+			$db->setAttribute(PDO::ATTR_TIMEOUT, 5);
+		}
+
 		$db->exec('PRAGMA synchronous=OFF');
 		$db->exec('PRAGMA temp_store=MEMORY');
 		$db->exec('PRAGMA page_size='.$pagesize);
@@ -742,6 +793,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		$db->exec('PRAGMA cache_size=15000');
 		$db->exec('PRAGMA soft_heap_limit=67108864');
 		$db->exec('PRAGMA journal_mode=MEMORY');
+		$db->setAttribute(PDO::ATTR_TIMEOUT, $timeout);
 	}
 
 	private function phpTest($interpreter, $args, $script)
