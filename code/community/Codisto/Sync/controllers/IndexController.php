@@ -380,7 +380,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						{
 							$quote = Mage::getModel('sales/quote');
 
-							$this->ProcessQuote($quote, $xml, $store);
+							$this->ProcessQuote($quote, $xml, $store, $request);
 						}
 						catch(Exception $e)
 						{
@@ -411,11 +411,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 							if($order && $order->getId())
 							{
-								$this->ProcessOrderSync($quote, $order, $xml, $productsToReindex, $ordersProcessed, $invoicesProcessed, $store);
+								$this->ProcessOrderSync($quote, $order, $xml, $productsToReindex, $ordersProcessed, $invoicesProcessed, $store, $request);
 							}
 							else
 							{
-								$this->ProcessOrderCreate($quote, $xml, $productsToReindex, $ordersProcessed, $invoicesProcessed, $store);
+								$this->ProcessOrderCreate($quote, $xml, $productsToReindex, $ordersProcessed, $invoicesProcessed, $store, $request);
 							}
 
 							$connection->commit();
@@ -533,9 +533,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 	}
 
-	private function ProcessOrderCreate($quote, $xml, &$productsToReindex, &$orderids, &$invoiceids, $store)
+	private function ProcessOrderCreate($quote, $xml, &$productsToReindex, &$orderids, &$invoiceids, $store, $request)
 	{
-		$request = $this->getRequest();
 
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
@@ -609,10 +608,12 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				{
 					$productid = intval($productid);
 
-					if($request->getQuery('skiproduct'))
+					if($request->getQuery('skipproduct')) {
 						$product = Mage::getModel('catalog/product');
-					else
+						$adjustStock = false;
+					} else {
 						$product = Mage::getModel('catalog/product')->load($productid);
+					}
 
 					if($product->getId())
 					{
@@ -839,6 +840,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		}
 
+		if($adjustStock == false) {
+		}
+
 		$order->setBaseTotalPaid(0);
 		$order->setTotalPaid(0);
 		$order->setBaseTotalDue(0);
@@ -940,9 +944,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$orderids[] = $order->getId();
 	}
 
-	private function ProcessOrderSync($quote, $order, $xml, &$productsToReindex, &$orderids, &$invoiceids, $store)
+	private function ProcessOrderSync($quote, $order, $xml, &$productsToReindex, &$orderids, &$invoiceids, $store, $request)
 	{
-		$request = $this->getRequest();
 
 		$orderstatus = $order->getStatus();
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
@@ -1106,14 +1109,17 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 					$productname = (string)$productname;
 
 				$productid = $orderline->externalreference[0];
+
 				if($productid != null)
 				{
 					$productid = intval($productid);
 
-					if($request->getQuery('skiproduct'))
+					if($request->getQuery('skipproduct')) {
 						$product = Mage::getModel('catalog/product');
-					else
+						$adjustStock = false;
+					} else {
 						$product = Mage::getModel('catalog/product')->load($productid);
+					}
 
 					if($product->getId())
 					{
@@ -1505,9 +1511,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$orderids[] = $order->getId();
 	}
 
-	private function ProcessQuote($quote, $xml, $store)
+	private function ProcessQuote($quote, $xml, $store, $request)
 	{
-		$request = $this->getRequest();
 
 		$connection = Mage::getSingleton('core/resource')->getConnection('core_write');
 
@@ -1749,7 +1754,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				{
 					$productid = intval($productid);
 
-					if($request->getQuery('skiproduct'))
+					if($request->getQuery('skipproduct')
 						$product = Mage::getModel('catalog/product');
 					else
 						$product = Mage::getModel('catalog/product')->load($productid);
@@ -1920,7 +1925,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$shippingRequest = Mage::getModel('shipping/rate_request');
 				$shippingRequest->setAllItems($quote->getAllItems());
 				$shippingRequest->setDestCountryId($shippingAddress->getCountryId());
-				$shippingRequest->setOrigCountry($shippingAddress->getCountryId());
 				$shippingRequest->setDestRegionId($shippingAddress->getRegionId());
 				$shippingRequest->setDestRegionCode($shippingAddress->getRegionCode());
 				$shippingRequest->setDestStreet($shippingAddress->getStreet(-1));
