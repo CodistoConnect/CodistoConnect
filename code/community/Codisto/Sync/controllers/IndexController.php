@@ -217,6 +217,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$shippingRequest = Mage::getModel('shipping/rate_request');
 			$shippingRequest->setAllItems($quote->getAllItems());
 			$shippingRequest->setDestCountryId($countrycode);
+			$shippingRequest->setOrigCountry($countrycode);
 			if($regionid)
 				$shippingRequest->setDestRegionId($regionid);
 			if($regioncode)
@@ -534,6 +535,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 	private function ProcessOrderCreate($quote, $xml, &$productsToReindex, &$orderids, &$invoiceids, $store)
 	{
+		$request = $this->getRequest();
+
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
 		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
@@ -606,7 +609,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				{
 					$productid = intval($productid);
 
-					$product = Mage::getModel('catalog/product')->load($productid);
+					if($request->getQuery('skiproduct'))
+						$product = Mage::getModel('catalog/product');
+					else
+						$product = Mage::getModel('catalog/product')->load($productid);
+
 					if($product->getId())
 					{
 						$productcode = $product->getSku();
@@ -797,7 +804,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		try
 		{
-			$order->place();
+			if(!$request->getQuery('skiporderevent'))
+				$order->place();
 		}
 		catch(Exception $e)
 		{
@@ -934,6 +942,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 	private function ProcessOrderSync($quote, $order, $xml, &$productsToReindex, &$orderids, &$invoiceids, $store)
 	{
+		$request = $this->getRequest();
+
 		$orderstatus = $order->getStatus();
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
@@ -987,7 +997,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		if(!$ebaysalesrecordnumber)
 			$ebaysalesrecordnumber = '';
 
-		$currencyCode = (string)$ordercontent->transactcurrency;
+		$currencyCode = (string)$ordercontent->transactcurrency[0];
 		$ordertotal = floatval($ordercontent->ordertotal[0]);
 		$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
 		$ordertaxtotal = floatval($ordercontent->ordertaxtotal[0]);
@@ -1100,7 +1110,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				{
 					$productid = intval($productid);
 
-					$product = Mage::getModel('catalog/product')->load($productid);
+					if($request->getQuery('skiproduct'))
+						$product = Mage::getModel('catalog/product');
+					else
+						$product = Mage::getModel('catalog/product')->load($productid);
+
 					if($product->getId())
 					{
 						$productcode = $product->getSku();
@@ -1493,6 +1507,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 	private function ProcessQuote($quote, $xml, $store)
 	{
+		$request = $this->getRequest();
+
 		$connection = Mage::getSingleton('core/resource')->getConnection('core_write');
 
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
@@ -1670,7 +1686,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 		}
 
-		$currencyCode = $ordercontent->transactcurrency[0];
+		$currencyCode = (string)$ordercontent->transactcurrency[0];
 		$ordertotal = floatval($ordercontent->ordertotal[0]);
 		$ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
 		$ordertaxtotal = floatval($ordercontent->ordertaxtotal[0]);
@@ -1733,7 +1749,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				{
 					$productid = intval($productid);
 
-					$product = Mage::getModel('catalog/product')->load($productid);
+					if($request->getQuery('skiproduct'))
+						$product = Mage::getModel('catalog/product');
+					else
+						$product = Mage::getModel('catalog/product')->load($productid);
+
 					if($product->getId())
 					{
 						$productcode = $product->getSku();
@@ -1896,53 +1916,56 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		try {
 
-			$shippingRequest = Mage::getModel('shipping/rate_request');
-			$shippingRequest->setAllItems($quote->getAllItems());
-			$shippingRequest->setDestCountryId($shippingAddress->getCountryId());
-			$shippingRequest->setDestRegionId($shippingAddress->getRegionId());
-			$shippingRequest->setDestRegionCode($shippingAddress->getRegionCode());
-			$shippingRequest->setDestStreet($shippingAddress->getStreet(-1));
-			$shippingRequest->setDestCity($shippingAddress->getCity());
-			$shippingRequest->setDestPostcode($shippingAddress->getPostcode());
-			$shippingRequest->setPackageValue($quote->getBaseSubtotal());
-			$shippingRequest->setPackageValueWithDiscount($quote->getBaseSubtotalWithDiscount());
-			$shippingRequest->setPackageWeight($quote->getWeight());
-			$shippingRequest->setPackageQty($quote->getItemQty());
-			$shippingRequest->setPackagePhysicalValue($quote->getBaseSubtotal());
-			$shippingRequest->setFreeMethodWeight(0);
-			$shippingRequest->setStoreId($store->getId());
-			$shippingRequest->setWebsiteId($store->getWebsiteId());
-			$shippingRequest->setFreeShipping(false);
-			$shippingRequest->setBaseCurrency($currencyCode);
-			$shippingRequest->setPackageCurrency($currencyCode);
-			$shippingRequest->setBaseSubtotalInclTax($quote->getBaseSubtotalInclTax());
+			if(!$request->getQuery('skipshipping')) {
+				$shippingRequest = Mage::getModel('shipping/rate_request');
+				$shippingRequest->setAllItems($quote->getAllItems());
+				$shippingRequest->setDestCountryId($shippingAddress->getCountryId());
+				$shippingRequest->setOrigCountry($shippingAddress->getCountryId());
+				$shippingRequest->setDestRegionId($shippingAddress->getRegionId());
+				$shippingRequest->setDestRegionCode($shippingAddress->getRegionCode());
+				$shippingRequest->setDestStreet($shippingAddress->getStreet(-1));
+				$shippingRequest->setDestCity($shippingAddress->getCity());
+				$shippingRequest->setDestPostcode($shippingAddress->getPostcode());
+				$shippingRequest->setPackageValue($quote->getBaseSubtotal());
+				$shippingRequest->setPackageValueWithDiscount($quote->getBaseSubtotalWithDiscount());
+				$shippingRequest->setPackageWeight($quote->getWeight());
+				$shippingRequest->setPackageQty($quote->getItemQty());
+				$shippingRequest->setPackagePhysicalValue($quote->getBaseSubtotal());
+				$shippingRequest->setFreeMethodWeight($quote->getWeight());
+				$shippingRequest->setStoreId($store->getId());
+				$shippingRequest->setWebsiteId($store->getWebsiteId());
+				$shippingRequest->setFreeShipping(false);
+				$shippingRequest->setBaseCurrency($currencyCode);
+				$shippingRequest->setPackageCurrency($currencyCode);
+				$shippingRequest->setBaseSubtotalInclTax($quote->getBaseSubtotalInclTax());
 
-			$shippingResult = Mage::getModel('shipping/shipping')->collectRates($shippingRequest)->getResult();
+				$shippingResult = Mage::getModel('shipping/shipping')->collectRates($shippingRequest)->getResult();
 
-			$shippingRates = $shippingResult->getAllRates();
+				$shippingRates = $shippingResult->getAllRates();
 
-			foreach($shippingRates as $shippingRate)
-			{
-				if($shippingRate instanceof Mage_Shipping_Model_Rate_Result_Method)
+				foreach($shippingRates as $shippingRate)
 				{
-					if(is_null($freightcost) || (!is_null($shippingRate->getPrice()) && $shippingRate->getPrice() < $freightcost))
+					if($shippingRate instanceof Mage_Shipping_Model_Rate_Result_Method)
 					{
-						$isPickup = $shippingRate->getPrice() == 0 &&
-									(preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethod())) ||
-										preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getCarrierTitle())) ||
-										preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethodTitle())));
-
-						if(!$isPickup)
+						if(is_null($freightcost) || (!is_null($shippingRate->getPrice()) && $shippingRate->getPrice() < $freightcost))
 						{
-							$freightRate = Mage::getModel('sales/quote_address_rate')
-											->importShippingRate($shippingRate);
+							$isPickup = $shippingRate->getPrice() == 0 &&
+										(preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethod())) ||
+											preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getCarrierTitle())) ||
+											preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethodTitle())));
 
-							$freightcode = $freightRate->getCode();
-							$freightcarrier = $freightRate->getCarrier();
-							$freightcarriertitle = $freightRate->getCarrierTitle();
-							$freightmethod = $freightRate->getMethod();
-							$freightmethodtitle = $freightRate->getMethodTitle();
-							$freightmethoddescription = $freightRate->getMethodDescription();
+							if(!$isPickup)
+							{
+								$freightRate = Mage::getModel('sales/quote_address_rate')
+												->importShippingRate($shippingRate);
+
+								$freightcode = $freightRate->getCode();
+								$freightcarrier = $freightRate->getCarrier();
+								$freightcarriertitle = $freightRate->getCarrierTitle();
+								$freightmethod = $freightRate->getMethod();
+								$freightmethodtitle = $freightRate->getMethodTitle();
+								$freightmethoddescription = $freightRate->getMethodDescription();
+							}
 						}
 					}
 				}
