@@ -522,11 +522,11 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 			if(!empty($existingTriggers))
 			{
-				$adapter->query('CREATE TABLE IF NOT EXISTS `'.$tablePrefix.'codisto_trigger_history` (definer text NOT NULL, current_schema text NOT NULL, current_name text NOT NULL, current_statement text NOT NULL, type text NOT NULL, `table` text NOT NULL, stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+				$adapter->query('CREATE TABLE IF NOT EXISTS `'.$tablePrefix.'codisto_trigger_backup` (definer text NOT NULL, current_schema text NOT NULL, current_name text NOT NULL, current_statement text NOT NULL, type text NOT NULL, `table` text NOT NULL, stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)');
 
 				foreach($existingTriggers as $trigger)
 				{
-					$adapter->insert($tablePrefix.'codisto_trigger_history', array(
+					$adapter->insert($tablePrefix.'codisto_trigger_backup', array(
 						'definer' => $trigger['current_definer'],
 						'current_schema' => $trigger['current_schema'],
 						'current_name' => $trigger['current_name'],
@@ -568,6 +568,15 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 						$final_statement = preg_replace('/;\s*;/', ';', $cleaned_statement."\n/* start codisto change tracking trigger */\n".$statement)
 											."\n/* end codisto change tracking trigger */\n";
 
+						if(!preg_match('/^\s/', $final_statement))
+						{
+							$final_statement = "\n".$final_statement;
+						}
+						if(!preg_match('/\s$/', $final_statement))
+						{
+							$final_statement = $final_statement."\n";
+						}
+
 						$definer = $trigger['current_definer'];
 						if(strpos($definer, '@') !== false)
 						{
@@ -582,7 +591,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 							$adapter->query('SET @saved_sql_mode = @@sql_mode');
 							$adapter->query('SET sql_mode = \''.$trigger['current_sqlmode'].'\'');
 							$adapter->query('DROP TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'`');
-							$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON `'.$trigger['table'].'`'."\n".'FOR EACH ROW BEGIN '.$final_statement.' END');
+							$adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON `'.$trigger['table'].'`'."\n".' FOR EACH ROW BEGIN'.$final_statement.'END');
 							$adapter->query('SET sql_mode = @saved_sql_mode');
 						}
 						catch(Exception $e2)
