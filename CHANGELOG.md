@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.90.7](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.7) (2016-08-04)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.6...1.90.7)
+
+**Merged pull requests:**
+
+- Release [\#345](https://github.com/CodistoConnect/CodistoConnect/pull/345) ([lamery](https://github.com/lamery))
+- incremental sync implementation [\#340](https://github.com/CodistoConnect/CodistoConnect/pull/340) ([lamery](https://github.com/lamery))
+
 ## [1.90.6](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.6) (2016-07-20)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.5...1.90.6)
 
