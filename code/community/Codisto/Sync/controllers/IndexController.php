@@ -608,12 +608,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				{
 					$productid = intval($productid);
 
-					if($request->getQuery('skipproduct')) {
-						$product = Mage::getModel('catalog/product');
-						$adjustStock = false;
-					} else {
-						$product = Mage::getModel('catalog/product')->load($productid);
-					}
+					$product = Mage::getModel('catalog/product')->load($productid);
 
 					if($product->getId())
 					{
@@ -628,6 +623,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				if(!$product)
 				{
+					if($request->getQuery('checkproduct')) {
+						throw new Exception("external reference not found");
+					}
 					$product = Mage::getModel('catalog/product');
 					$adjustStock = false;
 				}
@@ -1115,12 +1113,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				{
 					$productid = intval($productid);
 
-					if($request->getQuery('skipproduct')) {
-						$product = Mage::getModel('catalog/product');
-						$adjustStock = false;
-					} else {
-						$product = Mage::getModel('catalog/product')->load($productid);
-					}
+					$product = Mage::getModel('catalog/product')->load($productid);
 
 					if($product->getId())
 					{
@@ -1135,6 +1128,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				if(!$product)
 				{
+					if($request->getQuery('checkproduct')) {
+						throw new Exception('externalreference not found');
+					}
 					$product = Mage::getModel('catalog/product');
 					$adjustStock = false;
 				}
@@ -1755,10 +1751,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				{
 					$productid = intval($productid);
 
-					if($request->getQuery('skipproduct'))
-						$product = Mage::getModel('catalog/product');
-					else
-						$product = Mage::getModel('catalog/product')->load($productid);
+					$product = Mage::getModel('catalog/product')->load($productid);
 
 					if($product->getId())
 					{
@@ -1773,6 +1766,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 				if(!$product)
 				{
+					if($request->getQuery('checkproduct')) {
+						throw new Exception('externalreference not found');
+					}
 					$product = Mage::getModel('catalog/product');
 				}
 
