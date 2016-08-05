@@ -841,6 +841,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		}
 
 		if($adjustStock == false) {
+			$order->addStatusToHistory($order->getStatus(), "NOTE: Stock level not adjusted, please check your inventory.");
 		}
 
 		$order->setBaseTotalPaid(0);
@@ -1754,7 +1755,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				{
 					$productid = intval($productid);
 
-					if($request->getQuery('skipproduct')
+					if($request->getQuery('skipproduct'))
 						$product = Mage::getModel('catalog/product');
 					else
 						$product = Mage::getModel('catalog/product')->load($productid);
