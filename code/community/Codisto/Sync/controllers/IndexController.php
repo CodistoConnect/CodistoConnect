@@ -217,7 +217,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$shippingRequest = Mage::getModel('shipping/rate_request');
 			$shippingRequest->setAllItems($quote->getAllItems());
 			$shippingRequest->setDestCountryId($countrycode);
-			$shippingRequest->setOrigCountry($countrycode);
 			if($regionid)
 				$shippingRequest->setDestRegionId($regionid);
 			if($regioncode)
