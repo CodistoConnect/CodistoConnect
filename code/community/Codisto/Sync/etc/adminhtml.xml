@@ -56,9 +56,14 @@
 					<sort_order>6</sort_order>
 					<action>adminhtml/codisto/intro</action>
 				</getstarted>
+				<account translate="title">
+					<title>Account</title>
+					<sort_order>7</sort_order>
+					<action>adminhtml/codisto/account</action>
+				</account>
 				<settings translate="title">
 					<title>Settings</title>
-					<sort_order>7</sort_order>
+					<sort_order>8</sort_order>
 					<action>adminhtml/codisto/settings</action>
 				</settings>
 			</children>
@@ -97,9 +102,13 @@
 								<title>Getting Started</title>
 								<sort_order>6</sort_order>
 							</getstarted>
+							<account>
+								<title>Getting Started</title>
+								<sort_order>7</sort_order>
+							</account>
 							<settings>
 								<title>Settings</title>
-								<sort_order>7</sort_order>
+								<sort_order>8</sort_order>
 							</settings>
 						</children>
 					</codisto>
