@@ -1990,7 +1990,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$shippingAddress->addShippingRate($freightRate);
 		$shippingAddress->setShippingMethod($freightcode);
-		$shippingAddress->setShippingDescription($freightmethodtitle);
+		$shippingAddress->setShippingDescription($freightcarriertitle.' - '.$freightmethodtitle);
 		$shippingAddress->setShippingAmount($freighttotal);
 		$shippingAddress->setBaseShippingAmount($freighttotal);
 		$shippingAddress->save();
