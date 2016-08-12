@@ -68,6 +68,13 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 		$this->renderPane($url, 'codisto-attributemapping');
 	}
 
+	public function accountAction()
+	{
+		$url = preg_replace('/\/ebaytab(?:\/index)?(\/key\/)?/', '/account$1', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
+
+		$this->renderPane($url, 'codisto-account');
+	}
+
 	public function settingsAction()
 	{
 		$url = preg_replace('/\/ebaytab(?:\/index)?(\/key\/)?/', '/settings$1', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
