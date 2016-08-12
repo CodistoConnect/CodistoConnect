@@ -1,5 +1,20 @@
 # Change Log
 
+## [1.90.8](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.8) (2016-08-12)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.7...1.90.8)
+
+**Merged pull requests:**
+
+- add account menu item [\#347](https://github.com/CodistoConnect/CodistoConnect/pull/347) ([jlivas](https://github.com/jlivas))
+
+## [1.90.7](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.7) (2016-08-04)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.6...1.90.7)
+
+**Merged pull requests:**
+
+- Release [\#345](https://github.com/CodistoConnect/CodistoConnect/pull/345) ([lamery](https://github.com/lamery))
+- incremental sync implementation [\#340](https://github.com/CodistoConnect/CodistoConnect/pull/340) ([lamery](https://github.com/lamery))
+
 ## [1.90.6](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.6) (2016-07-20)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.5...1.90.6)
 
