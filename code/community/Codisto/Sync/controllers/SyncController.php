@@ -145,6 +145,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									$db->exec('CREATE TABLE SKUMatrix AS SELECT * FROM SyncDb.SKUMatrix WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 									$db->exec('CREATE TABLE ProductOptionValue AS SELECT DISTINCT * FROM SyncDb.ProductOptionValue');
 									$db->exec('CREATE TABLE ProductHTML AS SELECT * FROM SyncDb.ProductHTML WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
+									$db->exec('CREATE TABLE ProductRelated AS SELECT * FROM SyncDb.ProductRelated WHERE ProductExternalReference IN (SELECT ExternalReference FROM Product)');
 									$db->exec('CREATE TABLE Attribute AS SELECT * FROM SyncDb.Attribute');
 									$db->exec('CREATE TABLE AttributeGroup AS SELECT * FROM SyncDb.AttributeGroup');
 									$db->exec('CREATE TABLE AttributeGroupMap AS SELECT * FROM SyncDb.AttributeGroupMap');
@@ -215,6 +216,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 											$db->exec('CREATE TABLE SKUMatrix AS SELECT * FROM SyncDb.SKUMatrix WHERE ProductExternalReference IN (SELECT ExternalReference FROM SyncDb.ProductChange)');
 											$db->exec('CREATE TABLE ProductOptionValue AS SELECT DISTINCT * FROM SyncDb.ProductOptionValue');
 											$db->exec('CREATE TABLE ProductHTML AS SELECT * FROM SyncDb.ProductHTML WHERE ProductExternalReference IN (SELECT ExternalReference FROM SyncDb.ProductChange)');
+											$db->exec('CREATE TABLE ProductRelated AS SELECT * FROM SyncDb.ProductRelated WHERE ProductExternalReference IN (SELECT ExternalReference FROM SyncDb.ProductChange)');
 											$db->exec('CREATE TABLE Attribute AS SELECT * FROM SyncDb.Attribute');
 											$db->exec('CREATE TABLE AttributeGroup AS SELECT * FROM SyncDb.AttributeGroup');
 											$db->exec('CREATE TABLE AttributeGroupMap AS SELECT * FROM SyncDb.AttributeGroupMap');
