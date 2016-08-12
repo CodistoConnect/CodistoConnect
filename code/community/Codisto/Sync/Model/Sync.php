@@ -285,14 +285,12 @@ class Codisto_Sync_Model_Sync
 		$insertSKULink = $db->prepare('INSERT OR REPLACE INTO SKULink (SKUExternalReference, ProductExternalReference, Price) VALUES (?, ?, ?)');
 		$insertSKUMatrix = $db->prepare('INSERT INTO SKUMatrix(SKUExternalReference, ProductExternalReference, Code, OptionName, OptionValue, ProductOptionExternalReference, ProductOptionValueExternalReference) VALUES(?,?,?,?,?,?,?)');
 		$insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
-		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence) VALUES (?,?)');
 		$insertProductHTML = $db->prepare('INSERT OR IGNORE INTO ProductHTML(ProductExternalReference, Tag, HTML) VALUES (?, ?, ?)');
-		$clearAttribute = $db->prepare('DELETE FROM ProductAttributeValue WHERE ProductExternalReference = ?');
+		$insertProductRelated = $db->prepare('INSERT OR IGNORE INTO ProductRelated (RelatedProductExternalReference, ProductExternalReference) VALUES (?, ?)');
 		$insertAttribute = $db->prepare('INSERT OR REPLACE INTO Attribute(ID, Code, Label, Type, Input) VALUES (?, ?, ?, ?, ?)');
 		$insertAttributeGroup = $db->prepare('INSERT OR IGNORE INTO AttributeGroup(ID, Name) VALUES(?, ?)');
 		$insertAttributeGroupMap = $db->prepare('INSERT OR IGNORE INTO AttributeGroupMap(GroupID, AttributeID) VALUES(?,?)');
 		$insertProductAttribute = $db->prepare('INSERT OR IGNORE INTO ProductAttributeValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
-		$clearProductQuestion = $db->prepare('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference = ?1); DELETE FROM ProductQuestion WHERE ProductExternalReference = ?1');
 		$insertProductQuestion = $db->prepare('INSERT OR REPLACE INTO ProductQuestion(ExternalReference, ProductExternalReference, Name, Type, Sequence) VALUES (?, ?, ?, ?, ?)');
 		$insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
 
@@ -324,16 +322,28 @@ class Codisto_Sync_Model_Sync
 		$simpleProducts->getSelect()
 								->columns(array('codisto_in_store'=> new Zend_Db_Expr('CASE WHEN `e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))) THEN -1 ELSE 0 END')));
 
+		// Grouped products
+		$groupedProducts = $this->getProductCollection()
+							->addAttributeToSelect($this->availableProductFields, 'left')
+							->addAttributeToFilter('type_id', array('eq' => 'grouped'))
+							->addAttributeToFilter('entity_id', array('in' => $ids ));
+
+		$groupedProducts->getSelect()
+									->columns(array('codisto_in_store' => new Zend_Db_Expr('CASE WHEN `e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))) THEN -1 ELSE 0 END')));
+
+
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
 		$db->exec('DELETE FROM Product WHERE ExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM ProductImage WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM ProductHTML WHERE ProductExternalReference IN ('.implode(',', $ids).')');
+		$db->exec('DELETE FROM ProductRelated WHERE ProductExternalReference IN ('.implode(',', $ids).')');
+		$db->exec('DELETE FROM ProductAttributeValue WHERE ProductExternalReference IN ('.implode(',', $ids).')');
+		$db->exec('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
+		$db->exec('DELETE FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM SKUMatrix WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM SKULink WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).')');
-		$db->exec('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
-		$db->exec('DELETE FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 		$db->exec('DELETE FROM CategoryProduct WHERE ProductExternalReference IN ('.implode(',', $ids).')');
 
 		Mage::getSingleton('core/resource_iterator')->walk($configurableProducts->getSelect(), array(array($this, 'SyncConfigurableProductData')),
@@ -347,14 +357,12 @@ class Codisto_Sync_Model_Sync
 				'preparedskumatrixStatement' => $insertSKUMatrix,
 				'preparedcategoryproductStatement' => $insertCategoryProduct,
 				'preparedimageStatement' => $insertImage,
-				'preparedproductoptionvalueStatement' => $insertProductOptionValue,
 				'preparedproducthtmlStatement' => $insertProductHTML,
-				'preparedclearattributeStatement' => $clearAttribute,
+				'preparedproductrelatedStatement' => $insertProductRelated,
 				'preparedattributeStatement' => $insertAttribute,
 				'preparedattributegroupStatement' => $insertAttributeGroup,
 				'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 				'preparedproductattributeStatement' => $insertProductAttribute,
-				'preparedclearproductquestionStatement' => $clearProductQuestion,
 				'preparedproductquestionStatement' => $insertProductQuestion,
 				'preparedproductanswerStatement' => $insertProductAnswer,
 				'store' => $store )
@@ -369,16 +377,39 @@ class Codisto_Sync_Model_Sync
 				'preparedcategoryproductStatement' => $insertCategoryProduct,
 				'preparedimageStatement' => $insertImage,
 				'preparedproducthtmlStatement' => $insertProductHTML,
-				'preparedclearattributeStatement' => $clearAttribute,
+				'preparedproductrelatedStatement' => $insertProductRelated,
 				'preparedattributeStatement' => $insertAttribute,
 				'preparedattributegroupStatement' => $insertAttributeGroup,
 				'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 				'preparedproductattributeStatement' => $insertProductAttribute,
-				'preparedclearproductquestionStatement' => $clearProductQuestion,
 				'preparedproductquestionStatement' => $insertProductQuestion,
 				'preparedproductanswerStatement' => $insertProductAnswer,
 				'store' => $store )
 		);
+
+		Mage::getSingleton('core/resource_iterator')->walk($groupedProducts->getSelect(), array(array($this, 'SyncGroupedProductData')),
+			array(
+				'type' => 'grouped',
+				'db' => $db,
+				'preparedStatement' => $insertProduct,
+				'preparedcheckproductStatement' => $checkProduct,
+				'preparedskuStatement' => $insertSKU,
+				'preparedskulinkStatement' => $insertSKULink,
+				'preparedskumatrixStatement' => $insertSKUMatrix,
+				'preparedcategoryproductStatement' => $insertCategoryProduct,
+				'preparedimageStatement' => $insertImage,
+				'preparedproducthtmlStatement' => $insertProductHTML,
+				'preparedproductrelatedStatement' => $insertProductRelated,
+				'preparedattributeStatement' => $insertAttribute,
+				'preparedattributegroupStatement' => $insertAttributeGroup,
+				'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
+				'preparedproductattributeStatement' => $insertProductAttribute,
+				'preparedproductquestionStatement' => $insertProductQuestion,
+				'preparedproductanswerStatement' => $insertProductAnswer,
+				'store' => $store )
+		);
+
+		$db->exec('DELETE FROM ProductOptionValue');
 
 		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence) VALUES (?,?)');
 
@@ -401,22 +432,30 @@ class Codisto_Sync_Model_Sync
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
+		$db->exec('CREATE TABLE IF NOT EXISTS ProductDelete(ExternalReference text NOT NULL PRIMARY KEY)');
+
 		if(!is_array($ids))
 		{
 			$ids = array($ids);
 		}
 
+		$db->exec(
+			'DELETE FROM Product WHERE ExternalReference IN ('.implode(',', $ids).');'.
+			'DELETE FROM ProductImage WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
+			'DELETE FROM ProductHTML WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
+			'DELETE FROM ProductRelated WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
+			'DELETE FROM ProductAttributeValue WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
+			'DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).'));'.
+			'DELETE FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
+			'DELETE FROM SKULink WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
+			'DELETE FROM SKUMatrix WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
+			'DELETE FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
+			'DELETE FROM CategoryProduct WHERE ProductExternalReference IN ('.implode(',', $ids).')'
+		);
+
 		foreach($ids as $id)
 		{
-			$db->exec(	'CREATE TABLE IF NOT EXISTS ProductDelete(ExternalReference text NOT NULL PRIMARY KEY);'.
-						'INSERT OR IGNORE INTO ProductDelete VALUES('.$id.');'.
-						'DELETE FROM Product WHERE ExternalReference = '.$id.';'.
-						'DELETE FROM ProductImage WHERE ProductExternalReference = '.$id.';'.
-						'DELETE FROM ProductHTML WHERE ProductExternalReference = '.$id.';'.
-						'DELETE FROM SKULink WHERE ProductExternalReference = '.$id.';'.
-						'DELETE FROM SKUMatrix WHERE ProductExternalReference = '.$id.';'.
-						'DELETE FROM SKU WHERE ProductExternalReference = '.$id.';'.
-						'DELETE FROM CategoryProduct WHERE ProductExternalReference = '.$id);
+			$db->exec('INSERT OR IGNORE INTO ProductDelete VALUES('.$id.')');
 		}
 
 		$db->exec('COMMIT TRANSACTION');
@@ -768,12 +807,11 @@ class Codisto_Sync_Model_Sync
 		$insertCategorySQL = $args['preparedcategoryproductStatement'];
 		$insertImageSQL = $args['preparedimageStatement'];
 		$insertHTMLSQL = $args['preparedproducthtmlStatement'];
-		$clearAttributeSQL = $args['preparedclearattributeStatement'];
+		$insertRelatedSQL = $args['preparedproductrelatedStatement'];
 		$insertAttributeSQL = $args['preparedattributeStatement'];
 		$insertAttributeGroupSQL = $args['preparedattributegroupStatement'];
 		$insertAttributeGroupMapSQL = $args['preparedattributegroupmapStatement'];
 		$insertProductAttributeSQL = $args['preparedproductattributeStatement'];
-		$clearProductQuestionSQL = $args['preparedclearproductquestionStatement'];
 		$insertProductQuestionSQL = $args['preparedproductquestionStatement'];
 		$insertProductAnswerSQL = $args['preparedproductanswerStatement'];
 
@@ -858,8 +896,6 @@ class Codisto_Sync_Model_Sync
 
 			$insertHTMLSQL->execute(array($product_id, 'Short Description', $shortDescription));
 		}
-
-		$clearAttributeSQL->execute(array($product_id));
 
 		$attributeSet = array();
 		$attributeCodes = array();
@@ -1252,9 +1288,14 @@ class Codisto_Sync_Model_Sync
 			}
 		}
 
+		// process related products
+		$relatedProductIds = $product->getRelatedProductIds();
+		foreach($relatedProductIds as $relatedProductId)
+		{
+			$insertRelatedSQL->execute(array($relatedProductId, $product_id));
+		}
 
 		// process simple product question/answers
-		$clearProductQuestionSQL->execute(array($product_id));
 
 		$options = $product->getProductOptionsCollection();
 
@@ -1432,6 +1473,10 @@ class Codisto_Sync_Model_Sync
 						'DELETE FROM Product WHERE ExternalReference IN ('.implode(',', $productUpdateIds).');'.
 						'DELETE FROM ProductImage WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).');'.
 						'DELETE FROM ProductHTML WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).');'.
+						'DELETE FROM ProductRelated WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).');'.
+						'DELETE FROM ProductAttributeValue WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).');'.
+						'DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).'));'.
+						'DELETE FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).');'.
 						'DELETE FROM SKULink WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).');'.
 						'DELETE FROM SKUMatrix WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).');'.
 						'DELETE FROM SKU WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).');'.
@@ -1445,20 +1490,18 @@ class Codisto_Sync_Model_Sync
 					$insertSKULink = $db->prepare('INSERT OR REPLACE INTO SKULink (SKUExternalReference, ProductExternalReference, Price) VALUES (?, ?, ?)');
 					$insertSKUMatrix = $db->prepare('INSERT INTO SKUMatrix(SKUExternalReference, ProductExternalReference, Code, OptionName, OptionValue, ProductOptionExternalReference, ProductOptionValueExternalReference) VALUES(?,?,?,?,?,?,?)');
 					$insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
-					$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence) VALUES (?,?)');
 					$insertProductHTML = $db->prepare('INSERT OR IGNORE INTO ProductHTML(ProductExternalReference, Tag, HTML) VALUES (?, ?, ?)');
-					$clearAttribute = $db->prepare('DELETE FROM ProductAttributeValue WHERE ProductExternalReference = ?');
+					$insertProductRelated = $db->prepare('INSERT OR IGNORE INTO ProductRelated(RelatedProductExternalReference, ProductExternalReference) VALUES (?, ?)');
 					$insertAttribute = $db->prepare('INSERT OR REPLACE INTO Attribute(ID, Code, Label, Type, Input) VALUES (?, ?, ?, ?, ?)');
 					$insertAttributeGroup = $db->prepare('INSERT OR REPLACE INTO AttributeGroup(ID, Name) VALUES(?, ?)');
 					$insertAttributeGroupMap = $db->prepare('INSERT OR IGNORE INTO AttributeGroupMap(GroupID, AttributeID) VALUES(?,?)');
 					$insertProductAttribute = $db->prepare('INSERT OR IGNORE INTO ProductAttributeValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
-					$clearProductQuestion = $db->prepare('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference = ?1); DELETE FROM ProductQuestion WHERE ProductExternalReference = ?1');
 					$insertProductQuestion = $db->prepare('INSERT OR REPLACE INTO ProductQuestion(ExternalReference, ProductExternalReference, Name, Type, Sequence) VALUES (?, ?, ?, ?, ?)');
 					$insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
 
 					// Simple Products not participating as configurable skus
 					$simpleProducts = $this->getProductCollection()
-										->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+										->addAttributeToSelect($this->availableProductFields, 'left')
 										->addAttributeToFilter('type_id', array('eq' => 'simple'))
 										->addAttributeToFilter('entity_id', array('in' => $productUpdateIds) );
 					$simpleProducts->getSelect()
@@ -1469,22 +1512,22 @@ class Codisto_Sync_Model_Sync
 							'type' => 'simple',
 							'db' => $db,
 							'preparedStatement' => $insertProduct,
+							'preparedcheckproductStatement' => $checkProduct,
 							'preparedcategoryproductStatement' => $insertCategoryProduct,
 							'preparedimageStatement' => $insertImage,
 							'preparedproducthtmlStatement' => $insertProductHTML,
-							'preparedclearattributeStatement' => $clearAttribute,
+							'preparedproductrelatedStatement' => $insertProductRelated,
 							'preparedattributeStatement' => $insertAttribute,
 							'preparedattributegroupStatement' => $insertAttributeGroup,
 							'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 							'preparedproductattributeStatement' => $insertProductAttribute,
-							'preparedclearproductquestionStatement' => $clearProductQuestion,
 							'preparedproductquestionStatement' => $insertProductQuestion,
 							'preparedproductanswerStatement' => $insertProductAnswer,
 							'store' => $storeObject ));
 
 					// Configurable products
 					$configurableProducts = $this->getProductCollection()
-										->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+										->addAttributeToSelect($this->availableProductFields, 'left')
 										->addAttributeToFilter('type_id', array('eq' => 'configurable'))
 										->addAttributeToFilter('entity_id', array('in' => $productUpdateIds));
 					$configurableProducts->getSelect()
@@ -1495,18 +1538,18 @@ class Codisto_Sync_Model_Sync
 							'type' => 'configurable',
 							'db' => $db,
 							'preparedStatement' => $insertProduct,
+							'preparedcheckproductStatement' => $checkProduct,
 							'preparedskuStatement' => $insertSKU,
 							'preparedskulinkStatement' => $insertSKULink,
 							'preparedskumatrixStatement' => $insertSKUMatrix,
 							'preparedcategoryproductStatement' => $insertCategoryProduct,
 							'preparedimageStatement' => $insertImage,
 							'preparedproducthtmlStatement' => $insertProductHTML,
-							'preparedclearattributeStatement' => $clearAttribute,
+							'preparedproductrelatedStatement' => $insertProductRelated,
 							'preparedattributeStatement' => $insertAttribute,
 							'preparedattributegroupStatement' => $insertAttributeGroup,
 							'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 							'preparedproductattributeStatement' => $insertProductAttribute,
-							'preparedclearproductquestionStatement' => $clearProductQuestion,
 							'preparedproductquestionStatement' => $insertProductQuestion,
 							'preparedproductanswerStatement' => $insertProductAnswer,
 							'store' => $storeObject )
@@ -1514,7 +1557,7 @@ class Codisto_Sync_Model_Sync
 
 					// Grouped products
 					$groupedProducts = $this->getProductCollection()
-										->addAttributeToSelect(array('entity_id', 'sku', 'name', 'image', 'description', 'short_description', 'price', 'special_price', 'special_from_date', 'special_to_date', 'status', 'tax_class_id', 'weight'), 'left')
+										->addAttributeToSelect($this->availableProductFields, 'left')
 										->addAttributeToFilter('type_id', array('eq' => 'grouped'))
 										->addAttributeToFilter('entity_id', array('in' => $productUpdateIds ));
 
@@ -1526,18 +1569,18 @@ class Codisto_Sync_Model_Sync
 							'type' => 'grouped',
 							'db' => $db,
 							'preparedStatement' => $insertProduct,
+							'preparedcheckproductStatement' => $checkProduct,
 							'preparedskuStatement' => $insertSKU,
 							'preparedskulinkStatement' => $insertSKULink,
 							'preparedskumatrixStatement' => $insertSKUMatrix,
 							'preparedcategoryproductStatement' => $insertCategoryProduct,
 							'preparedimageStatement' => $insertImage,
 							'preparedproducthtmlStatement' => $insertProductHTML,
-							'preparedclearattributeStatement' => $clearAttribute,
+							'preparedproductrelatedStatement' => $insertProductRelated,
 							'preparedattributeStatement' => $insertAttribute,
 							'preparedattributegroupStatement' => $insertAttributeGroup,
 							'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 							'preparedproductattributeStatement' => $insertProductAttribute,
-							'preparedclearproductquestionStatement' => $clearProductQuestion,
 							'preparedproductquestionStatement' => $insertProductQuestion,
 							'preparedproductanswerStatement' => $insertProductAnswer,
 							'store' => $storeObject )
@@ -1621,6 +1664,20 @@ class Codisto_Sync_Model_Sync
 					foreach($productUpdateIds as $updateId)
 					{
 						$db->exec('INSERT OR REPLACE INTO ProductChange (ExternalReference) VALUES ('.$updateId.')');
+					}
+
+					$db->exec('DELETE FROM ProductOptionValue');
+
+					$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence) VALUES (?,?)');
+
+					$options = Mage::getResourceModel('eav/entity_attribute_option_collection')
+								->setPositionOrder('asc', true)
+								->load();
+
+					foreach($options as $opt){
+						$sequence = $opt->getSortOrder();
+						$optId = $opt->getId();
+						$insertProductOptionValue->execute(array($optId, $sequence));
 					}
 				}
 
@@ -1777,14 +1834,12 @@ class Codisto_Sync_Model_Sync
 		$insertSKULink = $db->prepare('INSERT OR REPLACE INTO SKULink (SKUExternalReference, ProductExternalReference, Price) VALUES (?, ?, ?)');
 		$insertSKUMatrix = $db->prepare('INSERT INTO SKUMatrix(SKUExternalReference, ProductExternalReference, Code, OptionName, OptionValue, ProductOptionExternalReference, ProductOptionValueExternalReference) VALUES(?,?,?,?,?,?,?)');
 		$insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
-		$insertProductOptionValue = $db->prepare('INSERT INTO ProductOptionValue (ExternalReference, Sequence) VALUES (?,?)');
 		$insertProductHTML = $db->prepare('INSERT OR IGNORE INTO ProductHTML(ProductExternalReference, Tag, HTML) VALUES (?, ?, ?)');
-		$clearAttribute = $db->prepare('DELETE FROM ProductAttributeValue WHERE ProductExternalReference = ?');
+		$insertProductRelated = $db->prepare('INSERT OR IGNORE INTO ProductRelated(RelatedProductExternalReference, ProductExternalReference) VALUES (?, ?)');
 		$insertAttribute = $db->prepare('INSERT OR REPLACE INTO Attribute(ID, Code, Label, Type, Input) VALUES (?, ?, ?, ?, ?)');
 		$insertAttributeGroup = $db->prepare('INSERT OR REPLACE INTO AttributeGroup(ID, Name) VALUES(?, ?)');
 		$insertAttributeGroupMap = $db->prepare('INSERT OR IGNORE INTO AttributeGroupMap(GroupID, AttributeID) VALUES(?,?)');
 		$insertProductAttribute = $db->prepare('INSERT OR IGNORE INTO ProductAttributeValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
-		$clearProductQuestion = $db->prepare('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference = ?1); DELETE FROM ProductQuestion WHERE ProductExternalReference = ?1');
 		$insertProductQuestion = $db->prepare('INSERT OR REPLACE INTO ProductQuestion(ExternalReference, ProductExternalReference, Name, Type, Sequence) VALUES (?, ?, ?, ?, ?)');
 		$insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
 		$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber) VALUES (?, ?, ?, ?, ?, ?)');
@@ -1895,12 +1950,11 @@ class Codisto_Sync_Model_Sync
 					'preparedcategoryproductStatement' => $insertCategoryProduct,
 					'preparedimageStatement' => $insertImage,
 					'preparedproducthtmlStatement' => $insertProductHTML,
-					'preparedclearattributeStatement' => $clearAttribute,
+					'preparedproductrelatedStatement' => $insertProductRelated,
 					'preparedattributeStatement' => $insertAttribute,
 					'preparedattributegroupStatement' => $insertAttributeGroup,
 					'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 					'preparedproductattributeStatement' => $insertProductAttribute,
-					'preparedclearproductquestionStatement' => $clearProductQuestion,
 					'preparedproductquestionStatement' => $insertProductQuestion,
 					'preparedproductanswerStatement' => $insertProductAnswer,
 					'store' => $store ));
@@ -1942,12 +1996,11 @@ class Codisto_Sync_Model_Sync
 					'preparedcategoryproductStatement' => $insertCategoryProduct,
 					'preparedimageStatement' => $insertImage,
 					'preparedproducthtmlStatement' => $insertProductHTML,
-					'preparedclearattributeStatement' => $clearAttribute,
+					'preparedproductrelatedStatement' => $insertProductRelated,
 					'preparedattributeStatement' => $insertAttribute,
 					'preparedattributegroupStatement' => $insertAttributeGroup,
 					'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 					'preparedproductattributeStatement' => $insertProductAttribute,
-					'preparedclearproductquestionStatement' => $clearProductQuestion,
 					'preparedproductquestionStatement' => $insertProductQuestion,
 					'preparedproductanswerStatement' => $insertProductAnswer,
 					'store' => $store )
@@ -1990,12 +2043,11 @@ class Codisto_Sync_Model_Sync
 					'preparedcategoryproductStatement' => $insertCategoryProduct,
 					'preparedimageStatement' => $insertImage,
 					'preparedproducthtmlStatement' => $insertProductHTML,
-					'preparedclearattributeStatement' => $clearAttribute,
+					'preparedproductrelatedStatement' => $insertProductRelated,
 					'preparedattributeStatement' => $insertAttribute,
 					'preparedattributegroupStatement' => $insertAttributeGroup,
 					'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 					'preparedproductattributeStatement' => $insertProductAttribute,
-					'preparedclearproductquestionStatement' => $clearProductQuestion,
 					'preparedproductquestionStatement' => $insertProductQuestion,
 					'preparedproductanswerStatement' => $insertProductAnswer,
 					'store' => $store )
@@ -2436,6 +2488,8 @@ class Codisto_Sync_Model_Sync
 
 		$db->exec('CREATE TABLE IF NOT EXISTS ProductHTML (ProductExternalReference text NOT NULL, Tag text NOT NULL, HTML text NOT NULL, PRIMARY KEY (ProductExternalReference, Tag))');
 		$db->exec('CREATE INDEX IF NOT EXISTS IX_ProductHTML_ProductExternalReference ON ProductHTML(ProductExternalReference)');
+
+		$db->exec('CREATE TABLE IF NOT EXISTS ProductRelated (RelatedProductExternalReference text NOT NULL, ProductExternalReference text NOT NULL, PRIMARY KEY (ProductExternalReference, RelatedProductExternalReference))');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS Attribute (ID integer NOT NULL PRIMARY KEY, Code text NOT NULL, Label text NOT NULL, Type text NOT NULL, Input text NOT NULL)');
 		$db->exec('CREATE TABLE IF NOT EXISTS AttributeGroupMap (AttributeID integer NOT NULL, GroupID integer NOT NULL, PRIMARY KEY(AttributeID, GroupID))');
