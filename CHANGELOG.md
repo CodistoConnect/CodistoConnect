@@ -1,11 +1,20 @@
 # Change Log
 
+## [1.90.9](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.9) (2016-08-12)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.8...1.90.9)
+
+**Merged pull requests:**
+
+- Release [\#349](https://github.com/CodistoConnect/CodistoConnect/pull/349) ([lamery](https://github.com/lamery))
+- support for sync related products [\#348](https://github.com/CodistoConnect/CodistoConnect/pull/348) ([lamery](https://github.com/lamery))
+
 ## [1.90.8](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.8) (2016-08-12)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.7...1.90.8)
 
 **Merged pull requests:**
 
 - add account menu item [\#347](https://github.com/CodistoConnect/CodistoConnect/pull/347) ([jlivas](https://github.com/jlivas))
+- create fallbacks to increase chance or successful order push [\#346](https://github.com/CodistoConnect/CodistoConnect/pull/346) ([jlivas](https://github.com/jlivas))
 
 ## [1.90.7](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.7) (2016-08-04)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.6...1.90.7)
