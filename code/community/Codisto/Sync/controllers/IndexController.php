@@ -566,10 +566,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setCustomer($quote->getCustomer());
 		$order->setCodistoOrderid($ordercontent->orderid);
 
-		if(preg_match('/\{ordernumber\}|\{ebaysalesrecordnumber\}/', $ordernumberformat))
+		if(preg_match('/\{ordernumber\}|\{ebaysalesrecordnumber\}|\{ebaytransactionid\}/', $ordernumberformat))
 		{
 			$incrementId = preg_replace('/\{ordernumber\}/', (string)$order->getIncrementId(), $ordernumberformat);
 			$incrementId = preg_replace('/\{ebaysalesrecordnumber\}/', $ebaysalesrecordnumber, $incrementId);
+			$incrementId = preg_replace('/\{ebaytransactionid\}/', $ebaysalesrecordnumber, $incrementId);
 			$order->setIncrementId($incrementId);
 		}
 		else
