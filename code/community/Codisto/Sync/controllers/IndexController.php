@@ -552,6 +552,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		if(!$ebaysalesrecordnumber)
 			$ebaysalesrecordnumber = '';
 
+		$ebaytransactionid = (string)$ordercontent->ebaytransactionid;
+
 		$ebayusername = (string)$ordercontent->ebayusername;
 		if(!$ebayusername)
 			$ebayusername = '';
@@ -570,7 +572,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		{
 			$incrementId = preg_replace('/\{ordernumber\}/', (string)$order->getIncrementId(), $ordernumberformat);
 			$incrementId = preg_replace('/\{ebaysalesrecordnumber\}/', $ebaysalesrecordnumber, $incrementId);
-			$incrementId = preg_replace('/\{ebaytransactionid\}/', $ebaysalesrecordnumber, $incrementId);
+			$incrementId = preg_replace('/\{ebaytransactionid\}/', $ebaytransactionid, $incrementId);
 			$order->setIncrementId($incrementId);
 		}
 		else
