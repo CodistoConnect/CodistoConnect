@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.90.10](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.10) (2016-08-18)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.9...1.90.10)
+
+**Merged pull requests:**
+
+- Release [\#351](https://github.com/CodistoConnect/CodistoConnect/pull/351) ([lamery](https://github.com/lamery))
+- ebay transaction id added as variable to order number field [\#350](https://github.com/CodistoConnect/CodistoConnect/pull/350) ([lamery](https://github.com/lamery))
+
 ## [1.90.9](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.9) (2016-08-12)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.8...1.90.9)
 
