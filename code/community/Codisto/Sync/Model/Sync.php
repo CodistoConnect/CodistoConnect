@@ -572,53 +572,75 @@ class Codisto_Sync_Model_Sync
 		$productParent = $args['parent_product'];
 
 		$attributeCodes = array();
+		$productAttributes = array();
+		$attributeValues = array();
 
-		foreach($attributes as $attribute)
+		$attributes->load();
+
+		$attribute = $attributes->fetchItem();
+		while($attribute !== false)
 		{
-			$attributeCodes[] = $attribute->getProductAttribute()->getAttributeCode();
+			$prodAttr = $attribute->getProductAttribute();
+			if($prodAttr)
+			{
+				$attributeCodes[] = $prodAttr->getAttributeCode();
+				$productAttributes[] = $prodAttr;
+			}
+
+			$attribute = $attributes->fetchItem();
 		}
 
-		$attributeValues = Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($skuData['entity_id'], $attributeCodes, $store->getId());
-
-		if(!is_array($attributeValues))
-			$attributeValues = array( $attributeCodes[0] => $attributeValues );
-
-		$options = array();
-
-		foreach($attributes as $attribute)
+		if(!empty($attributeCodes))
 		{
-			$productAttribute = $attribute->getProductAttribute();
+			$attributeValues = Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($skuData['entity_id'], $attributeCodes, $store->getId());
+			if(!is_array($attributeValues))
+				$attributeValues = array( $attributeCodes[0] => $attributeValues );
 
-			$options[$productAttribute->getId()] = $attributeValues[$productAttribute->getAttributeCode()];
+			$options = array();
+			foreach($productAttributes as $attribute)
+			{
+				$options[$attribute->getId()] = $attributeValues[$attribute->getAttributeCode()];
+			}
 		}
-		$price = $this->SyncProductPrice($store, $productParent, $options);
 
-		if(!$price)
+		if(!empty($options))
+		{
+			$price = $this->SyncProductPrice($store, $productParent, $options);
+			if(!$price)
+				$price = 0;
+		}
+		else
+		{
 			$price = 0;
+		}
 
 		$insertSKULinkSQL->execute(array($skuData['entity_id'], $args['parent_id'], $price));
-
 
 		// SKU Matrix
 		foreach($attributes as $attribute)
 		{
 			$productAttribute = $attribute->getProductAttribute();
-			$productOptionId = $productAttribute->getId();
-			$productOptionValueId = $attributeValues[$productAttribute->getAttributeCode()];
 
-			if(isset($productOptionValueId))
+			if($productAttribute)
 			{
-				$attributeName = $attribute->getLabel();
-				$attributeValue = $productAttribute->getSource()->getOptionText($productOptionValueId);
+				$productOptionId = $productAttribute->getId();
+				$productOptionValueId = isset($attributeValues[$productAttribute->getAttributeCode()]) ?
+											$attributeValues[$productAttribute->getAttributeCode()] : null;
 
-				$insertSKUMatrixSQL->execute(array(
-					$skuData['entity_id'],
-					$args['parent_id'],
-					'',
-					$attributeName,
-					$attributeValue,
-					$productOptionId,
-					$productOptionValueId));
+				if($productOptionValueId != null)
+				{
+					$attributeName = $attribute->getLabel();
+					$attributeValue = $productAttribute->getSource()->getOptionText($productOptionValueId);
+
+					$insertSKUMatrixSQL->execute(array(
+						$skuData['entity_id'],
+						$args['parent_id'],
+						'',
+						$attributeName,
+						$attributeValue,
+						$productOptionId,
+						$productOptionValueId));
+				}
 			}
 		}
 	}
