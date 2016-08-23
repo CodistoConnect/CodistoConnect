@@ -802,16 +802,49 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 			array('pipe', 'w')
 		), $pipes);
 
-		@fwrite($pipes[0], $script);
-		fclose($pipes[0]);
+		stream_set_blocking( $pipes[0], 0 );
+		stream_set_blocking( $pipes[1], 0 );
+
+		stream_set_timeout( $pipes[0], 5 );
+		stream_set_timeout( $pipes[1], 10 );
+
+		$write_total = strlen( $script );
+		$written = 0;
+
+		while($write_total > 0)
+		{
+			$write_count = @fwrite($pipes[0], substr( $script, $written ) );
+			if($write_count === false)
+			{
+				@fclose( $pipes[0] );
+				@fclose( $pipes[1] );
+				@proc_terminate( $process, 9 );
+				@proc_close( $process );
+
+				return '';
+			}
+
+			$write_total -= $write_count;
+			$written += $write_count;
+		}
+
+		@fclose( $pipes[0] );
 
 		$result = @stream_get_contents($pipes[1]);
+		if($result === false)
+		{
+			@fclose( $pipes[1] );
+			@proc_terminate( $process, 9 );
+			@proc_close( $process );
+
+			return '';
+		}
+
 		if(!$result)
 			$result = '';
 
-		fclose($pipes[1]);
-
-		proc_close($process);
+		@fclose( $pipes[1] );
+		@proc_close( $process );
 
 		return $result;
 	}
@@ -1020,7 +1053,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 				if(is_resource($process))
 				{
-					proc_close($process);
+					@proc_close($process);
 					return true;
 				}
 			}
@@ -1077,24 +1110,43 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 							$descriptors, $pipes, Mage::getBaseDir('base'), array( 'CURL_CA_BUNDLE' => $curl_cainfo ));
 				if(is_resource($process))
 				{
+					stream_set_blocking( $pipes[0], 0 );
+					stream_set_blocking( $pipes[1], 0 );
+
+					stream_set_timeout( $pipes[0], 5 );
+					stream_set_timeout( $pipes[1], 30 );
+
 					if(is_string($stdin))
 					{
 						for($written = 0; $written < strlen($stdin); )
 						{
 							$writecount = fwrite($pipes[0], substr($stdin, $written));
 							if($writecount === false)
-								break;
+							{
+								@fclose( $pipes[0] );
+								@fclose( $pipes[1] );
+								@proc_terminate( $process, 9 );
+								@proc_close( $process );
+								return null;
+							}
 
 							$written += $writecount;
 						}
 
-						fclose($pipes[0]);
+						@fclose($pipes[0]);
 					}
 
-					$result = stream_get_contents($pipes[1]);
-					fclose($pipes[1]);
+					$result = @stream_get_contents($pipes[1]);
+					if($result === false)
+					{
+						@fclose( $pipes[1] );
+						@proc_terminate( $process, 9 );
+						@proc_close( $process );
+						return null;
+					}
 
-					proc_close($process);
+					@fclose($pipes[1]);
+					@proc_close($process);
 					return $result;
 				}
 			}
