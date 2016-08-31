@@ -524,7 +524,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							{
 								if(file_exists($syncDb))
 									unlink($syncDb);
-								$this->sendPlainResponse($response, 200, 'OK', 'throttle');
+								$this->sendExceptionError($response, $e);
 								$response->sendResponse();
 							}
 							else
