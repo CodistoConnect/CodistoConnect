@@ -1553,7 +1553,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$shipping_phone = 'Not Available';
 
 		$email = (string)$billing_address->email;
-		if(!$email)
+		if(!$email || $email == 'Invalid Request')
 			$email = 'mail@example.com';
 
 		$regionCollection = $this->getRegionCollection($billing_address->countrycode);
@@ -1615,7 +1615,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$customer = null;
 
-		if($register_customer)
+		if($register_customer && $email != 'mail@example.com')
 		{
 			$customer = Mage::getModel('customer/customer');
 			$customer->setWebsiteId($websiteId);
