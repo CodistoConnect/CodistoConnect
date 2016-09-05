@@ -1221,7 +1221,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 						if($eventtype == Mage_Index_Model_Event::TYPE_DELETE)
 						{
-							$syncObject->DeleteProduct($syncDb, $productids, $storeId);
+							$syncObject->DeleteProducts($syncDb, $productids, $storeId);
 						}
 						else
 						{
