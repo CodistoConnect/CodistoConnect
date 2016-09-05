@@ -44,7 +44,7 @@ if(!isset($MerchantID) || !isset($HostKey))
 			}
 
 			//Can this request create a new merchant ?
-			$createMerchant  = Mage::helper('codistosync')->createMerchantwithLock();
+			$createMerchant  = Mage::helper('codistosync')->createMerchantwithLock(20.0);
 
 		}
 
