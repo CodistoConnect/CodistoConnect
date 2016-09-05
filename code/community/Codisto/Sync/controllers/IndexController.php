@@ -184,8 +184,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						$item->setDiscountAmount(0);
 						$item->setBaseDiscountAmount(0);
 						$item->setTaxPercent($taxpercent);
-						$item->setTaxAmount($producttax);
-						$item->setBaseTaxAmount($producttax);
+						$item->setTaxAmount($producttax * $productqty);
+						$item->setBaseTaxAmount($producttax * $productqty);
 						$item->setRowTotal($productprice * $productqty);
 						$item->setBaseRowTotal($productprice * $productqty);
 						$item->setRowTotalWithDiscount($productprice * $productqty);
@@ -297,9 +297,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$request = $this->getRequest();
 		$response = $this->getResponse();
-		$method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
-		$contenttype = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : '';
 		$server = $request->getServer();
+		$method = isset($server['REQUEST_METHOD']) ? $server['REQUEST_METHOD'] : 'GET';
+		$contenttype = isset($server['CONTENT_TYPE']) ? $server['CONTENT_TYPE'] : '';
 
 		if($method == 'POST')
 		{
@@ -566,7 +566,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setShippingAddress($quoteConverter->addressToOrderAddress($quote->getShippingAddress()));
 		$order->setPayment($quoteConverter->paymentToOrderPayment($quote->getPayment()));
 		$order->setCustomer($quote->getCustomer());
-		$order->setCodistoOrderid($ordercontent->orderid);
+		$order->setCodistoOrderid((string)$ordercontent->orderid);
 
 		if(preg_match('/\{ordernumber\}|\{ebaysalesrecordnumber\}|\{ebaytransactionid\}/', $ordernumberformat))
 		{
@@ -683,9 +683,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$orderItem->setBasePrice($price);
 				$orderItem->setBasePriceInclTax($priceinctax);
 				$orderItem->setTaxPercent($taxpercent);
-				$orderItem->setTaxAmount($taxamount);
-				$orderItem->setTaxBeforeDiscount($taxamount);
-				$orderItem->setBaseTaxBeforeDiscount($taxamount);
+				$orderItem->setTaxAmount($taxamount * $qty);
+				$orderItem->setTaxBeforeDiscount($taxamount * $qty);
+				$orderItem->setBaseTaxBeforeDiscount($taxamount * $qty);
 				$orderItem->setDiscountAmount(0);
 				$orderItem->setWeight($weight);
 				$orderItem->setBaseRowTotal($subtotal);
@@ -1220,9 +1220,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$item->setBasePrice($price);
 				$item->setBasePriceInclTax($priceinctax);
 				$item->setTaxPercent($taxpercent);
-				$item->setTaxAmount($taxamount);
-				$item->setTaxBeforeDiscount($taxamount);
-				$item->setBaseTaxBeforeDiscount($taxamount);
+				$item->setTaxAmount($taxamount * $qty);
+				$item->setTaxBeforeDiscount($taxamount * $qty);
+				$item->setBaseTaxBeforeDiscount($taxamount * $qty);
 				$item->setDiscountAmount(0);
 				$item->setWeight($weight);
 				$item->setBaseRowTotal($subtotal);
@@ -1533,6 +1533,10 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$billing_first_name = $billing_address->name;
 		}
 
+		$billing_phone = (string)$billing_address->phone;
+		if(!$billing_phone)
+			$billing_phone = 'Not Available';
+
 		$shipping_address = $ordercontent->orderaddresses->orderaddress[1];
 		$shipping_first_name = $shipping_last_name = '';
 
@@ -1544,8 +1548,12 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$shipping_first_name = $shipping_address->name;
 		}
 
+		$shipping_phone = (string)$shipping_address->phone;
+		if(!$shipping_phone)
+			$shipping_phone = 'Not Available';
+
 		$email = (string)$billing_address->email;
-		if(!$email)
+		if(!$email || $email == 'Invalid Request')
 			$email = 'mail@example.com';
 
 		$regionCollection = $this->getRegionCollection($billing_address->countrycode);
@@ -1571,7 +1579,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			'street' => (string)$billing_address->address1.($billing_address->address2 ? "\n".$billing_address->address2 : ''),
 			'city' => (string)$billing_address->place,
 			'postcode' => (string)$billing_address->postalcode,
-			'telephone' => (string)$billing_address->phone,
+			'telephone' => (string)$billing_phone,
 			'fax' => '',
 			'country_id' => (string)$billing_address->countrycode,
 			'region_id' => $regionsel_id, // id from directory_country_region table
@@ -1598,7 +1606,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			'street' => (string)$shipping_address->address1.($shipping_address->address2 ? "\n".$shipping_address->address2 : ''),
 			'city' => (string)$shipping_address->place,
 			'postcode' => (string)$shipping_address->postalcode,
-			'telephone' => (string)$shipping_address->phone,
+			'telephone' => (string)$shipping_phone,
 			'fax' => '',
 			'country_id' => (string)$shipping_address->countrycode,
 			'region_id' => $regionsel_id_ship, // id from directory_country_region table
@@ -1607,7 +1615,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$customer = null;
 
-		if($register_customer)
+		if($register_customer && $email != 'mail@example.com')
 		{
 			$customer = Mage::getModel('customer/customer');
 			$customer->setWebsiteId($websiteId);
@@ -1819,8 +1827,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$item->setDiscountAmount(0);
 				$item->setBaseDiscountAmount(0);
 				$item->setTaxPercent($taxpercent);
-				$item->setTaxAmount($taxamount);
-				$item->setBaseTaxAmount($taxamount);
+				$item->setTaxAmount($taxamount * $qty);
+				$item->setBaseTaxAmount($taxamount * $qty);
 				$item->setRowTotal($subtotal);
 				$item->setBaseRowTotal($subtotal);
 				$item->setRowTotalWithDiscount($subtotal);

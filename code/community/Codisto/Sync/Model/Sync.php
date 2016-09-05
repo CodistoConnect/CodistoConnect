@@ -12,10 +12,10 @@
  * obtain it through the world-wide-web, please send an email
  * to license@magentocommerce.com so we can send you a copy immediately.
  *
- * @category    Codisto
- * @package     Codisto_Sync
+ * @category	Codisto
+ * @package	 Codisto_Sync
  * @copyright   Copyright (c) 2015 On Technology Pty. Ltd. (http://codisto.com/)
- * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ * @license	 http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
 class Codisto_Sync_Model_Sync
@@ -82,52 +82,18 @@ class Codisto_Sync_Model_Sync
 
 	private function AvailableProductFields($selectArr) {
 
-		$attributes = array();
-        $productAttrs = Mage::getResourceModel('catalog/product_attribute_collection');
-        foreach ($productAttrs as $productAttr) {
-            $attributes[] = $productAttr->getAttributeCode();
-        }
-		$selectAvailable = array();
-		foreach($attributes as $attr){
-			if (in_array($attr, $selectArr)) {
-			    $selectAvailable[] = $attr;
-			}
-		}
-		return $selectAvailable;
+		$attributes = array('entity_id');
 
-	}
-
-	private function FilesInDir($dir, $prefix = '')
-	{
-		$dir = rtrim($dir, '\\/');
-		$result = array();
-
-		try
+		$productAttrs = Mage::getResourceModel('catalog/product_attribute_collection');
+		foreach ($productAttrs as $productAttr)
 		{
-			if(is_dir($dir))
+			if( in_array( $productAttr->getAttributeCode(), $selectArr ) )
 			{
-				$scan = @scandir($dir);
-
-				if($scan !== false)
-				{
-					foreach ($scan as $f) {
-						if ($f !== '.' and $f !== '..') {
-							if (is_dir("$dir/$f")) {
-								$result = array_merge($result, $this->FilesInDir("$dir/$f", "$f/"));
-							} else {
-								$result[] = $prefix.$f;
-							}
-						}
-					}
-				}
+				$attributes[] = $productAttr->getAttributeCode();
 			}
 		}
-		catch(Exception $e)
-		{
 
-		}
-
-		return $result;
+		return $attributes;
 	}
 
 	public function TemplateRead($templateDb)
@@ -259,9 +225,6 @@ class Codisto_Sync_Model_Sync
 	{
 		$db = $this->GetSyncDb($syncDb, 60 );
 
-		$args = array();
-		$args[] = $id;
-
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS CategoryDelete(ExternalReference text NOT NULL PRIMARY KEY);'.
@@ -334,17 +297,33 @@ class Codisto_Sync_Model_Sync
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
-		$db->exec('DELETE FROM Product WHERE ExternalReference IN ('.implode(',', $ids).')');
-		$db->exec('DELETE FROM ProductImage WHERE ProductExternalReference IN ('.implode(',', $ids).')');
-		$db->exec('DELETE FROM ProductHTML WHERE ProductExternalReference IN ('.implode(',', $ids).')');
-		$db->exec('DELETE FROM ProductRelated WHERE ProductExternalReference IN ('.implode(',', $ids).')');
-		$db->exec('DELETE FROM ProductAttributeValue WHERE ProductExternalReference IN ('.implode(',', $ids).')');
-		$db->exec('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).'))');
-		$db->exec('DELETE FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).')');
-		$db->exec('DELETE FROM SKUMatrix WHERE ProductExternalReference IN ('.implode(',', $ids).')');
-		$db->exec('DELETE FROM SKULink WHERE ProductExternalReference IN ('.implode(',', $ids).')');
-		$db->exec('DELETE FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).')');
-		$db->exec('DELETE FROM CategoryProduct WHERE ProductExternalReference IN ('.implode(',', $ids).')');
+		$db->exec('CREATE TEMPORARY TABLE TmpChanged (entity_id text NOT NULL PRIMARY KEY)');
+		foreach($ids as $id)
+		{
+			$db->exec('INSERT INTO TmpChanged (entity_id) VALUES('.$id.')');
+		}
+
+		try
+		{
+			$db->exec('DELETE FROM ProductDelete WHERE ExternalReference IN (SELECT entity_id FROM TmpChanged)');
+		}
+		catch(Exception $e)
+		{
+
+		}
+		$db->exec('DELETE FROM Product WHERE ExternalReference IN (SELECT entity_id FROM TmpChanged)');
+		$db->exec('DELETE FROM ProductImage WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
+		$db->exec('DELETE FROM ProductHTML WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
+		$db->exec('DELETE FROM ProductRelated WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
+		$db->exec('DELETE FROM ProductAttributeValue WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
+		$db->exec('DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged))');
+		$db->exec('DELETE FROM ProductQuestion WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
+		$db->exec('DELETE FROM SKUMatrix WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
+		$db->exec('DELETE FROM SKULink WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
+		$db->exec('DELETE FROM SKU WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
+		$db->exec('DELETE FROM CategoryProduct WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
+
+		$db->exec('DROP TABLE TmpChanged');
 
 		Mage::getSingleton('core/resource_iterator')->walk($configurableProducts->getSelect(), array(array($this, 'SyncConfigurableProductData')),
 			array(
@@ -426,7 +405,7 @@ class Codisto_Sync_Model_Sync
 		$db->exec('COMMIT TRANSACTION');
 	}
 
-	public function DeleteProduct($syncDb, $ids, $storeId)
+	public function DeleteProducts($syncDb, $ids, $storeId)
 	{
 		$db = $this->GetSyncDb($syncDb, 60 );
 
@@ -439,24 +418,29 @@ class Codisto_Sync_Model_Sync
 			$ids = array($ids);
 		}
 
-		$db->exec(
-			'DELETE FROM Product WHERE ExternalReference IN ('.implode(',', $ids).');'.
-			'DELETE FROM ProductImage WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
-			'DELETE FROM ProductHTML WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
-			'DELETE FROM ProductRelated WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
-			'DELETE FROM ProductAttributeValue WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
-			'DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).'));'.
-			'DELETE FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
-			'DELETE FROM SKULink WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
-			'DELETE FROM SKUMatrix WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
-			'DELETE FROM SKU WHERE ProductExternalReference IN ('.implode(',', $ids).');'.
-			'DELETE FROM CategoryProduct WHERE ProductExternalReference IN ('.implode(',', $ids).')'
-		);
+		$db->exec('CREATE TEMPORARY TABLE TmpDeleted(entity_id text NOT NULL PRIMARY KEY)');
 
 		foreach($ids as $id)
 		{
+			$db->exec('INSERT OR IGNORE INTO TmpDeleted (entity_id) VALUES ('.$id.')');
 			$db->exec('INSERT OR IGNORE INTO ProductDelete VALUES('.$id.')');
 		}
+
+		$db->exec(
+			'DELETE FROM Product WHERE ExternalReference IN (SELECT entity_id FROM TmpDeleted);'.
+			'DELETE FROM ProductImage WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted);'.
+			'DELETE FROM ProductHTML WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted);'.
+			'DELETE FROM ProductRelated WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted);'.
+			'DELETE FROM ProductAttributeValue WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted);'.
+			'DELETE FROM ProductQuestionAnswer WHERE ProductQuestionExternalReference IN (SELECT ExternalReference FROM ProductQuestion WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted));'.
+			'DELETE FROM ProductQuestion WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted);'.
+			'DELETE FROM SKULink WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted);'.
+			'DELETE FROM SKUMatrix WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted);'.
+			'DELETE FROM SKU WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted);'.
+			'DELETE FROM CategoryProduct WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted)'
+		);
+
+		$db->exec('DROP TABLE TmpDeleted');
 
 		$db->exec('COMMIT TRANSACTION');
 	}
@@ -477,7 +461,6 @@ class Codisto_Sync_Model_Sync
 		$data = array();
 		foreach ($insertFields as $key)
 		{
-
 			$value = $categoryData[$key];
 
 			if(!$value) {
@@ -572,53 +555,73 @@ class Codisto_Sync_Model_Sync
 		$productParent = $args['parent_product'];
 
 		$attributeCodes = array();
+		$productAttributes = array();
+		$attributeValues = array();
 
 		foreach($attributes as $attribute)
 		{
-			$attributeCodes[] = $attribute->getProductAttribute()->getAttributeCode();
+			$prodAttr = $attribute->getProductAttribute();
+			if($prodAttr)
+			{
+				$attributeCodes[] = $prodAttr->getAttributeCode();
+				$productAttributes[] = $prodAttr;
+			}
 		}
 
-		$attributeValues = Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($skuData['entity_id'], $attributeCodes, $store->getId());
-
-		if(!is_array($attributeValues))
-			$attributeValues = array( $attributeCodes[0] => $attributeValues );
-
-		$options = array();
-
-		foreach($attributes as $attribute)
+		if(!empty($attributeCodes))
 		{
-			$productAttribute = $attribute->getProductAttribute();
+			$attributeValues = Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($skuData['entity_id'], $attributeCodes, $store->getId());
+			if(!is_array($attributeValues))
+				$attributeValues = array( $attributeCodes[0] => $attributeValues );
 
-			$options[$productAttribute->getId()] = $attributeValues[$productAttribute->getAttributeCode()];
+			$options = array();
+			foreach($productAttributes as $attribute)
+			{
+				$options[$attribute->getId()] = $attributeValues[$attribute->getAttributeCode()];
+			}
 		}
-		$price = $this->SyncProductPrice($store, $productParent, $options);
 
-		if(!$price)
+		if(!empty($options))
+		{
+			$price = $this->SyncProductPrice($store, $productParent, $options);
+			if(!$price)
+				$price = 0;
+		}
+		else
+		{
 			$price = 0;
+		}
 
 		$insertSKULinkSQL->execute(array($skuData['entity_id'], $args['parent_id'], $price));
-
 
 		// SKU Matrix
 		foreach($attributes as $attribute)
 		{
 			$productAttribute = $attribute->getProductAttribute();
-			$productOptionId = $productAttribute->getId();
-			$productOptionValueId = $attributeValues[$productAttribute->getAttributeCode()];
 
-			if(isset($productOptionValueId))
+			if($productAttribute)
 			{
-				$attributeName = $attribute->getLabel();
-				$attributeValue = $productAttribute->getSource()->getOptionText($productOptionValueId);
+				$productAttribute->setStoreId($store->getId());
+				$productAttribute->setStore($store);
 
-				$insertSKUMatrixSQL->execute(array(
-					$skuData['entity_id'],
-					$args['parent_id'],
-					'',
-					$attributeName,
-					$attributeValue,
-					$productOptionId,
-					$productOptionValueId));
+				$productOptionId = $productAttribute->getId();
+				$productOptionValueId = isset($attributeValues[$productAttribute->getAttributeCode()]) ?
+											$attributeValues[$productAttribute->getAttributeCode()] : null;
+
+				if($productOptionValueId != null)
+				{
+					$attributeName = $attribute->getLabel();
+					$attributeValue = $productAttribute->getSource()->getOptionText($productOptionValueId);
+
+					$insertSKUMatrixSQL->execute(array(
+						$skuData['entity_id'],
+						$args['parent_id'],
+						'',
+						$attributeName,
+						$attributeValue,
+						$productOptionId,
+						$productOptionValueId));
+				}
 			}
 		}
 	}
@@ -872,7 +875,7 @@ class Codisto_Sync_Model_Sync
 		$data[] = $product_id;
 		$data[] = $type == 'configurable' ? 'c' : ($type == 'grouped' ? 'g' : 's');
 		$data[] = $productData['sku'];
-		$data[] = $productName;
+		$data[] = html_entity_decode($productName);
 		$data[] = $price;
 		$data[] = $listPrice;
 		$data[] = isset($productData['tax_class_id']) && $productData['tax_class_id'] ? $productData['tax_class_id'] : '';
@@ -916,6 +919,9 @@ class Codisto_Sync_Model_Sync
 
 		foreach($attributes as $attribute)
 		{
+			$attribute->setStoreId($store->getId());
+			$attribute->setStore($store);
+
 			$backend = $attribute->getBackEnd();
 			if(!$backend->isStatic())
 			{
@@ -1050,128 +1056,131 @@ class Codisto_Sync_Model_Sync
 			$attrTypeSelects[] = $attrTypeSelect;
 		}
 
-		$attributeValues = array();
-
-		$attrSelect = $adapter->select()->union($attrTypeSelects, Zend_Db_Select::SQL_UNION_ALL);
-
-		$attrArgs = array(
-			'entity_type_id' => 4,
-			'entity_id' => $product_id,
-			'store_id' => $store->getId()
-		);
-
-		$attributeRows = $adapter->fetchPairs($attrSelect, $attrArgs);
-		foreach ($attributeRows as $attributeId => $attributeValue)
+		if(!empty($attrTypeSelects))
 		{
-			$attributeCode = $attributeCodeIDMap[$attributeId];
-			$attributeValues[$attributeCode] = $attributeValue;
-		}
+			$attributeValues = array();
 
-		foreach($attributeSet as $attributeData)
-		{
-			if(isset($attributeValues[$attributeData['code']]))
-				$attributeValue = $attributeValues[$attributeData['code']];
-			else
-				$attributeValue = null;
+			$attrSelect = $adapter->select()->union($attrTypeSelects, Zend_Db_Select::SQL_UNION_ALL);
 
-			if(isset($attributeData['source']) &&
-				$attributeData['source_model'] == 'eav/entity_attribute_source_boolean')
+			$attrArgs = array(
+				'entity_type_id' => 4,
+				'entity_id' => $product_id,
+				'store_id' => $store->getId()
+			);
+
+			$attributeRows = $adapter->fetchPairs($attrSelect, $attrArgs);
+			foreach ($attributeRows as $attributeId => $attributeValue)
 			{
-				$attributeData['backend_type'] = 'boolean';
+				$attributeCode = $attributeCodeIDMap[$attributeId];
+				$attributeValues[$attributeCode] = $attributeValue;
+			}
 
-				if(isset($attributeValue) && $attributeValue)
-					$attributeValue = -1;
+			foreach($attributeSet as $attributeData)
+			{
+				if(isset($attributeValues[$attributeData['code']]))
+					$attributeValue = $attributeValues[$attributeData['code']];
 				else
-					$attributeValue = 0;
-			}
+					$attributeValue = null;
 
-			else if($attributeData['html'])
-			{
-				$attributeValue = Mage::helper('codistosync')->processCmsContent($attributeValue);
-			}
-
-			else if( in_array($attributeData['frontend_type'], array( 'select', 'multiselect' ) ) )
-			{
-				if(is_array($attributeValue))
+				if(isset($attributeData['source']) &&
+					$attributeData['source_model'] == 'eav/entity_attribute_source_boolean')
 				{
-					if(isset($attributeData['source']) &&
-						method_exists( $attributeData['source'], 'getOptionText') )
-					{
-						$attributeValueSet = array();
+					$attributeData['backend_type'] = 'boolean';
 
-						foreach($attributeValue as $attributeOptionId)
+					if(isset($attributeValue) && $attributeValue)
+						$attributeValue = -1;
+					else
+						$attributeValue = 0;
+				}
+
+				else if($attributeData['html'])
+				{
+					$attributeValue = Mage::helper('codistosync')->processCmsContent($attributeValue);
+				}
+
+				else if( in_array($attributeData['frontend_type'], array( 'select', 'multiselect' ) ) )
+				{
+					if(is_array($attributeValue))
+					{
+						if(isset($attributeData['source']) &&
+							method_exists( $attributeData['source'], 'getOptionText') )
 						{
-							if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId]))
+							$attributeValueSet = array();
+
+							foreach($attributeValue as $attributeOptionId)
 							{
-								$attributeValueSet[] = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId];
+								if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId]))
+								{
+									$attributeValueSet[] = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId];
+								}
+								else
+								{
+									try
+									{
+										$attributeText = $attributeData['source']->getOptionText($attributeOptionId);
+
+										$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId] = $attributeText;
+
+										$attributeValueSet[] = $attributeText;
+									}
+									catch(Exception $e)
+									{
+
+									}
+								}
+							}
+
+							$attributeValue = $attributeValueSet;
+						}
+					}
+					else
+					{
+						if(isset($attributeData['source'])  &&
+							method_exists( $attributeData['source'], 'getOptionText') )
+						{
+							if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue]))
+							{
+								$attributeValue = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue];
 							}
 							else
 							{
 								try
 								{
-									$attributeText = $attributeData['source']->getOptionText($attributeOptionId);
+									$attributeText = $attributeData['source']->getOptionText($attributeValue);
 
-									$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId] = $attributeText;
+									$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue] = $attributeText;
 
-									$attributeValueSet[] = $attributeText;
+									$attributeValue = $attributeText;
 								}
 								catch(Exception $e)
 								{
-
+									$attributeValue = null;
 								}
 							}
 						}
-
-						$attributeValue = $attributeValueSet;
 					}
 				}
-				else
+
+				if(isset($attributeValue) && !is_null($attributeValue))
 				{
-					if(isset($attributeData['source'])  &&
-						method_exists( $attributeData['source'], 'getOptionText') )
+					if($attributeData['html'])
 					{
-						if(isset($this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue]))
-						{
-							$attributeValue = $this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue];
-						}
-						else
-						{
-							try
-							{
-								$attributeText = $attributeData['source']->getOptionText($attributeValue);
-
-								$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue] = $attributeText;
-
-								$attributeValue = $attributeText;
-							}
-							catch(Exception $e)
-							{
-								$attributeValue = null;
-							}
-						}
+						$insertHTMLSQL->execute(array($product_id, $attributeData['label'], $attributeValue));
 					}
+
+					$insertAttributeSQL->execute(array($attributeData['id'], $attributeData['name'], $attributeData['label'], $attributeData['backend_type'], $attributeData['frontend_type']));
+
+					if($attributeData['groupid'])
+					{
+						$insertAttributeGroupSQL->execute(array($attributeData['groupid'], $attributeData['groupname']));
+						$insertAttributeGroupMapSQL->execute(array($attributeData['groupid'], $attributeData['id']));
+					}
+
+					if(is_array($attributeValue))
+						$attributeValue = implode(',', $attributeValue);
+
+					$insertProductAttributeSQL->execute(array($product_id, $attributeData['id'], $attributeValue));
 				}
-			}
-
-			if(isset($attributeValue) && !is_null($attributeValue))
-			{
-				if($attributeData['html'])
-				{
-					$insertHTMLSQL->execute(array($product_id, $attributeData['label'], $attributeValue));
-				}
-
-				$insertAttributeSQL->execute(array($attributeData['id'], $attributeData['name'], $attributeData['label'], $attributeData['backend_type'], $attributeData['frontend_type']));
-
-				if($attributeData['groupid'])
-				{
-					$insertAttributeGroupSQL->execute(array($attributeData['groupid'], $attributeData['groupname']));
-					$insertAttributeGroupMapSQL->execute(array($attributeData['groupid'], $attributeData['id']));
-				}
-
-				if(is_array($attributeValue))
-					$attributeValue = implode(',', $attributeValue);
-
-				$insertProductAttributeSQL->execute(array($product_id, $attributeData['id'], $attributeValue));
 			}
 		}
 
@@ -2689,5 +2698,38 @@ class Codisto_Sync_Model_Sync
 		}
 
 		return $price;
+	}
+
+	private function FilesInDir($dir, $prefix = '')
+	{
+		$dir = rtrim($dir, '\\/');
+		$result = array();
+
+		try
+		{
+			if(is_dir($dir))
+			{
+				$scan = @scandir($dir);
+
+				if($scan !== false)
+				{
+					foreach ($scan as $f) {
+						if ($f !== '.' and $f !== '..') {
+							if (is_dir("$dir/$f")) {
+								$result = array_merge($result, $this->FilesInDir("$dir/$f", "$f/"));
+							} else {
+								$result[] = $prefix.$f;
+							}
+						}
+					}
+				}
+			}
+		}
+		catch(Exception $e)
+		{
+
+		}
+
+		return $result;
 	}
 }

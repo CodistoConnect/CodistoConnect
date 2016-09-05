@@ -37,8 +37,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				throw new PDOException('(sqlite PDO Driver) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>', 999);
 			}
 
-			//Can this request create a new merchant ?
-			$createMerchant  = Mage::helper('codistosync')->createMerchantwithLock();
+			$createMerchant = Mage::helper('codistosync')->createMerchantwithLock(5.0);
 		}
 
 		//Something else happened such as PDO related exception
@@ -109,6 +108,12 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				return true;
 			}
 
+			if(isset($_SESSION))
+			{
+				session_write_close();
+				unset($_SESSION);
+			}
+
 			$loggedIn = false;
 
 			if($request->getCookie('adminhtml'))
@@ -149,7 +154,6 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			if(class_exists('Zend_Session', false) && Zend_Session::isStarted())
 			{
 				Zend_Session::writeClose();
-				Zend_Session::destroy();
 			}
 			if(isset($_SESSION))
 			{

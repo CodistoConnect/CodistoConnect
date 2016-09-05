@@ -517,6 +517,16 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 								$this->sendPlainResponse($response, 200, 'OK', 'throttle');
 								$response->sendResponse();
 							}
+							else if(property_exists($e, 'errorInfo') &&
+									$e->errorInfo[0] == 'HY000' &&
+									$e->errorInfo[1] == 8 &&
+									$e->errorInfo[2] == 'attempt to write a readonly database')
+							{
+								if(file_exists($syncDb))
+									unlink($syncDb);
+								$this->sendExceptionError($response, $e);
+								$response->sendResponse();
+							}
 							else
 							{
 								$this->sendExceptionError($response, $e);

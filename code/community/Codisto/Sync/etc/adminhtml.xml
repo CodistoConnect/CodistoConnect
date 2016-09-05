@@ -32,40 +32,40 @@
 					<action>adminhtml/codisto/index</action>
 				</listings>
 				<orders translate="title">
-					<title>Manage Orders</title>
+					<title>eBay Orders View</title>
 					<sort_order>2</sort_order>
 					<action>adminhtml/codisto/orders</action>
 				</orders>
 				<categories translate="title">
-					<title>Manage Categories</title>
+					<title>Manage eBay Store Categories</title>
 					<sort_order>3</sort_order>
 					<action>adminhtml/codisto/categories</action>
 				</categories>
 				<attributes translate="title">
-					<title>Manage Attributes</title>
+					<title>Manage Custom Attributes</title>
 					<sort_order>4</sort_order>
 					<action>adminhtml/codisto/attributemapping</action>
 				</attributes>
 				<import translate="title">
-					<title>Import Listings</title>
+					<title>Link eBay Listings</title>
 					<sort_order>5</sort_order>
 					<action>adminhtml/codisto/import</action>
 				</import>
-				<getstarted translate="title">
+				<!-- getstarted translate="title">
 					<title>Getting Started</title>
 					<sort_order>6</sort_order>
 					<action>adminhtml/codisto/intro</action>
-				</getstarted>
-				<account translate="title">
-					<title>Account</title>
-					<sort_order>7</sort_order>
-					<action>adminhtml/codisto/account</action>
-				</account>
+				</getstarted -->
 				<settings translate="title">
 					<title>Settings</title>
-					<sort_order>8</sort_order>
+					<sort_order>7</sort_order>
 					<action>adminhtml/codisto/settings</action>
 				</settings>
+				<account translate="title">
+					<title>Account</title>
+					<sort_order>8</sort_order>
+					<action>adminhtml/codisto/account</action>
+				</account>
 			</children>
 		</codisto>
 	</menu>
