@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.90.11](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.11) (2016-09-05)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.10...1.90.11)
+
+**Merged pull requests:**
+
+- Release [\#356](https://github.com/CodistoConnect/CodistoConnect/pull/356) ([lamery](https://github.com/lamery))
+- unlink readonly databases [\#355](https://github.com/CodistoConnect/CodistoConnect/pull/355) ([lamery](https://github.com/lamery))
+
 ## [1.90.10](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.10) (2016-08-18)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.9...1.90.10)
 
