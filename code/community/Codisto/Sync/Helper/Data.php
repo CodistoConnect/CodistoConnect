@@ -106,6 +106,14 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		}
 		catch(Exception $e)
 		{
+			if(property_exists($e, 'errorInfo') &&
+					$e->errorInfo[0] == 'HY000' &&
+					$e->errorInfo[1] == 8 &&
+					$e->errorInfo[2] == 'attempt to write a readonly database')
+			{
+				if(file_exists($nonceDbPath))
+					unlink($nonceDbPath);
+			}
 			$this->logExceptionCodisto($e, 'https://ui.codisto.com/installed');
 		}
 
