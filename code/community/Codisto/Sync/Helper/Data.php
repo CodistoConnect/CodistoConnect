@@ -845,14 +845,18 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 		@fclose( $pipes[0] );
 
-		$result = @stream_get_contents($pipes[1]);
-		if($result === false)
+		$result = '';
+		while(!feof($pipes[1]))
 		{
-			@fclose( $pipes[1] );
-			@proc_terminate( $process, 9 );
-			@proc_close( $process );
+			$result .= @fread($pipes[1], 8192);
+			if($result === false)
+			{
+				@fclose( $pipes[1] );
+				@proc_terminate( $process, 9 );
+				@proc_close( $process );
 
-			return '';
+				return '';
+			}
 		}
 
 		if(!$result)
@@ -1151,13 +1155,18 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 						@fclose($pipes[0]);
 					}
 
-					$result = @stream_get_contents($pipes[1]);
-					if($result === false)
+					$result = '';
+					while(!feof($pipes[1]))
 					{
-						@fclose( $pipes[1] );
-						@proc_terminate( $process, 9 );
-						@proc_close( $process );
-						return null;
+						$result .= @fread($pipes[1], 8192);
+						if($result === false)
+						{
+							@fclose( $pipes[1] );
+							@proc_terminate( $process, 9 );
+							@proc_close( $process );
+
+							return '';
+						}
 					}
 
 					@fclose($pipes[1]);
