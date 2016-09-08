@@ -1024,7 +1024,9 @@ class Codisto_Sync_Model_Sync
 			}
 		}
 
-		$adapter = Mage::getModel('core/resource')->getConnection(Mage_Core_Model_Resource::DEFAULT_READ_RESOURCE);
+		$coreResource = Mage::getModel('core/resource');
+
+		$adapter = $coreResource->getConnection(Mage_Core_Model_Resource::DEFAULT_READ_RESOURCE);
 
 		$attrTypeSelects = array();
 
@@ -1037,17 +1039,22 @@ class Codisto_Sync_Model_Sync
 						->where('default_value.entity_id = :entity_id')
 						->where('default_value.store_id = 0');
 
-
 			if($store->getId() == Mage_Catalog_Model_Abstract::DEFAULT_STORE_ID)
 			{
 				$attrTypeSelect->columns(array('attr_value' => new Zend_Db_Expr('CAST(value AS CHAR)')), 'default_value');
+				$attrTypeSelect->columns(array('default_value' => 'value'), 'default_value');
 				$attrTypeSelect->where('default_value.value IS NOT NULL');
 			}
 			else
 			{
+				$attrTypeSelect->columns(array('default_value' => 'value'), 'default_value');
 				$attrTypeSelect->joinLeft(
 					array('store_value' => $table),
-					'store_value.attribute_id = default_value.attribute_id AND store_value.entity_type_id = default_value.entity_type_id AND store_value.entity_id = default_value.entity_id AND store_value.store_id = :store_id ',
+					'store_value.attribute_id = default_value.attribute_id '.
+					'AND store_value.attribute_id IN (SELECT attribute_id FROM `'.$coreResource->getTableName('catalog/eav_attribute').'` WHERE is_global != 0) '.
+					'AND store_value.entity_type_id = default_value.entity_type_id '.
+					'AND store_value.entity_id = default_value.entity_id '.
+					'AND store_value.store_id = :store_id ',
 					array('attr_value' => new Zend_Db_Expr('CAST(COALESCE(store_value.value, default_value.value) AS CHAR)'))
 				);
 				$attrTypeSelect->where('store_value.value IS NOT NULL OR default_value.value IS NOT NULL');
