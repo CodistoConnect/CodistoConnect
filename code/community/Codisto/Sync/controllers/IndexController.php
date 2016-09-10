@@ -755,6 +755,20 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		{
 			$shippingDescription = $freightservice;
 		}
+		else if(strtolower($freightservice) != 'freight')
+		{
+			$shippingDescription = explode('-', $shippingDescription);
+			if(count($shippingDescription) > 1)
+			{
+				$shippingDescription = array_pop($shippingDescription);
+				$shippingDescription[] = $freightservice;
+				$shippingDescription = implode('-', $shippingDescription);
+			}
+			else
+			{
+				$shippingDescription = implode('-', $shippingDescription);
+			}
+		}
 
 		if($shippingDescription)
 		{
@@ -1042,6 +1056,20 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			strtolower($freightservice) != 'freight')
 		{
 			$shippingDescription = $freightservice;
+		}
+		else if(strtolower($freightservice) != 'freight')
+		{
+			$shippingDescription = explode('-', $shippingDescription);
+			if(count($shippingDescription) > 1)
+			{
+				$shippingDescription = array_pop($shippingDescription);
+				$shippingDescription[] = $freightservice;
+				$shippingDescription = implode('-', $shippingDescription);
+			}
+			else
+			{
+				$shippingDescription = implode('-', $shippingDescription);
+			}
 		}
 
 		if($shippingDescription)
