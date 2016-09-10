@@ -749,9 +749,16 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 		}
 
-		if(strtolower($freightservice) != 'freight')
+		$shippingDescription = $quote->getShippingAddress()->getShippingDescription();
+		if(!$shippingDescription &&
+			strtolower($freightservice) != 'freight')
 		{
-			$order->setShippingDescription($freightservice);
+			$shippingDescription = $freightservice;
+		}
+
+		if($shippingDescription)
+		{
+			$order->setShippingDescription($shippingDescription);
 		}
 
 		$ordersubtotal -= $freighttotalextax;
@@ -1030,9 +1037,16 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 		}
 
-		if(strtolower($freightservice) != 'freight')
+		$shippingDescription = $quote->getShippingAddress()->getShippingDescription();
+		if(!$shippingDescription &&
+			strtolower($freightservice) != 'freight')
 		{
-			$order->setShippingDescription($freightservice);
+			$shippingDescription = $freightservice;
+		}
+
+		if($shippingDescription)
+		{
+			$order->setShippingDescription($shippingDescription);
 		}
 
 		$ordersubtotal -= $freighttotalextax;
