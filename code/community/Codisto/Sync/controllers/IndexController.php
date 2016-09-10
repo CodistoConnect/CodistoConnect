@@ -749,24 +749,31 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 		}
 
-		$shippingDescription = $quote->getShippingAddress()->getShippingDescription();
-		if(!$shippingDescription &&
-			strtolower($freightservice) != 'freight')
+		if(strtolower($freightservice) != 'freight')
 		{
-			$shippingDescription = $freightservice;
-		}
-		else if(strtolower($freightservice) != 'freight')
-		{
-			$shippingDescription = explode('-', $shippingDescription);
-			if(count($shippingDescription) > 1)
+			$matchFound = false;
+
+			$shippingDescription = $quote->getShippingAddress()->getShippingDescription();
+			if($shippingDescription)
 			{
-				$shippingDescription = array_pop($shippingDescription);
-				$shippingDescription[] = $freightservice;
-				$shippingDescription = implode('-', $shippingDescription);
+				$shippingRates = $quote->getShippingAddress()->getAllShippingRates();
+				
+				foreach($shippingRates as $rate)
+				{
+					$shippingMethodTitle = $rate->getMethodTitle();
+
+					if(strpos($shippingDescription, $shippingMethodTitle) !== false)
+					{
+						$shippingDescription = str_replace($shippingMethodTitle, $freightservice, $shippingDescription);
+						$matchFound = true;
+						break;
+					}
+				}
 			}
-			else
+
+			if(!$matchFound)
 			{
-				$shippingDescription = implode('-', $shippingDescription);
+				$shippingDescription = $freightservice;
 			}
 		}
 
@@ -1051,24 +1058,31 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			}
 		}
 
-		$shippingDescription = $quote->getShippingAddress()->getShippingDescription();
-		if(!$shippingDescription &&
-			strtolower($freightservice) != 'freight')
+		if(strtolower($freightservice) != 'freight')
 		{
-			$shippingDescription = $freightservice;
-		}
-		else if(strtolower($freightservice) != 'freight')
-		{
-			$shippingDescription = explode('-', $shippingDescription);
-			if(count($shippingDescription) > 1)
+			$matchFound = false;
+
+			$shippingDescription = $quote->getShippingAddress()->getShippingDescription();
+			if($shippingDescription)
 			{
-				$shippingDescription = array_pop($shippingDescription);
-				$shippingDescription[] = $freightservice;
-				$shippingDescription = implode('-', $shippingDescription);
+				$shippingRates = $quote->getShippingAddress()->getAllShippingRates();
+
+				foreach($shippingRates as $rate)
+				{
+					$shippingMethodTitle = $rate->getMethodTitle();
+
+					if(strpos($shippingDescription, $shippingMethodTitle) !== false)
+					{
+						$shippingDescription = str_replace($shippingMethodTitle, $freightservice, $shippingDescription);
+						$matchFound = true;
+						break;
+					}
+				}
 			}
-			else
+
+			if(!$matchFound)
 			{
-				$shippingDescription = implode('-', $shippingDescription);
+				$shippingDescription = $freightservice;
 			}
 		}
 
