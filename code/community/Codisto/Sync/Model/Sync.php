@@ -1372,7 +1372,7 @@ class Codisto_Sync_Model_Sync
 
 		$orderData = $args['row'];
 
-		$insertOrdersSQL->execute(array($orderData['codisto_orderid'], ($orderData['status'])?$orderData['status']:'processing', $orderData['pay_date'], $orderData['ship_date'], $orderData['carrier'], $orderData['track_number']));
+		$insertOrdersSQL->execute(array($orderData['codisto_orderid'], ($orderData['status'])?$orderData['status']:'processing', $orderData['pay_date'], $orderData['ship_date'], $orderData['carrier'], $orderData['track_number'], $orderData['externalreference']));
 
 		$this->ordersProcessed[] = $orderData['entity_id'];
 		$this->currentEntityId = $orderData['entity_id'];
@@ -1610,7 +1610,7 @@ class Codisto_Sync_Model_Sync
 
 				if(!empty($orderUpdateIds))
 				{
-					$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber) VALUES (?, ?, ?, ?, ?, ?)');
+					$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber, ExternalReference) VALUES (?, ?, ?, ?, ?, ?, ?)');
 
 					$orderStoreId = $storeId;
 					if($storeId == 0)
@@ -1631,7 +1631,8 @@ class Codisto_Sync_Model_Sync
 					$ts -= 7776000; // 90 days
 
 					$orders = Mage::getModel('sales/order')->getCollection()
-								->addFieldToSelect(array('codisto_orderid', 'status'))
+								->addFieldToSelect(array('codisto_orderid', 'status' ))
+								->addFieldToSelect('entity_id','externalreference')
 								->addAttributeToFilter('entity_id', array('in' => $orderUpdateIds ))
 								->addAttributeToFilter('main_table.store_id', array('eq' => $orderStoreId ))
 								->addAttributeToFilter('main_table.updated_at', array('gteq' => date('Y-m-d H:i:s', $ts)))
@@ -2111,6 +2112,7 @@ class Codisto_Sync_Model_Sync
 
 			$orders = Mage::getModel('sales/order')->getCollection()
 						->addFieldToSelect(array('codisto_orderid', 'status'))
+						->addFieldToSelect('entity_id','externalreference')
 						->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId ))
 						->addAttributeToFilter('main_table.store_id', array('eq' => $orderStoreId ))
 						->addAttributeToFilter('main_table.updated_at', array('gteq' => date('Y-m-d H:i:s', $ts)))
@@ -2434,7 +2436,7 @@ class Codisto_Sync_Model_Sync
 
 		$db = $this->GetSyncDb($syncDb, 5 );
 
-		$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber) VALUES (?, ?, ?, ?, ?, ?)');
+		$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber, ExternalReference) VALUES (?, ?, ?, ?, ?, ?, ?)');
 
 		$coreResource = Mage::getSingleton('core/resource');
 
@@ -2446,6 +2448,7 @@ class Codisto_Sync_Model_Sync
 
 		$orders = Mage::getModel('sales/order')->getCollection()
 					->addFieldToSelect(array('codisto_orderid', 'status'))
+					->addFieldToSelect('entity_id','externalreference')
 					->addAttributeToFilter('codisto_orderid', array('in' => $orders ));
 
 		$orders->getSelect()->joinLeft( array('i' => $invoiceName), 'i.order_id = main_table.entity_id AND i.state = 2', array('pay_date' => 'MIN(i.created_at)'));
@@ -2514,7 +2517,7 @@ class Codisto_Sync_Model_Sync
 		$db->exec('CREATE TABLE IF NOT EXISTS Store(ID integer NOT NULL PRIMARY KEY, Code text NOT NULL, Name text NOT NULL, Currency text NOT NULL)');
 		$db->exec('CREATE TABLE IF NOT EXISTS StoreMerchant(StoreID integer NOT NULL, MerchantID integer NOT NULL, PRIMARY KEY (StoreID, MerchantID))');
 
-		$db->exec('CREATE TABLE IF NOT EXISTS [Order](ID integer NOT NULL PRIMARY KEY, Status text NOT NULL, PaymentDate datetime NULL, ShipmentDate datetime NULL, Carrier text NOT NULL, TrackingNumber text NOT NULL)');
+		$db->exec('CREATE TABLE IF NOT EXISTS [Order](ID integer NOT NULL PRIMARY KEY, Status text NOT NULL, PaymentDate datetime NULL, ShipmentDate datetime NULL, Carrier text NOT NULL, TrackingNumber text NOT NULL, ExternalReference text NOT NULL DEFAULT \'\')');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS StaticBlock(BlockID integer NOT NULL PRIMARY KEY, Title text NOT NULL, Identifier text NOT NULL, Content text NOT NULL)');
 
@@ -2530,6 +2533,15 @@ class Codisto_Sync_Model_Sync
 			$db->exec('INSERT INTO NewOrder SELECT ID, Status, PaymentDate, ShipmentDate, \'Unknown\', TrackingNumber FROM [Order]');
 			$db->exec('DROP TABLE [Order]');
 			$db->exec('ALTER TABLE NewOrder RENAME TO [Order]');
+		}
+
+		try
+		{
+			$db->exec('SELECT 1 FROM [Order] WHERE ExternalReference IS NULL LIMIT 1');
+		}
+		catch(Exception $e)
+		{
+			$db->exec('ALTER TABLE [Order] ADD COLUMN ExternalReference text NOT NULL DEFAULT \'\'');
 		}
 
 		try

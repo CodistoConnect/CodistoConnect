@@ -254,7 +254,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 										if($ordersAvailable)
 										{
-											$db->exec('CREATE TABLE [Order] AS SELECT * FROM SyncDb.[Order] WHERE ID IN (SELECT ExternalReference FROM SyncDb.OrderChange)');
+											$db->exec('CREATE TABLE [Order] AS SELECT * FROM SyncDb.[Order] WHERE ExternalReference = \'\' OR ExternalReference IN (SELECT ExternalReference FROM SyncDb.OrderChange)');
 											$db->exec('CREATE TABLE OrderChange AS SELECT * FROM SyncDb.OrderChange');
 										}
 									}
