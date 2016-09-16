@@ -751,7 +751,35 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		if(strtolower($freightservice) != 'freight')
 		{
-			$order->setShippingDescription($freightservice);
+			$matchFound = false;
+
+			$shippingDescription = $quote->getShippingAddress()->getShippingDescription();
+			if($shippingDescription)
+			{
+				$shippingRates = $quote->getShippingAddress()->getAllShippingRates();
+				
+				foreach($shippingRates as $rate)
+				{
+					$shippingMethodTitle = $rate->getMethodTitle();
+
+					if(strpos($shippingDescription, $shippingMethodTitle) !== false)
+					{
+						$shippingDescription = str_replace($shippingMethodTitle, $freightservice, $shippingDescription);
+						$matchFound = true;
+						break;
+					}
+				}
+			}
+
+			if(!$matchFound)
+			{
+				$shippingDescription = $freightservice;
+			}
+		}
+
+		if($shippingDescription)
+		{
+			$order->setShippingDescription($shippingDescription);
 		}
 
 		$ordersubtotal -= $freighttotalextax;
@@ -1032,7 +1060,35 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		if(strtolower($freightservice) != 'freight')
 		{
-			$order->setShippingDescription($freightservice);
+			$matchFound = false;
+
+			$shippingDescription = $quote->getShippingAddress()->getShippingDescription();
+			if($shippingDescription)
+			{
+				$shippingRates = $quote->getShippingAddress()->getAllShippingRates();
+
+				foreach($shippingRates as $rate)
+				{
+					$shippingMethodTitle = $rate->getMethodTitle();
+
+					if(strpos($shippingDescription, $shippingMethodTitle) !== false)
+					{
+						$shippingDescription = str_replace($shippingMethodTitle, $freightservice, $shippingDescription);
+						$matchFound = true;
+						break;
+					}
+				}
+			}
+
+			if(!$matchFound)
+			{
+				$shippingDescription = $freightservice;
+			}
+		}
+
+		if($shippingDescription)
+		{
+			$order->setShippingDescription($shippingDescription);
 		}
 
 		$ordersubtotal -= $freighttotalextax;
