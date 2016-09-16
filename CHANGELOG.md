@@ -1,5 +1,15 @@
 # Change Log
 
+## [1.90.13](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.13) (2016-09-16)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.12...1.90.13)
+
+**Merged pull requests:**
+
+- Release [\#361](https://github.com/CodistoConnect/CodistoConnect/pull/361) ([lamery](https://github.com/lamery))
+- reference externalreference in incremental sync filter [\#360](https://github.com/CodistoConnect/CodistoConnect/pull/360) ([lamery](https://github.com/lamery))
+- include tax class id for grouped product children [\#359](https://github.com/CodistoConnect/CodistoConnect/pull/359) ([jlivas](https://github.com/jlivas))
+- restrict store level attributes on global attributes and push default… [\#358](https://github.com/CodistoConnect/CodistoConnect/pull/358) ([lamery](https://github.com/lamery))
+
 ## [1.90.12](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.12) (2016-09-06)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.11...1.90.12)
 
