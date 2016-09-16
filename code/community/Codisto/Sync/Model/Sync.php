@@ -322,6 +322,7 @@ class Codisto_Sync_Model_Sync
 		$insertAttributeGroup = $db->prepare('INSERT OR IGNORE INTO AttributeGroup(ID, Name) VALUES(?, ?)');
 		$insertAttributeGroupMap = $db->prepare('INSERT OR IGNORE INTO AttributeGroupMap(GroupID, AttributeID) VALUES(?,?)');
 		$insertProductAttribute = $db->prepare('INSERT OR IGNORE INTO ProductAttributeValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
+		$insertProductAttributeDefault = $db->prepare('INSERT OR IGNORE INTO ProductAttributeDefaultValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
 		$insertProductQuestion = $db->prepare('INSERT OR REPLACE INTO ProductQuestion(ExternalReference, ProductExternalReference, Name, Type, Sequence) VALUES (?, ?, ?, ?, ?)');
 		$insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
 
@@ -342,6 +343,7 @@ class Codisto_Sync_Model_Sync
 				'preparedattributegroupStatement' => $insertAttributeGroup,
 				'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 				'preparedproductattributeStatement' => $insertProductAttribute,
+				'preparedproductattributedefaultStatement' => $insertProductAttributeDefault,
 				'preparedproductquestionStatement' => $insertProductQuestion,
 				'preparedproductanswerStatement' => $insertProductAnswer,
 				'store' => $store )
@@ -361,6 +363,7 @@ class Codisto_Sync_Model_Sync
 				'preparedattributegroupStatement' => $insertAttributeGroup,
 				'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 				'preparedproductattributeStatement' => $insertProductAttribute,
+				'preparedproductattributedefaultStatement' => $insertProductAttributeDefault,
 				'preparedproductquestionStatement' => $insertProductQuestion,
 				'preparedproductanswerStatement' => $insertProductAnswer,
 				'store' => $store )
@@ -383,6 +386,7 @@ class Codisto_Sync_Model_Sync
 				'preparedattributegroupStatement' => $insertAttributeGroup,
 				'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 				'preparedproductattributeStatement' => $insertProductAttribute,
+				'preparedproductattributedefaultStatement' => $insertProductAttributeDefault,
 				'preparedproductquestionStatement' => $insertProductQuestion,
 				'preparedproductanswerStatement' => $insertProductAnswer,
 				'store' => $store )
@@ -815,6 +819,7 @@ class Codisto_Sync_Model_Sync
 		$insertAttributeGroupSQL = $args['preparedattributegroupStatement'];
 		$insertAttributeGroupMapSQL = $args['preparedattributegroupmapStatement'];
 		$insertProductAttributeSQL = $args['preparedproductattributeStatement'];
+		$insertProductAttributeDefaultSQL = $args['preparedproductattributedefaultStatement'];
 		$insertProductQuestionSQL = $args['preparedproductquestionStatement'];
 		$insertProductAnswerSQL = $args['preparedproductanswerStatement'];
 
@@ -1024,7 +1029,9 @@ class Codisto_Sync_Model_Sync
 			}
 		}
 
-		$adapter = Mage::getModel('core/resource')->getConnection(Mage_Core_Model_Resource::DEFAULT_READ_RESOURCE);
+		$coreResource = Mage::getModel('core/resource');
+
+		$adapter = $coreResource->getConnection(Mage_Core_Model_Resource::DEFAULT_READ_RESOURCE);
 
 		$attrTypeSelects = array();
 
@@ -1037,17 +1044,22 @@ class Codisto_Sync_Model_Sync
 						->where('default_value.entity_id = :entity_id')
 						->where('default_value.store_id = 0');
 
-
 			if($store->getId() == Mage_Catalog_Model_Abstract::DEFAULT_STORE_ID)
 			{
 				$attrTypeSelect->columns(array('attr_value' => new Zend_Db_Expr('CAST(value AS CHAR)')), 'default_value');
+				$attrTypeSelect->columns(array('default_value' => 'value'), 'default_value');
 				$attrTypeSelect->where('default_value.value IS NOT NULL');
 			}
 			else
 			{
+				$attrTypeSelect->columns(array('default_value' => 'value'), 'default_value');
 				$attrTypeSelect->joinLeft(
 					array('store_value' => $table),
-					'store_value.attribute_id = default_value.attribute_id AND store_value.entity_type_id = default_value.entity_type_id AND store_value.entity_id = default_value.entity_id AND store_value.store_id = :store_id ',
+					'store_value.attribute_id = default_value.attribute_id '.
+					'AND store_value.attribute_id IN (SELECT attribute_id FROM `'.$coreResource->getTableName('catalog/eav_attribute').'` WHERE is_global != 0) '.
+					'AND store_value.entity_type_id = default_value.entity_type_id '.
+					'AND store_value.entity_id = default_value.entity_id '.
+					'AND store_value.store_id = :store_id ',
 					array('attr_value' => new Zend_Db_Expr('CAST(COALESCE(store_value.value, default_value.value) AS CHAR)'))
 				);
 				$attrTypeSelect->where('store_value.value IS NOT NULL OR default_value.value IS NOT NULL');
@@ -1068,24 +1080,38 @@ class Codisto_Sync_Model_Sync
 				'store_id' => $store->getId()
 			);
 
-			$attributeRows = $adapter->fetchPairs($attrSelect, $attrArgs);
-			foreach ($attributeRows as $attributeId => $attributeValue)
+			foreach($adapter->fetchAll($attrSelect, $attrArgs, Zend_Db::FETCH_NUM) as $attributeRow)
 			{
+				$attributeId = $attributeRow[0];
+
 				$attributeCode = $attributeCodeIDMap[$attributeId];
-				$attributeValues[$attributeCode] = $attributeValue;
+				$attributeValues[$attributeCode] = $attributeRow;
 			}
 
 			foreach($attributeSet as $attributeData)
 			{
 				if(isset($attributeValues[$attributeData['code']]))
-					$attributeValue = $attributeValues[$attributeData['code']];
+				{
+					$attributeRow = $attributeValues[$attributeData['code']];
+
+					$defaultValue = $attributeRow[1];
+					$attributeValue = $attributeRow[2];
+				}
 				else
+				{
+					$defaultValue = null;
 					$attributeValue = null;
+				}
 
 				if(isset($attributeData['source']) &&
 					$attributeData['source_model'] == 'eav/entity_attribute_source_boolean')
 				{
 					$attributeData['backend_type'] = 'boolean';
+
+					if(isset($defaultValue) && $defaultValue)
+						$defaultValue = -1;
+					else
+						$defaultValue = 0;
 
 					if(isset($attributeValue) && $attributeValue)
 						$attributeValue = -1;
@@ -1095,11 +1121,87 @@ class Codisto_Sync_Model_Sync
 
 				else if($attributeData['html'])
 				{
-					$attributeValue = Mage::helper('codistosync')->processCmsContent($attributeValue);
+					if($defaultValue == $attributeValue)
+					{
+						$defaultValue = $attributeValue = Mage::helper('codistosync')->processCmsContent($attributeValue);
+					}
+					else
+					{
+						$defaultValue = Mage::helper('codistosync')->processCmsContent($defaultValue);
+						$attributeValue = Mage::helper('codistosync')->processCmsContent($attributeValue);
+					}
 				}
 
 				else if( in_array($attributeData['frontend_type'], array( 'select', 'multiselect' ) ) )
 				{
+					if(is_array($attributeValue))
+					{
+						if(isset($attributeData['source']) &&
+							method_exists( $attributeData['source'], 'getOptionText') )
+						{
+							$defaultValueSet = array();
+
+							foreach($attributeValue as $attributeOptionId)
+							{
+								if(isset($this->optionTextCache['0-'.$attributeData['id'].'-'.$attributeOptionId]))
+								{
+									$defaultValueSet[] = $this->optionTextCache['0-'.$attributeData['id'].'-'.$attributeOptionId];
+								}
+								else
+								{
+									try
+									{
+										$attributeData['source']->getAttribute()->setStoreId(0);
+
+										$attributeText = $attributeData['source']->getOptionText($attributeOptionId);
+
+										$attributeData['source']->getAttribute()->setStoreId($store->getId());
+
+										$this->optionTextCache['0-'.$attributeData['id'].'-'.$attributeOptionId] = $attributeText;
+
+										$defaultValueSet[] = $attributeText;
+									}
+									catch(Exception $e)
+									{
+
+									}
+								}
+							}
+
+							$defaultValue = $defaultValueSet;
+						}
+					}
+					else
+					{
+						if(isset($attributeData['source'])  &&
+							method_exists( $attributeData['source'], 'getOptionText') )
+						{
+							if(isset($this->optionTextCache['0-'.$attributeData['id'].'-'.$attributeValue]))
+							{
+								$defaultValue = $this->optionTextCache['0-'.$attributeData['id'].'-'.$attributeValue];
+							}
+							else
+							{
+								try
+								{
+									$attributeData['source']->getAttribute()->setStoreId(0);
+
+									$attributeText = $attributeData['source']->getOptionText($attributeValue);
+
+									$attributeData['source']->getAttribute()->setStoreId($store->getId());
+
+									$this->optionTextCache['0-'.$attributeData['id'].'-'.$attributeValue] = $attributeText;
+
+									$defaultValue = $attributeText;
+								}
+								catch(Exception $e)
+								{
+									$defaultValue = null;
+								}
+							}
+						}
+					}
+
 					if(is_array($attributeValue))
 					{
 						if(isset($attributeData['source']) &&
@@ -1180,6 +1282,17 @@ class Codisto_Sync_Model_Sync
 						$attributeValue = implode(',', $attributeValue);
 
 					$insertProductAttributeSQL->execute(array($product_id, $attributeData['id'], $attributeValue));
+				}
+
+				if(isset($defaultValue) && !is_null($defaultValue))
+				{
+					if(is_array($defaultValue))
+						$defaultValue = implode(',', $defaultValue);
+
+					if($defaultValue != $attributeValue)
+					{
+						$insertProductAttributeDefaultSQL->execute(array($product_id, $attributeData['id'], $defaultValue));
+					}
 				}
 			}
 		}
@@ -1505,6 +1618,7 @@ class Codisto_Sync_Model_Sync
 					$insertAttributeGroup = $db->prepare('INSERT OR REPLACE INTO AttributeGroup(ID, Name) VALUES(?, ?)');
 					$insertAttributeGroupMap = $db->prepare('INSERT OR IGNORE INTO AttributeGroupMap(GroupID, AttributeID) VALUES(?,?)');
 					$insertProductAttribute = $db->prepare('INSERT OR IGNORE INTO ProductAttributeValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
+					$insertProductAttributeDefault = $db->prepare('INSERT OR IGNORE INTO ProductAttributeDefaultValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
 					$insertProductQuestion = $db->prepare('INSERT OR REPLACE INTO ProductQuestion(ExternalReference, ProductExternalReference, Name, Type, Sequence) VALUES (?, ?, ?, ?, ?)');
 					$insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
 
@@ -1530,6 +1644,7 @@ class Codisto_Sync_Model_Sync
 							'preparedattributegroupStatement' => $insertAttributeGroup,
 							'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 							'preparedproductattributeStatement' => $insertProductAttribute,
+							'preparedproductattributedefaultStatement' => $insertProductAttributeDefault,
 							'preparedproductquestionStatement' => $insertProductQuestion,
 							'preparedproductanswerStatement' => $insertProductAnswer,
 							'store' => $storeObject ));
@@ -1559,6 +1674,7 @@ class Codisto_Sync_Model_Sync
 							'preparedattributegroupStatement' => $insertAttributeGroup,
 							'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 							'preparedproductattributeStatement' => $insertProductAttribute,
+							'preparedproductattributedefaultStatement' => $insertProductAttributeDefault,
 							'preparedproductquestionStatement' => $insertProductQuestion,
 							'preparedproductanswerStatement' => $insertProductAnswer,
 							'store' => $storeObject )
@@ -1590,6 +1706,7 @@ class Codisto_Sync_Model_Sync
 							'preparedattributegroupStatement' => $insertAttributeGroup,
 							'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 							'preparedproductattributeStatement' => $insertProductAttribute,
+							'preparedproductattributedefaultStatement' => $insertProductAttributeDefault,
 							'preparedproductquestionStatement' => $insertProductQuestion,
 							'preparedproductanswerStatement' => $insertProductAnswer,
 							'store' => $storeObject )
@@ -1850,6 +1967,7 @@ class Codisto_Sync_Model_Sync
 		$insertAttributeGroup = $db->prepare('INSERT OR REPLACE INTO AttributeGroup(ID, Name) VALUES(?, ?)');
 		$insertAttributeGroupMap = $db->prepare('INSERT OR IGNORE INTO AttributeGroupMap(GroupID, AttributeID) VALUES(?,?)');
 		$insertProductAttribute = $db->prepare('INSERT OR IGNORE INTO ProductAttributeValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
+		$insertProductAttributeDefault = $db->prepare('INSERT OR IGNORE INTO ProductAttributeDefaultValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
 		$insertProductQuestion = $db->prepare('INSERT OR REPLACE INTO ProductQuestion(ExternalReference, ProductExternalReference, Name, Type, Sequence) VALUES (?, ?, ?, ?, ?)');
 		$insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
 		$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber) VALUES (?, ?, ?, ?, ?, ?)');
@@ -1965,6 +2083,7 @@ class Codisto_Sync_Model_Sync
 					'preparedattributegroupStatement' => $insertAttributeGroup,
 					'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 					'preparedproductattributeStatement' => $insertProductAttribute,
+					'preparedproductattributedefaultStatement' => $insertProductAttributeDefault,
 					'preparedproductquestionStatement' => $insertProductQuestion,
 					'preparedproductanswerStatement' => $insertProductAnswer,
 					'store' => $store ));
@@ -2011,6 +2130,7 @@ class Codisto_Sync_Model_Sync
 					'preparedattributegroupStatement' => $insertAttributeGroup,
 					'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 					'preparedproductattributeStatement' => $insertProductAttribute,
+					'preparedproductattributedefaultStatement' => $insertProductAttributeDefault,
 					'preparedproductquestionStatement' => $insertProductQuestion,
 					'preparedproductanswerStatement' => $insertProductAnswer,
 					'store' => $store )
@@ -2058,6 +2178,7 @@ class Codisto_Sync_Model_Sync
 					'preparedattributegroupStatement' => $insertAttributeGroup,
 					'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
 					'preparedproductattributeStatement' => $insertProductAttribute,
+					'preparedproductattributedefaultStatement' => $insertProductAttributeDefault,
 					'preparedproductquestionStatement' => $insertProductQuestion,
 					'preparedproductanswerStatement' => $insertProductAnswer,
 					'store' => $store )
@@ -2507,6 +2628,7 @@ class Codisto_Sync_Model_Sync
 		$db->exec('CREATE TABLE IF NOT EXISTS AttributeGroupMap (AttributeID integer NOT NULL, GroupID integer NOT NULL, PRIMARY KEY(AttributeID, GroupID))');
 		$db->exec('CREATE TABLE IF NOT EXISTS AttributeGroup (ID integer NOT NULL PRIMARY KEY, Name text NOT NULL)');
 		$db->exec('CREATE TABLE IF NOT EXISTS ProductAttributeValue (ProductExternalReference text NOT NULL, AttributeID integer NOT NULL, Value any, PRIMARY KEY (ProductExternalReference, AttributeID))');
+		$db->exec('CREATE TABLE IF NOT EXISTS ProductAttributeDefaultValue (ProductExternalReference text NOT NULL, AttributeID integer NOT NULL, Value any, PRIMARY KEY (ProductExternalReference, AttributeID))');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS TaxClass (ID integer NOT NULL PRIMARY KEY, Type text NOT NULL, Name text NOT NULL)');
 		$db->exec('CREATE TABLE IF NOT EXISTS TaxCalculation(ID integer NOT NULL PRIMARY KEY, TaxRateID integer NOT NULL, TaxRuleID integer NOT NULL, ProductTaxClassID integer NOT NULL, CustomerTaxClassID integer NOT NULL)');
