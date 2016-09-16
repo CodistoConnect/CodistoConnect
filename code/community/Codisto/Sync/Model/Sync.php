@@ -696,7 +696,7 @@ class Codisto_Sync_Model_Sync
 		$groupedData = Mage::getModel('catalog/product_type_grouped');
 
 		$childProducts = $groupedData->getAssociatedProductCollection($product);
-		$childProducts->addAttributeToSelect(array('sku', 'name', 'price', 'special_price', 'special_from_date', 'special_to_date'));
+		$childProducts->addAttributeToSelect(array('sku', 'name', 'price', 'special_price', 'special_from_date', 'special_to_date', 'tax_class_id'));
 
 		$skulinkArgs = array();
 		$skumatrixArgs = array();
