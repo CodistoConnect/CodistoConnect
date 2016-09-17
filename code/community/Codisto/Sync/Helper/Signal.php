@@ -7,7 +7,7 @@ Mage::app();
 $merchants = unserialize($argv[1]);
 $msg = $argv[2];
 
-$curlOptions = array( CURLOPT_TIMEOUT => 10 );
+$curlOptions = array( CURLOPT_TIMEOUT => 20 );
 
 if(isset($_ENV['CURL_CA_BUNDLE']) && $_ENV['CURL_CA_BUNDLE'])
 {
@@ -33,7 +33,7 @@ foreach($merchants as $merchant)
 		{
 			if($Retry >= 3)
 			{
-				Mage::logException($e);
+				Mage::log($e->__toString(), null, 'codisto.log');
 				break;
 			}
 
