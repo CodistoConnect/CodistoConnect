@@ -330,7 +330,8 @@ class Codisto_Sync_Model_Observer
 	{
 		$transport = $observer->getEvent()->getTransport();
 		$payment = $observer->getEvent()->getPayment();
-		$paymentmethod = $payment->getMethodInstance()->getCode();
+		$paymentmethodinstance = is_object($payment) && $payment && method_exists($payment, 'getMethodInstance') ? $payment->getMethodInstance() : null;
+		$paymentmethod = is_object($paymentmethodinstance) && $paymentmethodinstance && method_exists($paymentmethodinstance, 'getCode') ? $paymentmethodinstance->getCode() : '';
 
 		if($paymentmethod == 'ebay' && Mage::getDesign()->getArea() == 'adminhtml')
 		{
