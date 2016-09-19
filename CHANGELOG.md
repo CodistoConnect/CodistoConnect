@@ -1,8 +1,18 @@
 # Change Log
 
-## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
+## [1.90.15](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.15) (2016-09-19)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.14...1.90.15)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.13...HEAD)
+**Fixed bugs:**
+
+- fixes for issues reported by wowstores [\#363](https://github.com/CodistoConnect/CodistoConnect/pull/363) ([lamery](https://github.com/lamery))
+
+**Merged pull requests:**
+
+- Release [\#364](https://github.com/CodistoConnect/CodistoConnect/pull/364) ([lamery](https://github.com/lamery))
+
+## [1.90.14](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.14) (2016-09-16)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.13...1.90.14)
 
 **Merged pull requests:**
 
@@ -330,9 +340,6 @@
 - use quote pricing instead of running own magento equivalent price calc [\#261](https://github.com/CodistoConnect/CodistoConnect/pull/261) ([lamery](https://github.com/lamery))
 - async signalling + process protection on cms content [\#260](https://github.com/CodistoConnect/CodistoConnect/pull/260) ([lamery](https://github.com/lamery))
 - reduce the number of signals during updates [\#259](https://github.com/CodistoConnect/CodistoConnect/pull/259) ([lamery](https://github.com/lamery))
-
-## [1.1.78](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.78) (2016-02-19)
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.78...1.1.78)
 
 ## [1.1.78](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.78) (2016-02-19)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.77...1.1.78)
