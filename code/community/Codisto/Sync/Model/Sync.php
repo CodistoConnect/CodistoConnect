@@ -642,7 +642,7 @@ class Codisto_Sync_Model_Sync
 		$insertCategorySQL = $args['preparedcategoryproductStatement'];
 		$insertSKUMatrixSQL = $args['preparedskumatrixStatement'];
 
-		$this->SyncSimpleProductData(array_merge($args, array('row' => $productData)));
+		$this->SyncSimpleProductData(array_merge($args, array('row' => $productData, 'product_type' => 'configurable')));
 
 		$product = Mage::getModel('catalog/product')
 					->setData($productData)
@@ -823,7 +823,30 @@ class Codisto_Sync_Model_Sync
 		$insertProductQuestionSQL = $args['preparedproductquestionStatement'];
 		$insertProductAnswerSQL = $args['preparedproductanswerStatement'];
 
-		$price = $this->SyncProductPrice($store, $product);
+		if($args['product_type'] == 'configurable') {
+			try {
+				$configurableData = Mage::getModel('catalog/product_type_configurable');
+				$attributes = $configurableData->getConfigurableAttributes($product);
+			} catch(Exception $e) {
+				$badoptiondata = true;
+			}
+		}
+
+		if($attributes) {
+			foreach($attributes as $attribute)
+			{
+				$prodAttr = $attribute->getProductAttribute();
+				if(!is_object($prodAttr) || !$prodAttr->getAttributeCode())
+				{
+					$badoptiondata = true;
+				}
+			}
+		}
+
+		if(!$badoptiondata)
+			$price = $this->SyncProductPrice($store, $product);
+		else
+			$price = 0;
 
 		$listPrice = $this->getExTaxPrice($product, $product->getPrice(), $store);
 		if(!is_numeric($listPrice))

@@ -24,6 +24,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 	{
 		set_time_limit(0);
 		ignore_user_abort(false);
+		@ini_set('display_errors', 1);
+		@ini_set('display_startup_errors', 1);
+		@error_reporting(E_ALL);
 
 		$output = '';
 
@@ -294,6 +297,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 	{
 		set_time_limit(0);
 		ignore_user_abort(false);
+		@ini_set('display_errors', 1);
+		@ini_set('display_startup_errors', 1);
+		@error_reporting(E_ALL);
 
 		$request = $this->getRequest();
 		$response = $this->getResponse();
@@ -757,7 +763,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			if($shippingDescription)
 			{
 				$shippingRates = $quote->getShippingAddress()->getAllShippingRates();
-				
+
 				foreach($shippingRates as $rate)
 				{
 					$shippingMethodTitle = $rate->getMethodTitle();
