@@ -1482,7 +1482,7 @@ class Codisto_Sync_Model_Sync
 
 		$orderData = $args['row'];
 
-		$insertOrdersSQL->execute(array($orderData['codisto_orderid'], ($orderData['status'])?$orderData['status']:'processing', $orderData['pay_date'], $orderData['ship_date'], $orderData['carrier'], $orderData['track_number'], $orderData['externalreference']));
+		$insertOrdersSQL->execute(array($orderData['codisto_orderid'], ($orderData['status'])?$orderData['status']:'processing', $orderData['pay_date'], $orderData['ship_date'], $orderData['carrier'], $orderData['track_number'], $orderData['externalreference'], $orderData['codisto_merchantid']));
 
 		$this->ordersProcessed[] = $orderData['entity_id'];
 		$this->currentEntityId = $orderData['entity_id'];
@@ -1724,7 +1724,7 @@ class Codisto_Sync_Model_Sync
 
 				if(!empty($orderUpdateIds))
 				{
-					$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber, ExternalReference) VALUES (?, ?, ?, ?, ?, ?, ?)');
+					$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber, ExternalReference, MerchantID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 
 					$orderStoreId = $storeId;
 					if($storeId == 0)
@@ -1745,7 +1745,7 @@ class Codisto_Sync_Model_Sync
 					$ts -= 7776000; // 90 days
 
 					$orders = Mage::getModel('sales/order')->getCollection()
-								->addFieldToSelect(array('codisto_orderid', 'status' ))
+								->addFieldToSelect(array('codisto_orderid', 'codisto_merchantid', 'status' ))
 								->addFieldToSelect('entity_id','externalreference')
 								->addAttributeToFilter('entity_id', array('in' => $orderUpdateIds ))
 								->addAttributeToFilter('main_table.store_id', array('eq' => $orderStoreId ))
@@ -1754,7 +1754,7 @@ class Codisto_Sync_Model_Sync
 					$orders->getSelect()->joinLeft( array('i' => $invoiceName), 'i.order_id = main_table.entity_id AND i.state = 2', array('pay_date' => 'MIN(i.created_at)'));
 					$orders->getSelect()->joinLeft( array('s' => $shipmentName), 's.order_id = main_table.entity_id', array('ship_date' => 'MIN(s.created_at)'));
 					$orders->getSelect()->joinLeft( array('t' => $shipmentTrackName), 't.order_id = main_table.entity_id', array('carrier' => 'GROUP_CONCAT(COALESCE(t.title, \'\') SEPARATOR \',\')', 'track_number' => 'GROUP_CONCAT(COALESCE(t.track_number, \'\') SEPARATOR \',\')'));
-					$orders->getSelect()->group(array('main_table.entity_id', 'main_table.codisto_orderid', 'main_table.status'));
+					$orders->getSelect()->group(array('main_table.entity_id', 'main_table.codisto_orderid', 'main_table.codisto_merchantid', 'main_table.status'));
 					$orders->setOrder('entity_id', 'ASC');
 
 					Mage::getSingleton('core/resource_iterator')->walk($orders->getSelect(), array(array($this, 'SyncOrderData')),
@@ -1967,7 +1967,7 @@ class Codisto_Sync_Model_Sync
 		$insertProductAttributeDefault = $db->prepare('INSERT OR IGNORE INTO ProductAttributeDefaultValue(ProductExternalReference, AttributeID, Value) VALUES (?, ?, ?)');
 		$insertProductQuestion = $db->prepare('INSERT OR REPLACE INTO ProductQuestion(ExternalReference, ProductExternalReference, Name, Type, Sequence) VALUES (?, ?, ?, ?, ?)');
 		$insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
-		$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber, ExternalReference) VALUES (?, ?, ?, ?, ?, ?, ?)');
+		$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber, ExternalReference, MerchantID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
@@ -2208,6 +2208,18 @@ class Codisto_Sync_Model_Sync
 				catch(Exception $e)
 				{
 				}
+
+				try
+				{
+					$connection->addColumn(
+							$tablePrefix . 'sales_flat_order',
+							'codisto_merchantid',
+							'varchar(10)'
+						);
+				}
+				catch(Exception $e)
+				{
+				}
 			}
 
 			$orderStoreId = $storeId;
@@ -2229,7 +2241,7 @@ class Codisto_Sync_Model_Sync
 			$ts -= 7776000; // 90 days
 
 			$orders = Mage::getModel('sales/order')->getCollection()
-						->addFieldToSelect(array('codisto_orderid', 'status'))
+						->addFieldToSelect(array('codisto_orderid', 'codisto_merchantid', 'status'))
 						->addFieldToSelect('entity_id','externalreference')
 						->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId ))
 						->addAttributeToFilter('main_table.store_id', array('eq' => $orderStoreId ))
@@ -2238,7 +2250,7 @@ class Codisto_Sync_Model_Sync
 			$orders->getSelect()->joinLeft( array('i' => $invoiceName), 'i.order_id = main_table.entity_id AND i.state = 2', array('pay_date' => 'MIN(i.created_at)'));
 			$orders->getSelect()->joinLeft( array('s' => $shipmentName), 's.order_id = main_table.entity_id', array('ship_date' => 'MIN(s.created_at)'));
 			$orders->getSelect()->joinLeft( array('t' => $shipmentTrackName), 't.order_id = main_table.entity_id', array('carrier' => 'GROUP_CONCAT(COALESCE(t.title, \'\') SEPARATOR \',\')', 'track_number' => 'GROUP_CONCAT(COALESCE(t.track_number, \'\') SEPARATOR \',\')'));
-			$orders->getSelect()->group(array('main_table.entity_id', 'main_table.codisto_orderid', 'main_table.status'));
+			$orders->getSelect()->group(array('main_table.entity_id', 'main_table.codisto_orderid', 'main_table.codisto_merchantid', 'main_table.status'));
 			$orders->getSelect()->limit(1000);
 			$orders->setOrder('entity_id', 'ASC');
 
@@ -2560,7 +2572,7 @@ class Codisto_Sync_Model_Sync
 
 		$db = $this->GetSyncDb($syncDb, 5 );
 
-		$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber, ExternalReference) VALUES (?, ?, ?, ?, ?, ?, ?)');
+		$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber, ExternalReference, MerchantID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 
 		$coreResource = Mage::getSingleton('core/resource');
 
@@ -2571,14 +2583,14 @@ class Codisto_Sync_Model_Sync
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
 		$orders = Mage::getModel('sales/order')->getCollection()
-					->addFieldToSelect(array('codisto_orderid', 'status'))
+					->addFieldToSelect(array('codisto_orderid', 'codisto_merchantid', 'status'))
 					->addFieldToSelect('entity_id','externalreference')
 					->addAttributeToFilter('codisto_orderid', array('in' => $orders ));
 
 		$orders->getSelect()->joinLeft( array('i' => $invoiceName), 'i.order_id = main_table.entity_id AND i.state = 2', array('pay_date' => 'MIN(i.created_at)'));
 		$orders->getSelect()->joinLeft( array('s' => $shipmentName), 's.order_id = main_table.entity_id', array('ship_date' => 'MIN(s.created_at)'));
 		$orders->getSelect()->joinLeft( array('t' => $shipmentTrackName), 't.order_id = main_table.entity_id', array('carrier' => 'GROUP_CONCAT(COALESCE(t.title, \'\') SEPARATOR \',\')', 'track_number' => 'GROUP_CONCAT(COALESCE(t.track_number, \'\') SEPARATOR \',\')'));
-		$orders->getSelect()->group(array('main_table.entity_id', 'main_table.codisto_orderid', 'main_table.status'));
+		$orders->getSelect()->group(array('main_table.entity_id', 'main_table.codisto_orderid', 'main_table.codisto_merchantid', 'main_table.status'));
 
 		$orders->setOrder('entity_id', 'ASC');
 
@@ -2642,7 +2654,7 @@ class Codisto_Sync_Model_Sync
 		$db->exec('CREATE TABLE IF NOT EXISTS Store(ID integer NOT NULL PRIMARY KEY, Code text NOT NULL, Name text NOT NULL, Currency text NOT NULL)');
 		$db->exec('CREATE TABLE IF NOT EXISTS StoreMerchant(StoreID integer NOT NULL, MerchantID integer NOT NULL, PRIMARY KEY (StoreID, MerchantID))');
 
-		$db->exec('CREATE TABLE IF NOT EXISTS [Order](ID integer NOT NULL PRIMARY KEY, Status text NOT NULL, PaymentDate datetime NULL, ShipmentDate datetime NULL, Carrier text NOT NULL, TrackingNumber text NOT NULL, ExternalReference text NOT NULL DEFAULT \'\')');
+		$db->exec('CREATE TABLE IF NOT EXISTS [Order](ID integer NOT NULL PRIMARY KEY, Status text NOT NULL, PaymentDate datetime NULL, ShipmentDate datetime NULL, Carrier text NOT NULL, TrackingNumber text NOT NULL, ExternalReference text NOT NULL DEFAULT \'\', MerchantID text NOT NULL DEFAULT \'\')');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS StaticBlock(BlockID integer NOT NULL PRIMARY KEY, Title text NOT NULL, Identifier text NOT NULL, Content text NOT NULL)');
 
@@ -2667,6 +2679,15 @@ class Codisto_Sync_Model_Sync
 		catch(Exception $e)
 		{
 			$db->exec('ALTER TABLE [Order] ADD COLUMN ExternalReference text NOT NULL DEFAULT \'\'');
+		}
+
+		try
+		{
+			$db->exec('SELECT 1 FROM [Order] WHERE MerchantID IS NULL LIMIT 1');
+		}
+		catch(Exception $e)
+		{
+			$db->exec('ALTER TABLE [Order] ADD COLUMN MerchantID text NOT NULL DEFAULT \'\'');
 		}
 
 		try
