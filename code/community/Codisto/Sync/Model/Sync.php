@@ -1040,7 +1040,6 @@ class Codisto_Sync_Model_Sync
 			$attrTypeSelect = $adapter->select()
 						->from(array('default_value' => $table), array('attribute_id'))
 						->where('default_value.attribute_id IN (?)', array_keys($_attributes))
-						->where('default_value.entity_type_id = :entity_type_id')
 						->where('default_value.entity_id = :entity_id')
 						->where('default_value.store_id = 0');
 
@@ -1057,7 +1056,6 @@ class Codisto_Sync_Model_Sync
 					array('store_value' => $table),
 					'store_value.attribute_id = default_value.attribute_id '.
 					'AND store_value.attribute_id IN (SELECT attribute_id FROM `'.$coreResource->getTableName('catalog/eav_attribute').'` WHERE is_global != 0) '.
-					'AND store_value.entity_type_id = default_value.entity_type_id '.
 					'AND store_value.entity_id = default_value.entity_id '.
 					'AND store_value.store_id = :store_id ',
 					array('attr_value' => new Zend_Db_Expr('CAST(COALESCE(store_value.value, default_value.value) AS CHAR)'))
@@ -1075,7 +1073,6 @@ class Codisto_Sync_Model_Sync
 			$attrSelect = $adapter->select()->union($attrTypeSelects, Zend_Db_Select::SQL_UNION_ALL);
 
 			$attrArgs = array(
-				'entity_type_id' => 4,
 				'entity_id' => $product_id,
 				'store_id' => $store->getId()
 			);
@@ -2295,7 +2292,7 @@ class Codisto_Sync_Model_Sync
 			$db->exec('INSERT OR REPLACE INTO Progress (Sentinel, State, entity_id) VALUES (1, \'complete\', 0)');
 		}
 
-		if((empty($this->productsProcessed) && empty($this->ordersProcessed)) || $first)
+		if(empty($this->productsProcessed) && empty($this->ordersProcessed))
 		{
 			$uniqueId = uniqid();
 
@@ -2306,6 +2303,12 @@ class Codisto_Sync_Model_Sync
 
 			$db->exec('CREATE TABLE IF NOT EXISTS Sync (token text NOT NULL, sentinel NOT NULL PRIMARY KEY DEFAULT 1, CHECK(sentinel = 1))');
 			$db->exec('INSERT OR REPLACE INTO Sync (token) VALUES (\''.$uniqueId.'\')');
+			$db->exec('COMMIT TRANSACTION');
+
+			return 'complete';
+		}
+		else if($first)
+		{
 			$db->exec('COMMIT TRANSACTION');
 
 			return 'complete';
