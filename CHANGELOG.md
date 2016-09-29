@@ -1,5 +1,15 @@
 # Change Log
 
+## [1.90.16](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.16) (2016-09-29)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.15...1.90.16)
+
+**Merged pull requests:**
+
+- Release [\#368](https://github.com/CodistoConnect/CodistoConnect/pull/368) ([lamery](https://github.com/lamery))
+- move attribute check to configurable if block [\#367](https://github.com/CodistoConnect/CodistoConnect/pull/367) ([jlivas](https://github.com/jlivas))
+- only attempt to get price on configurables with good attribute data [\#366](https://github.com/CodistoConnect/CodistoConnect/pull/366) ([jlivas](https://github.com/jlivas))
+- add codisto merchantid to order sync lookup [\#365](https://github.com/CodistoConnect/CodistoConnect/pull/365) ([lamery](https://github.com/lamery))
+
 ## [1.90.15](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.15) (2016-09-19)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.14...1.90.15)
 
