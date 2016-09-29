@@ -30,4 +30,10 @@ $connection->addColumn(
 	'varchar(10)'
 );
 
+$connection->addColumn(
+	$tablename,
+	'codisto_merchantid',
+	'varchar(10)'
+);
+
 $installer->endSetup();

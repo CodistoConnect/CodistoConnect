@@ -114,7 +114,18 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 				if(file_exists($nonceDbPath))
 					unlink($nonceDbPath);
 			}
-			$this->logExceptionCodisto($e, 'https://ui.codisto.com/installed');
+			else if(property_exists($e, 'errorInfo') &&
+					$e->errorInfo[0] == 'HY000' &&
+					$e->errorInfo[1] == 11 &&
+					$e->errorInfo[2] == 'database disk image is malformed')
+			{
+				if(file_exists($nonceDbPath))
+					unlink($nonceDbPath);
+			}
+			else
+			{
+				$this->logExceptionCodisto($e, 'https://ui.codisto.com/installed');
+			}
 		}
 
 		return $this->checkHash($key, $nonce, $hash);

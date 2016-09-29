@@ -24,6 +24,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 	{
 		set_time_limit(0);
 		ignore_user_abort(false);
+		@ini_set('display_errors', 1);
+		@ini_set('display_startup_errors', 1);
+		@error_reporting(E_ALL);
 
 		$output = '';
 
@@ -294,6 +297,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 	{
 		set_time_limit(0);
 		ignore_user_abort(false);
+		@ini_set('display_errors', 1);
+		@ini_set('display_startup_errors', 1);
+		@error_reporting(E_ALL);
 
 		$request = $this->getRequest();
 		$response = $this->getResponse();
@@ -343,6 +349,19 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						$connection->addColumn(
 								Mage::getConfig()->getTablePrefix() . 'sales_flat_order',
 								'codisto_orderid',
+								'varchar(10)'
+							);
+					}
+					catch(Exception $e)
+					{
+
+					}
+
+					try
+					{
+						$connection->addColumn(
+								Mage::getConfig()->getTablePrefix() . 'sales_flat_order',
+								'codisto_merchantid',
 								'varchar(10)'
 							);
 					}
@@ -406,7 +425,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 						try
 						{
-							$order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)->getFirstItem();
+							$order = Mage::getModel('sales/order')
+										->getCollection()
+											->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)
+											->addAttributeToFilter('codisto_merchantid', $ordercontent->merchantid)
+												->getFirstItem();
 
 							if($order && $order->getId())
 							{
@@ -567,6 +590,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setPayment($quoteConverter->paymentToOrderPayment($quote->getPayment()));
 		$order->setCustomer($quote->getCustomer());
 		$order->setCodistoOrderid((string)$ordercontent->orderid);
+		$order->setCodistoMerchantid((string)$ordercontent->merchantid);
 
 		if(preg_match('/\{ordernumber\}|\{ebaysalesrecordnumber\}|\{ebaytransactionid\}/', $ordernumberformat))
 		{
@@ -757,7 +781,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			if($shippingDescription)
 			{
 				$shippingRates = $quote->getShippingAddress()->getAllShippingRates();
-				
+
 				foreach($shippingRates as $rate)
 				{
 					$shippingMethodTitle = $rate->getMethodTitle();
