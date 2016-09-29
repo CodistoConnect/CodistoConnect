@@ -182,8 +182,6 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 							}
 							else
 							{
-								$sendFullDb = true;
-
 								if(!$request->getQuery('first') &&
 									is_string($request->getQuery('incremental')))
 								{
@@ -196,6 +194,16 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									$db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
 
 									$db->exec('BEGIN EXCLUSIVE TRANSACTION');
+
+									$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'Sync\') THEN -1 ELSE 0 END');
+									$syncComplete = $qry->fetchColumn();
+									$qry->closeCursor();
+									if(!$syncComplete)
+									{
+										@unlink($tmpDb);
+
+										throw new Exception('Attempting to download partial sync db - incremental');
+									}
 
 									$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'ProductChange\') THEN -1 ELSE 0 END');
 									$productChange = $qry->fetchColumn();
@@ -266,13 +274,27 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									$this->sendFile($tmpDb, 'incremental');
 
 									unlink($tmpDb);
-
-									$sendFullDb = false;
 								}
-
-								if($sendFullDb)
+								else
 								{
-									$this->sendFile($syncDb);
+									$syncComplete = true;
+
+									if(!$request->getQuery('first'))
+									{
+										$db = new PDO('sqlite:' . $syncDb);
+										$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'Sync\') THEN -1 ELSE 0 END');
+										$syncComplete = $qry->fetchColumn();
+										$qry->closeCursor();
+									}
+
+									if($syncComplete)
+									{
+										$this->sendFile($syncDb);
+									}
+									else
+									{
+										throw new Exception('Attempting to download partial sync db');
+									}
 								}
 							}
 						}
