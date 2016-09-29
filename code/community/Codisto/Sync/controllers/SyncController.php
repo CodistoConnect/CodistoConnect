@@ -890,11 +890,16 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$description = $request->getPost('description');
 						$url = $request->getPost('url');
 						$severity = (int)$request->getPost('severity');
-Mage::log($severity, null, 'codisto.log');
-						if(Mage::getResourceModel('adminnotification/inbox_collection')->addFieldToFilter('url', $url)->addFieldToFilter('is_remove', 0)->getSize() == 0)
-							Mage::getModel('adminnotification/inbox')->add($severity, $title, $description, $url);
 
-						$this->sendJsonResponse($response, 200, 'OK', array( 'ack' => 'ok' ) );
+						if(Mage::getResourceModel('adminnotification/inbox_collection')->addFieldToFilter('url', $url)->addFieldToFilter('is_remove', 0)->getSize() == 0)
+						{
+							Mage::getModel('adminnotification/inbox')->add($severity, $title, $description, $url);
+							$this->sendJsonResponse($response, 200, 'OK', array( 'ack' => 'ok' ) );
+						}
+						else
+						{
+							$this->sendJsonResponse($response, 200, 'OK', array( 'ack' => 'warning', 'message' => 'already present' ) );
+						}
 						$response->sendResponse();
 					}
 					else
