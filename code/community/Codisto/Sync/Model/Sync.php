@@ -260,13 +260,22 @@ class Codisto_Sync_Model_Sync
 								->columns(array('codisto_in_store'=> new Zend_Db_Expr('CASE WHEN `e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))) THEN -1 ELSE 0 END')))
 								->where($sqlCheckModified);
 
-		// Simple Products not participating as configurable skus
+		// Simple Products
 		$simpleProducts = $this->getProductCollection()
 							->addAttributeToSelect($this->availableProductFields, 'left')
 							->addAttributeToFilter('type_id', array('eq' => 'simple'))
 							->addAttributeToFilter('entity_id', array('in' => $ids));
 
 		$simpleProducts->getSelect()
+								->columns(array('codisto_in_store'=> new Zend_Db_Expr('CASE WHEN `e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))) THEN -1 ELSE 0 END')));
+
+		// Virtual Products
+		$virtualProducts = $this->getProductCollection()
+							->addAttributeToSelect($this->availableProductFields, 'left')
+							->addAttributeToFilter('type_id', array('eq' => 'virtual'))
+							->addAttributeToFilter('entity_id', array('in' => $ids));
+
+		$virtualProducts->getSelect()
 								->columns(array('codisto_in_store'=> new Zend_Db_Expr('CASE WHEN `e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))) THEN -1 ELSE 0 END')));
 
 		// Grouped products
@@ -352,6 +361,26 @@ class Codisto_Sync_Model_Sync
 		Mage::getSingleton('core/resource_iterator')->walk($simpleProducts->getSelect(), array(array($this, 'SyncSimpleProductData')),
 			array(
 				'type' => 'simple',
+				'db' => $db,
+				'preparedStatement' => $insertProduct,
+				'preparedcheckproductStatement' => $checkProduct,
+				'preparedcategoryproductStatement' => $insertCategoryProduct,
+				'preparedimageStatement' => $insertImage,
+				'preparedproducthtmlStatement' => $insertProductHTML,
+				'preparedproductrelatedStatement' => $insertProductRelated,
+				'preparedattributeStatement' => $insertAttribute,
+				'preparedattributegroupStatement' => $insertAttributeGroup,
+				'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
+				'preparedproductattributeStatement' => $insertProductAttribute,
+				'preparedproductattributedefaultStatement' => $insertProductAttributeDefault,
+				'preparedproductquestionStatement' => $insertProductQuestion,
+				'preparedproductanswerStatement' => $insertProductAnswer,
+				'store' => $store )
+		);
+
+		Mage::getSingleton('core/resource_iterator')->walk($virtualProducts->getSelect(), array(array($this, 'SyncSimpleProductData')),
+			array(
+				'type' => 'virtual',
 				'db' => $db,
 				'preparedStatement' => $insertProduct,
 				'preparedcheckproductStatement' => $checkProduct,
@@ -844,7 +873,7 @@ class Codisto_Sync_Model_Sync
 		}
 
 		$description = Mage::helper('codistosync')->processCmsContent($description);
-		if($type == 'simple' &&
+		if(($type == 'simple' || $type == 'virtual') &&
 			$description == '')
 		{
 			if(!isset($parentids))
@@ -878,7 +907,7 @@ class Codisto_Sync_Model_Sync
 		$data = array();
 
 		$data[] = $product_id;
-		$data[] = $type == 'configurable' ? 'c' : ($type == 'grouped' ? 'g' : 's');
+		$data[] = $type == 'configurable' ? 'c' : ($type == 'grouped' ? 'g' : ($type == 'virtual' ? 'v' : 's'));
 		$data[] = $productData['sku'];
 		$data[] = html_entity_decode($productName);
 		$data[] = $price;
@@ -1467,7 +1496,7 @@ class Codisto_Sync_Model_Sync
 			}
 		}
 
-		if($type == 'simple')
+		if($type == 'simple' || $type == 'virtual')
 		{
 			$this->productsProcessed[] = $product_id;
 
@@ -1619,7 +1648,7 @@ class Codisto_Sync_Model_Sync
 					$insertProductQuestion = $db->prepare('INSERT OR REPLACE INTO ProductQuestion(ExternalReference, ProductExternalReference, Name, Type, Sequence) VALUES (?, ?, ?, ?, ?)');
 					$insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
 
-					// Simple Products not participating as configurable skus
+					// Simple Products
 					$simpleProducts = $this->getProductCollection()
 										->addAttributeToSelect($this->availableProductFields, 'left')
 										->addAttributeToFilter('type_id', array('eq' => 'simple'))
@@ -1645,6 +1674,34 @@ class Codisto_Sync_Model_Sync
 							'preparedproductquestionStatement' => $insertProductQuestion,
 							'preparedproductanswerStatement' => $insertProductAnswer,
 							'store' => $storeObject ));
+
+					// Virtual Products
+					$virtualProducts = $this->getProductCollection()
+										->addAttributeToSelect($this->availableProductFields, 'left')
+										->addAttributeToFilter('type_id', array('eq' => 'virtual'))
+										->addAttributeToFilter('entity_id', array('in' => $productUpdateIds) );
+					$virtualProducts->getSelect()
+										->columns(array('codisto_in_store' => new Zend_Db_Expr('CASE WHEN `e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))) THEN -1 ELSE 0 END')));
+
+					Mage::getSingleton('core/resource_iterator')->walk($virtualProducts->getSelect(), array(array($this, 'SyncSimpleProductData')),
+						array(
+							'type' => 'virtual',
+							'db' => $db,
+							'preparedStatement' => $insertProduct,
+							'preparedcheckproductStatement' => $checkProduct,
+							'preparedcategoryproductStatement' => $insertCategoryProduct,
+							'preparedimageStatement' => $insertImage,
+							'preparedproducthtmlStatement' => $insertProductHTML,
+							'preparedproductrelatedStatement' => $insertProductRelated,
+							'preparedattributeStatement' => $insertAttribute,
+							'preparedattributegroupStatement' => $insertAttributeGroup,
+							'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
+							'preparedproductattributeStatement' => $insertProductAttribute,
+							'preparedproductattributedefaultStatement' => $insertProductAttributeDefault,
+							'preparedproductquestionStatement' => $insertProductQuestion,
+							'preparedproductanswerStatement' => $insertProductAnswer,
+							'store' => $storeObject ));
+
 
 					// Configurable products
 					$configurableProducts = $this->getProductCollection()
@@ -2079,7 +2136,7 @@ class Codisto_Sync_Model_Sync
 
 		if($state == 'simple')
 		{
-			// Simple Products not participating as configurable skus
+			// Simple Products
 
 			$simpleProducts = $this->getProductCollection()->addAttributeToSelect($this->availableProductFields, 'left')
 								->addAttributeToFilter('type_id', array('eq' => 'simple'))
@@ -2113,6 +2170,50 @@ class Codisto_Sync_Model_Sync
 			if(!empty($this->productsProcessed))
 			{
 				$db->exec('INSERT OR REPLACE INTO Progress (Sentinel, State, entity_id) VALUES (1, \'simple\', '.$this->currentEntityId.')');
+			}
+			else
+			{
+				$state = 'virtual';
+				$this->currentEntityId = 0;
+			}
+		}
+
+		if($state == 'virtual')
+		{
+			// Virtual Products
+
+			$virtualProducts = $this->getProductCollection()->addAttributeToSelect($this->availableProductFields, 'left')
+								->addAttributeToFilter('type_id', array('eq' => 'virtual'))
+								->addAttributeToFilter('entity_id', array('gt' => (int)$this->currentEntityId));
+
+			$virtualProducts->getSelect()
+								->columns(array('codisto_in_store' => new Zend_Db_Expr('CASE WHEN `e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))) THEN -1 ELSE 0 END')))
+								->order('entity_id')
+								->limit($simpleCount);
+			$virtualProducts->setOrder('entity_id', 'ASC');
+
+			Mage::getSingleton('core/resource_iterator')->walk($virtualProducts->getSelect(), array(array($this, 'SyncSimpleProductData')),
+				array(
+					'type' => 'virtual',
+					'db' => $db,
+					'preparedStatement' => $insertProduct,
+					'preparedcheckproductStatement' => $checkProduct,
+					'preparedcategoryproductStatement' => $insertCategoryProduct,
+					'preparedimageStatement' => $insertImage,
+					'preparedproducthtmlStatement' => $insertProductHTML,
+					'preparedproductrelatedStatement' => $insertProductRelated,
+					'preparedattributeStatement' => $insertAttribute,
+					'preparedattributegroupStatement' => $insertAttributeGroup,
+					'preparedattributegroupmapStatement' => $insertAttributeGroupMap,
+					'preparedproductattributeStatement' => $insertProductAttribute,
+					'preparedproductattributedefaultStatement' => $insertProductAttributeDefault,
+					'preparedproductquestionStatement' => $insertProductQuestion,
+					'preparedproductanswerStatement' => $insertProductAnswer,
+					'store' => $store ));
+
+			if(!empty($this->productsProcessed))
+			{
+				$db->exec('INSERT OR REPLACE INTO Progress (Sentinel, State, entity_id) VALUES (1, \'virtual\', '.$this->currentEntityId.')');
 			}
 			else
 			{
@@ -2370,7 +2471,7 @@ class Codisto_Sync_Model_Sync
 
 		$simpleProducts = $this->getProductCollection()
 							->addAttributeToSelect(array('entity_id'), 'left')
-							->addAttributeToFilter('type_id', array('eq' => 'simple'));
+							->addAttributeToFilter('type_id', array('in' => array('simple', 'virtual')));
 
 		$simplecount = $simpleProducts->getSize();
 
