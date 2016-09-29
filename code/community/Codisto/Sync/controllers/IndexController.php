@@ -425,11 +425,18 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 						try
 						{
+
 							$order = Mage::getModel('sales/order')
-										->getCollection()
-											->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)
-											->addAttributeToFilter('codisto_merchantid', array('in' => array($ordercontent->merchantid, '')))
-												->getFirstItem();
+							->getCollection()
+							->addFieldToFilter('codisto_orderid', $ordercontent->orderid)
+							->addFieldToFilter(
+							    array('codisto_merchantid', 'codisto_merchantid'),
+							    array(
+							        array('in'=> array($ordercontent->merchantid, '')),
+							        array('null'=> true)
+							    )
+							)
+							->getFirstItem();
 
 							if($order && $order->getId())
 							{
@@ -445,6 +452,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						}
 						catch(Exception $e)
 						{
+
 							if($Retry < 5)
 							{
 								if($e->getCode() == 40001)
