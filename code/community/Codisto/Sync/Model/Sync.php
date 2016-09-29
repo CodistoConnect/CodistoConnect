@@ -1724,6 +1724,31 @@ class Codisto_Sync_Model_Sync
 
 				if(!empty($orderUpdateIds))
 				{
+					$connection = $coreResource->getConnection(Mage_Core_Model_Resource::DEFAULT_WRITE_RESOURCE);
+					try
+					{
+						$connection->addColumn(
+								$tablePrefix . 'sales_flat_order',
+								'codisto_orderid',
+								'varchar(10)'
+							);
+					}
+					catch(Exception $e)
+					{
+					}
+
+					try
+					{
+						$connection->addColumn(
+								$tablePrefix . 'sales_flat_order',
+								'codisto_merchantid',
+								'varchar(10)'
+							);
+					}
+					catch(Exception $e)
+					{
+					}
+
 					$insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber, ExternalReference, MerchantID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 
 					$orderStoreId = $storeId;
