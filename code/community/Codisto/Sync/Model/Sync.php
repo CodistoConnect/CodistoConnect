@@ -852,7 +852,30 @@ class Codisto_Sync_Model_Sync
 		$insertProductQuestionSQL = $args['preparedproductquestionStatement'];
 		$insertProductAnswerSQL = $args['preparedproductanswerStatement'];
 
-		$price = $this->SyncProductPrice($store, $product);
+		if($type == 'configurable') {
+			try {
+				$configurableData = Mage::getModel('catalog/product_type_configurable');
+				$attributes = $configurableData->getConfigurableAttributes($product);
+			} catch(Exception $e) {
+				$badoptiondata = true;
+			}
+		}
+
+		if($attributes) {
+			foreach($attributes as $attribute)
+			{
+				$prodAttr = $attribute->getProductAttribute();
+				if(!is_object($prodAttr) || !$prodAttr->getAttributeCode())
+				{
+					$badoptiondata = true;
+				}
+			}
+		}
+
+		if(!$badoptiondata)
+			$price = $this->SyncProductPrice($store, $product);
+		else
+			$price = 0;
 
 		$listPrice = $this->getExTaxPrice($product, $product->getPrice(), $store);
 		if(!is_numeric($listPrice))

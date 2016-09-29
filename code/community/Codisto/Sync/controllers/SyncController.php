@@ -42,6 +42,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		@ini_set('zlib.output_compression', 'Off');
 		@ini_set('output_buffering', 'Off');
 		@ini_set('output_handler', '');
+		@ini_set('display_errors', 1);
+		@ini_set('display_startup_errors', 1);
+		@error_reporting(E_ALL);
 
 		ignore_user_abort(true);
 
