@@ -852,24 +852,30 @@ class Codisto_Sync_Model_Sync
 		$insertProductQuestionSQL = $args['preparedproductquestionStatement'];
 		$insertProductAnswerSQL = $args['preparedproductanswerStatement'];
 
+
+		$badoptiondata = false;
+
 		if($type == 'configurable') {
+
+			$attributes = null;
 			try {
 				$configurableData = Mage::getModel('catalog/product_type_configurable');
 				$attributes = $configurableData->getConfigurableAttributes($product);
 			} catch(Exception $e) {
 				$badoptiondata = true;
 			}
-		}
 
-		if($attributes) {
-			foreach($attributes as $attribute)
-			{
-				$prodAttr = $attribute->getProductAttribute();
-				if(!is_object($prodAttr) || !$prodAttr->getAttributeCode())
+			if($attributes) {
+				foreach($attributes as $attribute)
 				{
-					$badoptiondata = true;
+					$prodAttr = $attribute->getProductAttribute();
+					if(!is_object($prodAttr) || !$prodAttr->getAttributeCode())
+					{
+						$badoptiondata = true;
+					}
 				}
 			}
+
 		}
 
 		if(!$badoptiondata)
