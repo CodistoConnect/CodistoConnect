@@ -642,7 +642,7 @@ class Codisto_Sync_Model_Sync
 		$insertCategorySQL = $args['preparedcategoryproductStatement'];
 		$insertSKUMatrixSQL = $args['preparedskumatrixStatement'];
 
-		$this->SyncSimpleProductData(array_merge($args, array('row' => $productData, 'product_type' => 'configurable')));
+		$this->SyncSimpleProductData(array_merge($args, array('row' => $productData)));
 
 		$product = Mage::getModel('catalog/product')
 					->setData($productData)
@@ -823,7 +823,7 @@ class Codisto_Sync_Model_Sync
 		$insertProductQuestionSQL = $args['preparedproductquestionStatement'];
 		$insertProductAnswerSQL = $args['preparedproductanswerStatement'];
 
-		if($args['product_type'] == 'configurable') {
+		if($type == 'configurable') {
 			try {
 				$configurableData = Mage::getModel('catalog/product_type_configurable');
 				$attributes = $configurableData->getConfigurableAttributes($product);
