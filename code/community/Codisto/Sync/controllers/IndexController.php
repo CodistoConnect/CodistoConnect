@@ -428,7 +428,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 							$order = Mage::getModel('sales/order')
 										->getCollection()
 											->addAttributeToFilter('codisto_orderid', $ordercontent->orderid)
-											->addAttributeToFilter('codisto_merchantid', $ordercontent->merchantid)
+											->addAttributeToFilter('codisto_merchantid', array('in' => array($ordercontent->merchantid, '')))
 												->getFirstItem();
 
 							if($order && $order->getId())
