@@ -2797,8 +2797,8 @@ class Codisto_Sync_Model_Sync
 		$db->exec('CREATE TABLE IF NOT EXISTS Attribute (ID integer NOT NULL PRIMARY KEY, Code text NOT NULL, Label text NOT NULL, Type text NOT NULL, Input text NOT NULL)');
 		$db->exec('CREATE TABLE IF NOT EXISTS AttributeGroupMap (AttributeID integer NOT NULL, GroupID integer NOT NULL, PRIMARY KEY(AttributeID, GroupID))');
 		$db->exec('CREATE TABLE IF NOT EXISTS AttributeGroup (ID integer NOT NULL PRIMARY KEY, Name text NOT NULL)');
-		$db->exec('CREATE TABLE IF NOT EXISTS ProductAttributeValue (ProductExternalReference text NOT NULL, AttributeID integer NOT NULL, Value any, PRIMARY KEY (ProductExternalReference, AttributeID))');
-		$db->exec('CREATE TABLE IF NOT EXISTS ProductAttributeDefaultValue (ProductExternalReference text NOT NULL, AttributeID integer NOT NULL, Value any, PRIMARY KEY (ProductExternalReference, AttributeID))');
+		$db->exec('CREATE TABLE IF NOT EXISTS ProductAttributeValue (ProductExternalReference text NOT NULL, AttributeID integer NOT NULL, Value text, PRIMARY KEY (ProductExternalReference, AttributeID))');
+		$db->exec('CREATE TABLE IF NOT EXISTS ProductAttributeDefaultValue (ProductExternalReference text NOT NULL, AttributeID integer NOT NULL, Value text, PRIMARY KEY (ProductExternalReference, AttributeID))');
 
 		$db->exec('CREATE TABLE IF NOT EXISTS TaxClass (ID integer NOT NULL PRIMARY KEY, Type text NOT NULL, Name text NOT NULL)');
 		$db->exec('CREATE TABLE IF NOT EXISTS TaxCalculation(ID integer NOT NULL PRIMARY KEY, TaxRateID integer NOT NULL, TaxRuleID integer NOT NULL, ProductTaxClassID integer NOT NULL, CustomerTaxClassID integer NOT NULL)');
@@ -2851,24 +2851,10 @@ class Codisto_Sync_Model_Sync
 		}
 		catch(Exception $e)
 		{
-			$db->exec('CREATE TABLE NewProductAttributeValue (ProductExternalReference integer NOT NULL, AttributeID integer NOT NULL, Value any, PRIMARY KEY (ProductExternalReference, AttributeID))');
+			$db->exec('CREATE TABLE NewProductAttributeValue (ProductExternalReference integer NOT NULL, AttributeID integer NOT NULL, Value text, PRIMARY KEY (ProductExternalReference, AttributeID))');
 			$db->exec('INSERT INTO NewProductAttributeValue SELECT ProductID, AttributeID, Value FROM ProductAttributeValue');
 			$db->exec('DROP TABLE ProductAttributeValue');
 			$db->exec('ALTER TABLE NewProductAttributeValue RENAME TO ProductAttributeValue');
-		}
-
-		try
-		{
-			$db->exec('SELECT 1 FROM Store WHERE MerchantID IS NULL LIMIT 1');
-
-			$db->exec('CREATE TABLE NewStore(ID integer NOT NULL PRIMARY KEY, Code text NOT NULL, Name text NOT NULL)');
-			$db->exec('INSERT INTO NewStore SELECT ID, Code, Name FROM Store');
-			$db->exec('DROP TABLE Store');
-			$db->exec('ALTER TABLE NewStore RENAME TO Store');
-		}
-		catch(Exception $e)
-		{
-
 		}
 
 		try
