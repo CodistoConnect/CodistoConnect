@@ -1,5 +1,13 @@
 # Change Log
 
+## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
+
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.19...HEAD)
+
+**Merged pull requests:**
+
+- Release [\#372](https://github.com/CodistoConnect/CodistoConnect/pull/372) ([lamery](https://github.com/lamery))
+
 ## [1.90.19](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.19) (2016-10-04)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.18...1.90.19)
 
@@ -287,6 +295,9 @@
 **Merged pull requests:**
 
 - Release [\#290](https://github.com/CodistoConnect/CodistoConnect/pull/290) ([bradmccormack](https://github.com/bradmccormack))
+
+## [1.1.84](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.84) (2016-03-01)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.84...1.1.84)
 
 ## [1.1.84](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.84) (2016-03-01)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.83...1.1.84)
