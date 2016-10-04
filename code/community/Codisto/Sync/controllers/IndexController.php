@@ -1012,6 +1012,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$orderstatus = $order->getStatus();
 		$ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
+		$order->setCodistoMerchantid((string)$ordercontent->merchantid);
+
 		$paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
 
 		$quoteConverter =  Mage::getModel('sales/convert_quote');
