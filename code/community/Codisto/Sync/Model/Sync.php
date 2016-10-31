@@ -552,6 +552,8 @@ class Codisto_Sync_Model_Sync
 		$parentProduct->getTypeInstance(true)->processConfiguration($addInfo, $parentProduct, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
 
 		$price = $this->getExTaxPrice($parentProduct, $parentProduct->getFinalPrice(), $store);
+		if(is_null($price))
+			$price = 0;
 
 		if ($currentProductWebsiteId == 0) {
 			$store->setStoreId($currentStoreId);
