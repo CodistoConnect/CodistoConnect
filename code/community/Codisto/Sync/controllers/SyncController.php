@@ -198,7 +198,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 									$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
-									$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'Sync\') THEN -1 ELSE 0 END');
+									$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE type = \'table\' AND name = \'Sync\') THEN -1 ELSE 0 END');
 									$syncComplete = $qry->fetchColumn();
 									$qry->closeCursor();
 									if(!$syncComplete)
@@ -208,7 +208,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 										throw new Exception('Attempting to download partial sync db - incremental');
 									}
 
-									$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'ProductChange\') THEN -1 ELSE 0 END');
+									$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE type = \'table\' AND name = \'ProductChange\') THEN -1 ELSE 0 END');
 									$productChange = $qry->fetchColumn();
 									$qry->closeCursor();
 									if($productChange)
@@ -238,7 +238,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 										}
 									}
 
-									$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'CategoryChange\') THEN -1 ELSE 0 END');
+									$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE type = \'table\' AND name = \'CategoryChange\') THEN -1 ELSE 0 END');
 									$categoryChange = $qry->fetchColumn();
 									$qry->closeCursor();
 									if($categoryChange)
@@ -254,7 +254,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 										}
 									}
 
-									$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'OrderChange\') THEN -1 ELSE 0 END');
+									$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE type = \'table\' AND name = \'OrderChange\') THEN -1 ELSE 0 END');
 									$orderChange = $qry->fetchColumn();
 									$qry->closeCursor();
 									if($orderChange)
@@ -285,7 +285,8 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 									if(!$request->getQuery('first'))
 									{
 										$db = new PDO('sqlite:' . $syncDb);
-										$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'Sync\') THEN -1 ELSE 0 END');
+										$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+										$qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM sqlite_master WHERE type = \'table\' AND name = \'Sync\') THEN -1 ELSE 0 END');
 										$syncComplete = $qry->fetchColumn();
 										$qry->closeCursor();
 									}
