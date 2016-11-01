@@ -1983,6 +1983,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$checkoutSession->setData('customer_comment', $customerInstruction);
 		$checkoutSession->setData('destination_type', 'residence');
 
+		$customerSession = Mage::getSingleton('customer/session');
+		$customerSession->setCustomer($customer);
+
 		$shippingAddress = $quote->getShippingAddress();
 		$shippingAddress->setSubtotal($ordersubtotal);
 		$shippingAddress->setBaseSubtotal($ordersubtotal);
