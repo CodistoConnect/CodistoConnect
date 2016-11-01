@@ -552,6 +552,8 @@ class Codisto_Sync_Model_Sync
 		$parentProduct->getTypeInstance(true)->processConfiguration($addInfo, $parentProduct, Mage_Catalog_Model_Product_Type_Abstract::PROCESS_MODE_LITE);
 
 		$price = $this->getExTaxPrice($parentProduct, $parentProduct->getFinalPrice(), $store);
+		if(is_null($price))
+			$price = 0;
 
 		if ($currentProductWebsiteId == 0) {
 			$store->setStoreId($currentStoreId);
@@ -821,10 +823,10 @@ class Codisto_Sync_Model_Sync
 			$checkProductSQL->execute(array($product_id));
 			if($checkProductSQL->fetchColumn())
 			{
-				//$checkProductSQL->closeCursor();
+				$checkProductSQL->closeCursor();
 				return;
 			}
-			//$checkProductSQL->closeCursor();
+			$checkProductSQL->closeCursor();
 		}
 
 		$product = Mage::getModel('catalog/product');
@@ -2002,22 +2004,22 @@ class Codisto_Sync_Model_Sync
 		$db->exec('BEGIN EXCLUSIVE TRANSACTION');
 
 		$qry = $db->query('SELECT CASE WHEN '.
-							'EXISTS(SELECT 1 FROM sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'ProductChange\') AND '.
-							'EXISTS(SELECT 1 FROM ChangeDb.sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'ProductChangeProcessed\') '.
+							'EXISTS(SELECT 1 FROM sqlite_master WHERE type = \'table\' AND name = \'ProductChange\') AND '.
+							'EXISTS(SELECT 1 FROM ChangeDb.sqlite_master WHERE type = \'table\' AND name = \'ProductChangeProcessed\') '.
 							'THEN -1 ELSE 0 END');
 		$processProductChange = $qry->fetchColumn();
 		$qry->closeCursor();
 
 		$qry = $db->query('SELECT CASE WHEN '.
-							'EXISTS(SELECT 1 FROM sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'CategoryChange\') AND '.
-							'EXISTS(SELECT 1 FROM ChangeDb.sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'CategoryChangeProcessed\') '.
+							'EXISTS(SELECT 1 FROM sqlite_master WHERE type = \'table\' AND name = \'CategoryChange\') AND '.
+							'EXISTS(SELECT 1 FROM ChangeDb.sqlite_master WHERE type = \'table\' AND name = \'CategoryChangeProcessed\') '.
 							'THEN -1 ELSE 0 END');
 		$processCategoryChange = $qry->fetchColumn();
 		$qry->closeCursor();
 
 		$qry = $db->query('SELECT CASE WHEN '.
-							'EXISTS(SELECT 1 FROM sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'OrderChange\') AND '.
-							'EXISTS(SELECT 1 FROM ChangeDb.sqlite_master WHERE type COLLATE NOCASE = \'TABLE\' AND name = \'OrderChangeProcessed\') '.
+							'EXISTS(SELECT 1 FROM sqlite_master WHERE type = \'table\' AND name = \'OrderChange\') AND '.
+							'EXISTS(SELECT 1 FROM ChangeDb.sqlite_master WHERE type = \'table\' AND name = \'OrderChangeProcessed\') '.
 							'THEN -1 ELSE 0 END');
 		$processOrderChange = $qry->fetchColumn();
 		$qry->closeCursor();

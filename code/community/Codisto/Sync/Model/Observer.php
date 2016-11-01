@@ -341,7 +341,9 @@ class Codisto_Sync_Model_Observer
 			$order = $payment->getOrder();
 			$orderid = $order->getCodistoOrderid();
 			$storeid = $order->getStoreId();
-			$merchantid = $helper->getMerchantId($storeid);
+			$merchantid = $order->getCodistoMerchantid();
+			if(!$merchantid)
+				$merchantid = $helper->getMerchantId($storeid);
 
 			if($paypaltransactionid)
 			{

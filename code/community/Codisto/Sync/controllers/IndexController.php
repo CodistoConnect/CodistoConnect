@@ -677,7 +677,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				if($weight == 0)
 					$weight = 1;
 
-				$weight_total += $weight;
+				$weight_total += $weight * $qty;
 
 				$orderItem = $quoteConverter->itemToOrderItem($quoteItems[$quoteIdx]);
 
@@ -1242,7 +1242,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				if($weight == 0)
 					$weight = 1;
 
-				$weight_total += $weight;
+				$weight_total += $weight * $qty;
 
 				$itemFound = false;
 				foreach($order->getAllItems() as $item)
@@ -1982,6 +1982,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$checkoutSession->replaceQuote($quote);
 		$checkoutSession->setData('customer_comment', $customerInstruction);
 		$checkoutSession->setData('destination_type', 'residence');
+
+		$customerSession = Mage::getSingleton('customer/session');
+		$customerSession->setCustomer($customer);
 
 		$shippingAddress = $quote->getShippingAddress();
 		$shippingAddress->setSubtotal($ordersubtotal);
