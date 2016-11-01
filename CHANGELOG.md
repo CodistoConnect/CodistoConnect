@@ -1,8 +1,16 @@
 # Change Log
 
-## [Unreleased](https://github.com/CodistoConnect/CodistoConnect/tree/HEAD)
+## [1.90.21](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.21) (2016-11-01)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.20...1.90.21)
 
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.19...HEAD)
+**Merged pull requests:**
+
+- Release [\#375](https://github.com/CodistoConnect/CodistoConnect/pull/375) ([lamery](https://github.com/lamery))
+- switched router to consider all storeids/merchant accounts on the mag… [\#374](https://github.com/CodistoConnect/CodistoConnect/pull/374) ([lamery](https://github.com/lamery))
+- Order Line weight total fix & protect against null price [\#373](https://github.com/CodistoConnect/CodistoConnect/pull/373) ([jschiller](https://github.com/jschiller))
+
+## [1.90.20](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.20) (2016-10-04)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.19...1.90.20)
 
 **Merged pull requests:**
 
@@ -295,9 +303,6 @@
 **Merged pull requests:**
 
 - Release [\#290](https://github.com/CodistoConnect/CodistoConnect/pull/290) ([bradmccormack](https://github.com/bradmccormack))
-
-## [1.1.84](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.84) (2016-03-01)
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.84...1.1.84)
 
 ## [1.1.84](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.84) (2016-03-01)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.83...1.1.84)
