@@ -260,7 +260,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					$MerchantID = $Merchants[0];
 					$HostKey = $HostKeys[$MerchantID];
 
-					$path = preg_replace('/(^\/codisto\/ebaytab\/)(\d+\/?)/', '$1', $path);
+					$path = preg_replace('/(^\/codisto\/[^\/]+\/)(\d+\/?)/', '$1', $path);
 				}
 				else
 				{
