@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.90.22](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.22) (2016-11-10)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.21...1.90.22)
+
+**Merged pull requests:**
+
+- conditionally set the customer object [\#376](https://github.com/CodistoConnect/CodistoConnect/pull/376) ([jlivas](https://github.com/jlivas))
+
 ## [1.90.21](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.21) (2016-11-01)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.20...1.90.21)
 
