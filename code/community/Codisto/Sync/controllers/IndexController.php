@@ -1978,13 +1978,16 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$customerInstruction = @count($ordercontent->instructions) ? strval($ordercontent->instructions) : '';
 
 		$checkoutSession = Mage::getSingleton('checkout/session');
-		$checkoutSession->setCustomer($customer);
+		if($customer)
+			$checkoutSession->setCustomer($customer);
 		$checkoutSession->replaceQuote($quote);
 		$checkoutSession->setData('customer_comment', $customerInstruction);
 		$checkoutSession->setData('destination_type', 'residence');
 
-		$customerSession = Mage::getSingleton('customer/session');
-		$customerSession->setCustomer($customer);
+		if($customer) {
+			$customerSession = Mage::getSingleton('customer/session');
+			$customerSession->setCustomer($customer);
+		}
 
 		$shippingAddress = $quote->getShippingAddress();
 		$shippingAddress->setSubtotal($ordersubtotal);
