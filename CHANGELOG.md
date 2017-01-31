@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.90.24](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.24) (2017-01-31)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.23...1.90.24)
+
+**Merged pull requests:**
+
+- Release [\#378](https://github.com/CodistoConnect/CodistoConnect/pull/378) ([jlivas](https://github.com/jlivas))
+- convert weight to back to user defined input [\#377](https://github.com/CodistoConnect/CodistoConnect/pull/377) ([jlivas](https://github.com/jlivas))
+
 ## [1.90.23](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.23) (2016-11-10)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.22...1.90.23)
 
