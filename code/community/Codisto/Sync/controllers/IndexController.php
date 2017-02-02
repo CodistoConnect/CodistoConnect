@@ -676,13 +676,13 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$taxpercent = $price == 0 ? 0 : round($priceinctax / $price - 1.0, 2) * 100;
 				$weight = $orderline->weight[0];
 
-				if($weightunit = 'g')
+				if(!$weightunit || $weightunit == 'g')
 					$weightactual = floatval($weight);
-				else if($weightunit = 'kg')
+				else if($weightunit == 'kg')
 					$weightactual = floatval($weight / 1000);
-				else if($weightunit = 'pounds')
+				else if($weightunit == 'pounds')
 					$weightactual = floatval($weight / 453.592);
-				else if($weightunit = 'ounces')
+				else if($weightunit == 'ounces')
 					$weightactual = floatval($weight / 28.3495);
 
 				if($weightactual == 0)
@@ -1254,13 +1254,13 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 				$taxpercent = $price == 0 ? 0 : round($priceinctax / $price - 1.0, 2) * 100;
 				$weight = $orderline->weight[0];
 
-				if($weightunit = 'g')
+				if(!$weightunit || $weightunit == 'g')
 					$weightactual = floatval($weight);
-				else if($weightunit = 'kg')
+				else if($weightunit == 'kg')
 					$weightactual = floatval($weight / 1000);
-				else if($weightunit = 'pounds')
+				else if($weightunit == 'pounds')
 					$weightactual = floatval($weight / 453.592);
-				else if($weightunit = 'ounces')
+				else if($weightunit == 'ounces')
 					$weightactual = floatval($weight / 28.3495);
 
 				if($weightactual == 0)
