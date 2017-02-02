@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.90.25](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.25) (2017-02-02)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.24...1.90.25)
+
+**Merged pull requests:**
+
+- Release [\#380](https://github.com/CodistoConnect/CodistoConnect/pull/380) ([jschiller](https://github.com/jschiller))
+- 	fallback for no weight unit [\#379](https://github.com/CodistoConnect/CodistoConnect/pull/379) ([jlivas](https://github.com/jlivas))
+
 ## [1.90.24](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.24) (2017-01-31)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.23...1.90.24)
 
