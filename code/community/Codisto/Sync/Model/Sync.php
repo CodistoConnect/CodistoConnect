@@ -38,6 +38,8 @@ class Codisto_Sync_Model_Sync
 
 	private $availableProductFields;
 
+	private $useSimplePrice = false;
+
 	public function __construct()
 	{
 		if(method_exists('Mage', 'getEdition'))
@@ -47,6 +49,14 @@ class Codisto_Sync_Model_Sync
 		else
 		{
 			$edition = 'Community';
+		}
+
+		//getFinalPrice() method still returns the configurable product price with this plugin installed
+		//this check ensures the simple product price used when this plugin is used
+		if(Mage::helper('core')->isModuleEnabled('Ayasoftware_SimpleProductPricing')) {
+			$this->useSimplePrice = true;
+		} else {
+			$this->useSimplePrice = false;
 		}
 
 		$version = Mage::getVersionInfo();
@@ -618,7 +628,14 @@ class Codisto_Sync_Model_Sync
 
 		if(!empty($options))
 		{
-			$price = $this->SyncProductPrice($store, $productParent, $options);
+			if($this->useSimplePrice)
+			{
+				$price = $this->SyncProductPrice($store, $product);
+			}
+			else
+			{
+				$price = $this->SyncProductPrice($store, $productParent, $options);
+			}
 			if(!$price)
 				$price = 0;
 		}
@@ -765,6 +782,8 @@ class Codisto_Sync_Model_Sync
 				$optionValues[$childProduct->getName()] = 1;
 		}
 
+		$optionCheck = array();
+
 		foreach($optionValues as $key => $count)
 		{
 			if($count > 1)
@@ -776,7 +795,15 @@ class Codisto_Sync_Model_Sync
 					if($childProduct->getName() == $key)
 					{
 						$skumatrixArg = &$skumatrixArgs[$i];
-						$skumatrixArg[4] = $childProduct->getSku().' - '.$childProduct->getName();
+						if(isset($optionCheck[$childProduct->getName()]))
+						{
+							$skumatrixArg[4] = $childProduct->getSku().' - '.$childProduct->getName();
+						}
+						else
+						{
+							$skumatrixArg[4] = $childProduct->getName();
+							$optionCheck[$childProduct->getName()] = true;
+						}
 					}
 
 					$i++;
