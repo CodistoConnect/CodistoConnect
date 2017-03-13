@@ -579,7 +579,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 							$tmpDb = $helper->getSyncPathTemp('sync');
 
-							file_put_contents($tmpDb, $request->getRawBody());
+							file_put_contents($tmpDb, file_get_contents('php://input'));
 
 							$syncObject->SyncChangeComplete($syncDb, $tmpDb, $storeId);
 

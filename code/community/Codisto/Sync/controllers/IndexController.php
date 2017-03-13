@@ -1457,6 +1457,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		/* States: cancelled, processing, captured, inprogress, complete */
 		if(($ordercontent->orderstate == 'captured' ||
 			$ordercontent->paymentstatus != 'complete') &&
+			$ordercontent->orderstate != 'cancelled' &&
 			($orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING &&
 				$orderstatus!=Mage_Sales_Model_Order::STATE_PENDING_PAYMENT &&
 				$orderstatus!=Mage_Sales_Model_Order::STATE_NEW))
