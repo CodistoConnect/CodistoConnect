@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.90.26](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.26) (2017-03-13)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.25...1.90.26)
+
+**Merged pull requests:**
+
+- Release [\#383](https://github.com/CodistoConnect/CodistoConnect/pull/383) ([lamery](https://github.com/lamery))
+- backport fixes discovered in m2 dev [\#382](https://github.com/CodistoConnect/CodistoConnect/pull/382) ([lamery](https://github.com/lamery))
+- SPP plugin support + group product option value optimisation [\#381](https://github.com/CodistoConnect/CodistoConnect/pull/381) ([jlivas](https://github.com/jlivas))
+
 ## [1.90.25](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.25) (2017-02-02)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.24...1.90.25)
 
