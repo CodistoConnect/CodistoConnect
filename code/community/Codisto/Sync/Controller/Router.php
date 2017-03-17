@@ -452,7 +452,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 								$storeViewMapping = Zend_Json::decode($v);
 
-								$mappedStores = [];
+								$mappedStores = array();
 
 								foreach($storeViewMapping as $mapping)
 								{
