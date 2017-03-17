@@ -452,6 +452,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 								$storeViewMapping = Zend_Json::decode($v);
 
+								$mappedStores = array();
+
 								foreach($storeViewMapping as $mapping)
 								{
 									$storeId = $mapping['storeid'];
@@ -464,6 +466,16 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 									else
 									{
 										$config->saveConfig('codisto/merchantid', $merchantList, 'stores', $storeId);
+									}
+
+									$mappedStores[] = $storeId;
+								}
+
+								$stores = Mage::getModel('core/store')->getCollection()->setLoadDefault(true);
+								foreach($stores as $store)
+								{
+									if (!isset($mappedStores[$store->getId()])) {
+										$config->deleteConfig('codisto/merchantid', 'stores', $store->getId());
 									}
 								}
 
