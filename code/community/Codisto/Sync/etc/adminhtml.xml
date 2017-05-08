@@ -23,26 +23,26 @@
 <config>
 	<menu>
 		<codisto translate="title">
-			<title>eBay | Codisto</title>
+			<title>Amazon &amp; eBay | Codisto</title>
 			<sort_order>99</sort_order>
 			<children>
 				<listings translate="title">
-					<title>Manage Listings</title>
+					<title>Marketplace Listings</title>
 					<sort_order>1</sort_order>
 					<action>adminhtml/codisto/index</action>
 				</listings>
 				<orders translate="title">
-					<title>eBay Orders View</title>
+					<title>Marketplace Orders</title>
 					<sort_order>2</sort_order>
 					<action>adminhtml/codisto/orders</action>
 				</orders>
 				<categories translate="title">
-					<title>Manage eBay Store Categories</title>
+					<title>eBay Store Categories</title>
 					<sort_order>3</sort_order>
 					<action>adminhtml/codisto/categories</action>
 				</categories>
 				<attributes translate="title">
-					<title>Manage Custom Attributes</title>
+					<title>Attribute Mapping</title>
 					<sort_order>4</sort_order>
 					<action>adminhtml/codisto/attributemapping</action>
 				</attributes>
@@ -75,41 +75,41 @@
 			<admin>
 				<children>
 					<codisto translate="title">
-						<title>eBay | Codisto</title>
+						<title>Amazon &amp; eBay | Codisto</title>
 						<sort_order>1</sort_order>
 						<children>
 							<listings>
-								<title>Manage Listings</title>
+								<title>Marketplace Listings</title>
 								<sort_order>1</sort_order>
 							</listings>
 							<orders>
-								<title>Manage Orders</title>
+								<title>Marketplace Orders</title>
 								<sort_order>2</sort_order>
 							</orders>
 							<categories>
-								<title>Manage Categories</title>
+								<title>eBay Store Categories</title>
 								<sort_order>3</sort_order>
 							</categories>
 							<attributes>
-								<title>Manage Attributes</title>
+								<title>Attribute Mapping</title>
 								<sort_order>4</sort_order>
 							</attributes>
 							<import>
-								<title>Import Listings</title>
+								<title>Link eBay Listings</title>
 								<sort_order>5</sort_order>
 							</import>
-							<getstarted>
+							<!-- getstarted>
 								<title>Getting Started</title>
 								<sort_order>6</sort_order>
-							</getstarted>
-							<account>
-								<title>Getting Started</title>
-								<sort_order>7</sort_order>
-							</account>
+							</getstarted -->
 							<settings>
 								<title>Settings</title>
-								<sort_order>8</sort_order>
+								<sort_order>7</sort_order>
 							</settings>
+							<account>
+								<title>Account</title>
+								<sort_order>8</sort_order>
+							</account>
 						</children>
 					</codisto>
 				</children>
