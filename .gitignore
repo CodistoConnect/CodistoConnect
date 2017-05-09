@@ -3,6 +3,7 @@
 .idea
 .project
 .metadata
+*.DS_Store
 
 #Github Magento .gitignore
 .modgit/
@@ -127,7 +128,6 @@ skin/frontend/enterprise
 skin/install/
 var/
 etc/
-code/
 design/
 locale/
 Mage.php
@@ -135,7 +135,9 @@ bootstrap.php
 
 #Allow Codisto Plugin whitelist
 !code/community/Codisto/*
-!etc/modules/Codisto*
+!code/community/Codisto/Sync/etc/*
+!design/ebay/*
+!etc/modules/Codisto_Sync.xml
 
 .remote-sync.json
 
