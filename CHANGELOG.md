@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.90.27](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.27) (2017-05-09)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.26...1.90.27)
+
+**Merged pull requests:**
+
+- Release [\#387](https://github.com/CodistoConnect/CodistoConnect/pull/387) ([jlivas](https://github.com/jlivas))
+- update menu items [\#386](https://github.com/CodistoConnect/CodistoConnect/pull/386) ([jlivas](https://github.com/jlivas))
+- improve gitignore [\#385](https://github.com/CodistoConnect/CodistoConnect/pull/385) ([lamery](https://github.com/lamery))
+
 ## [1.90.26](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.26) (2017-03-13)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.25...1.90.26)
 
