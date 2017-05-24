@@ -782,6 +782,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$freighttax = 0.0;
 		$taxpercent =  0.0;
 		$taxrate =  1.0;
+		$shippingDescription  = null;
 
 		foreach($ordercontent->orderlines->orderline as $orderline)
 		{
