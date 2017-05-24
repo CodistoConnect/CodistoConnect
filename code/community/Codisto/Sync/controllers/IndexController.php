@@ -1639,6 +1639,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 		$websiteId = $store->getWebsiteId();
 
+		$order_source = $ordercontent->source;
+
 		$billing_address = $ordercontent->orderaddresses->orderaddress[0];
 		$billing_first_name = $billing_last_name = '';
 
@@ -1749,18 +1751,34 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
 					if(!$customer->getId())
 					{
-						$ebayGroup = Mage::getModel('customer/group');
-						$ebayGroup->load('eBay', 'customer_group_code');
-						if(!$ebayGroup->getId())
-						{
-							$defaultGroup = Mage::getModel('customer/group')->load(1);
+						$customerGroupId = null;
+						if($order_source == 'ebay') {
+							$ebayGroup = Mage::getModel('customer/group');
+							$ebayGroup->load('eBay', 'customer_group_code');
+							if(!$ebayGroup->getId())
+							{
+								$defaultGroup = Mage::getModel('customer/group')->load(1);
 
-							$ebayGroup->setCode('eBay');
-							$ebayGroup->setTaxClassId($defaultGroup->getTaxClassId());
-							$ebayGroup->save();
+								$ebayGroup->setCode('eBay');
+								$ebayGroup->setTaxClassId($defaultGroup->getTaxClassId());
+								$ebayGroup->save();
+							}
+
+							$customerGroupId = $ebayGroup->getId();
+						} else if($order_source == 'amazon') {
+							$amazonGroup = Mage::getModel('customer/group');
+							$amazonGroup->load('Amazon', 'customer_group_code');
+							if(!$amazonGroup->getId())
+							{
+								$defaultGroup = Mage::getModel('customer/group')->load(1);
+
+								$amazonGroup->setCode('Amazon');
+								$amazonGroup->setTaxClassId($defaultGroup->getTaxClassId());
+								$amazonGroup->save();
+							}
+
+							$customerGroupId = $amazonGroup->getId();
 						}
-
-						$customerGroupId = $ebayGroup->getId();
 
 						$customer->setWebsiteId($websiteId);
 						$customer->setStoreId($store->getId());
@@ -1768,7 +1786,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 						$customer->setFirstname((string)$billing_first_name);
 						$customer->setLastname((string)$billing_last_name);
 						$customer->setPassword('');
-						$customer->setGroupId($customerGroupId);
+						if($customerGroupId) {
+							$customer->setGroupId($customerGroupId);
+						}
 						$customer->save();
 						$customer->setConfirmation(null);
 						$customer->save();
