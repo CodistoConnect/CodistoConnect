@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.91.1](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.1) (2017-05-24)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.27...1.91.1)
+
+**Merged pull requests:**
+
+- Release [\#390](https://github.com/CodistoConnect/CodistoConnect/pull/390) ([jlivas](https://github.com/jlivas))
+- add customers to amazon group when they are sourced from amazon [\#389](https://github.com/CodistoConnect/CodistoConnect/pull/389) ([lamery](https://github.com/lamery))
+
 ## [1.90.27](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.27) (2017-05-09)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.26...1.90.27)
 
