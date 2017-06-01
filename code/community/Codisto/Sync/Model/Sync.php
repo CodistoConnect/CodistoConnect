@@ -1388,10 +1388,10 @@ class Codisto_Sync_Model_Sync
 
 		if($primaryImage && $galleryImages->getSize() == 0) {
 
-			if(substr($primaryImage,0,4) != 'http') {
-				$imgURL = $product->getMediaConfig()->getMediaUrl($primaryImage);
-			} else {
+			if(preg_match('/^https?:\/\//', $primaryImage)) {
 				$imgURL = $primaryImage;
+			} else {
+				$imgURL = $product->getMediaConfig()->getMediaUrl($primaryImage);
 			}
 
 			$insertImageSQL->execute(array($product_id, $imgURL, '', 0, -1));
@@ -1406,10 +1406,10 @@ class Codisto_Sync_Model_Sync
 
 				$imagesVisited[$image['file']] = true;
 
-				if(substr($image['file'],0,4) != 'http') {
-					$imgURL = $product->getMediaConfig()->getMediaUrl($image['file']);
-				} else {
+				if(preg_match('/^https?:\/\//', $image['file'])) {
 					$imgURL = $image['file'];
+				} else {
+					$imgURL = $product->getMediaConfig()->getMediaUrl($image['file']);
 				}
 
 				if($image['file'] == $primaryImage)
@@ -1439,7 +1439,7 @@ class Codisto_Sync_Model_Sync
 
 			foreach ($product->getMediaGallery('images') as $image)
 			{
-				if (isset($image['disabled']) && $image['disabled'] != 0) {
+				if (isset($image['disabled']) && $image['disabled'] == 0) {
 					continue;
 				}
 
@@ -1447,10 +1447,10 @@ class Codisto_Sync_Model_Sync
 					continue;
 				}
 
-				if(substr($image['file'],0,4) != 'http') {
-					$imgURL = $product->getMediaConfig()->getMediaUrl($image['file']);
-				} else {
+				if(preg_match('/^https?:\/\//', $image['file'])) {
 					$imgURL = $image['file'];
+				} else {
+					$imgURL = $product->getMediaConfig()->getMediaUrl($image['file']);
 				}
 
 				if($image['file'] == $primaryImage)
