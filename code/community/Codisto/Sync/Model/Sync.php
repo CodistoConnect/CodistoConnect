@@ -1382,36 +1382,98 @@ class Codisto_Sync_Model_Sync
 		}
 
 		$hasImage = false;
-		$product->load('media_gallery');
+		$galleryImages = $product->getMediaGalleryImages();
 
 		$primaryImage = isset($productData['image']) ? $productData['image'] : '';
 
-		foreach ($product->getMediaGallery('images') as $image) {
+		if($primaryImage && $galleryImages->getSize() == 0) {
 
-			$imgURL = $product->getMediaConfig()->getMediaUrl($image['file']);
-
-			$enabled = ($image['disabled'] == 0 ? -1 : 0);
-
-			if($image['file'] == $primaryImage)
-			{
-				$tag = '';
-				$sequence = 0;
-			}
-			else
-			{
-				$tag = $image['label'];
-				if(!$tag)
-					$tag = '';
-				$sequence = $image['position'];
-				if(!$sequence)
-					$sequence = 1;
-				else
-					$sequence++;
+			if(preg_match('/^https?:\/\//', $primaryImage)) {
+				$imgURL = $primaryImage;
+			} else {
+				$imgURL = $product->getMediaConfig()->getMediaUrl($primaryImage);
 			}
 
-			$insertImageSQL->execute(array($product_id, $imgURL, $tag, $sequence, $enabled));
+			$insertImageSQL->execute(array($product_id, $imgURL, '', 0, -1));
 
 			$hasImage = true;
+
+		} else {
+
+			$imagesVisited = array();
+
+			foreach ($galleryImages as $image) {
+
+				$imagesVisited[$image['file']] = true;
+
+				if(preg_match('/^https?:\/\//', $image['file'])) {
+					$imgURL = $image['file'];
+				} else {
+					$imgURL = $product->getMediaConfig()->getMediaUrl($image['file']);
+				}
+
+				if($image['file'] == $primaryImage)
+				{
+					$tag = '';
+					$sequence = 0;
+				}
+				else
+				{
+					$tag = $image['label'];
+					if(!$tag)
+						$tag = '';
+					$sequence = $image['position'];
+					if(!$sequence)
+						$sequence = 1;
+					else
+						$sequence++;
+				}
+
+				$insertImageSQL->execute(array($product_id, $imgURL, $tag, $sequence, -1));
+
+				$hasImage = true;
+
+			}
+
+			$product->load('media_gallery');
+
+			foreach ($product->getMediaGallery('images') as $image)
+			{
+				if (isset($image['disabled']) && $image['disabled'] == 0) {
+					continue;
+				}
+
+				if(isset($imagesVisited[$image['file']])) {
+					continue;
+				}
+
+				if(preg_match('/^https?:\/\//', $image['file'])) {
+					$imgURL = $image['file'];
+				} else {
+					$imgURL = $product->getMediaConfig()->getMediaUrl($image['file']);
+				}
+
+				if($image['file'] == $primaryImage)
+				{
+					$tag = '';
+					$sequence = 0;
+				}
+				else
+				{
+					$tag = $image['label'];
+					if(!$tag)
+						$tag = '';
+					$sequence = $image['position'];
+					if(!$sequence)
+						$sequence = 1;
+					else
+						$sequence++;
+				}
+
+				$insertImageSQL->execute(array($product_id, $imgURL, $tag, $sequence, 0));
+
+				$hasImage = true;
+			}
 
 		}
 
