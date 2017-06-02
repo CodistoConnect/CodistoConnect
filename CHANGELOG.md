@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.91.2](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.2) (2017-06-02)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.1...1.91.2)
+
+**Merged pull requests:**
+
+- Release [\#392](https://github.com/CodistoConnect/CodistoConnect/pull/392) ([jlivas](https://github.com/jlivas))
+- use getMediaGalleryImages to honour model overrides [\#391](https://github.com/CodistoConnect/CodistoConnect/pull/391) ([lamery](https://github.com/lamery))
+
 ## [1.91.1](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.1) (2017-05-24)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.27...1.91.1)
 
