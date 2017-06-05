@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.91.3](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.3) (2017-06-05)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.2...1.91.3)
+
+**Merged pull requests:**
+
+- Release [\#393](https://github.com/CodistoConnect/CodistoConnect/pull/393) ([jlivas](https://github.com/jlivas))
+
 ## [1.91.2](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.2) (2017-06-02)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.1...1.91.2)
 
