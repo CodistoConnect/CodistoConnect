@@ -1382,6 +1382,9 @@ class Codisto_Sync_Model_Sync
 		}
 
 		$hasImage = false;
+
+		$product->load('media_gallery');
+
 		$galleryImages = $product->getMediaGalleryImages();
 
 		$primaryImage = isset($productData['image']) ? $productData['image'] : '';
@@ -1434,8 +1437,6 @@ class Codisto_Sync_Model_Sync
 				$hasImage = true;
 
 			}
-
-			$product->load('media_gallery');
 
 			foreach ($product->getMediaGallery('images') as $image)
 			{
