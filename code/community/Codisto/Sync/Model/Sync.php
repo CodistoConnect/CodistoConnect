@@ -663,7 +663,15 @@ class Codisto_Sync_Model_Sync
 				if($productOptionValueId != null)
 				{
 					$attributeName = $attribute->getLabel();
+					if(!$attributeName) {
+						$attributeName = '';
+					}
+					$attributeName = html_entity_decode($attributeName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 					$attributeValue = $productAttribute->getSource()->getOptionText($productOptionValueId);
+					if(!$attributeValue) {
+						$attributeValue = '';
+					}
+					$attributeValue = html_entity_decode($attributeValue, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 					$insertSKUMatrixSQL->execute(array(
 						$skuData['entity_id'],
@@ -959,15 +967,24 @@ class Codisto_Sync_Model_Sync
 		}
 
 		$productName = $productData['name'];
-		if(!$productName)
+		if(!$productName) {
 			$productName = '';
+		}
+		$productName = html_entity_decode($productName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+		$productCode = $productData['sku'];
+		if(!$productCode) {
+			$productCode = '';
+		}
+		$productCode = html_entity_decode($productCode, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
 
 		$data = array();
 
 		$data[] = $product_id;
 		$data[] = $type == 'configurable' ? 'c' : ($type == 'grouped' ? 'g' : ($type == 'virtual' ? 'v' : 's'));
-		$data[] = $productData['sku'];
-		$data[] = html_entity_decode($productName);
+		$data[] = $productCode;
+		$data[] = $productName;
 		$data[] = $price;
 		$data[] = $listPrice;
 		$data[] = isset($productData['tax_class_id']) && $productData['tax_class_id'] ? $productData['tax_class_id'] : '';
@@ -1037,6 +1054,7 @@ class Codisto_Sync_Model_Sync
 						}
 					}
 				}
+				$attributeLabel = html_entity_decode($attributeLabel, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 				$attributeCodeIDMap[$attributeID] = $attributeCode;
 
@@ -1055,7 +1073,11 @@ class Codisto_Sync_Model_Sync
 					{
 						$attributeGroup = Mage::getModel('catalog/product_attribute_group')->load($attributeGroupID);
 
-						$attributeGroupName = html_entity_decode($attributeGroup->getAttributeGroupName());
+						$attributeGroupName = $attributeGroup->getAttributeGroupName();
+						if(!$attributeGroupName) {
+							$attributeGroupName = '';
+						}
+						$attributeGroupName = html_entity_decode($attributeGroupName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 						$this->groupCache[$attributeGroupID] = $attributeGroupName;
 					}
@@ -1063,10 +1085,16 @@ class Codisto_Sync_Model_Sync
 
 				$attributeFrontEnd = $attribute->getFrontend();
 
+				$attributeName = $attribute->getName();
+				if(!$attributeName) {
+					$attributeName = '';
+				}
+				$attributeName = html_entity_decode($attributeName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
 				$attributeData = array(
 						'id' => $attributeID,
 						'code' => $attributeCode,
-						'name' => $attribute->getName(),
+						'name' => $attributeName,
 						'label' => $attributeLabel,
 						'backend_type' => $attribute->getBackendType(),
 						'frontend_type' => $attributeFrontEnd->getInputType(),
@@ -1238,6 +1266,10 @@ class Codisto_Sync_Model_Sync
 										$attributeData['source']->getAttribute()->setStoreId(0);
 
 										$attributeText = $attributeData['source']->getOptionText($attributeOptionId);
+										if(!$attributeText) {
+											$attributeText = '';
+										}
+										$attributeText = html_entity_decode($attributeText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 										$attributeData['source']->getAttribute()->setStoreId($store->getId());
 
@@ -1271,6 +1303,10 @@ class Codisto_Sync_Model_Sync
 									$attributeData['source']->getAttribute()->setStoreId(0);
 
 									$attributeText = $attributeData['source']->getOptionText($attributeValue);
+									if(!$attributeText) {
+										$attributeText = '';
+									}
+									$attributeText = html_entity_decode($attributeText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 									$attributeData['source']->getAttribute()->setStoreId($store->getId());
 
@@ -1304,6 +1340,10 @@ class Codisto_Sync_Model_Sync
 									try
 									{
 										$attributeText = $attributeData['source']->getOptionText($attributeOptionId);
+										if(!$attributeText) {
+											$attributeText = '';
+										}
+										$attributeText = html_entity_decode($attributeText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 										$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId] = $attributeText;
 
@@ -1333,6 +1373,10 @@ class Codisto_Sync_Model_Sync
 								try
 								{
 									$attributeText = $attributeData['source']->getOptionText($attributeValue);
+									if(!$attributeText) {
+										$attributeText = '';
+									}
+									$attributeText = html_entity_decode($attributeText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 									$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue] = $attributeText;
 
@@ -1509,6 +1553,10 @@ class Codisto_Sync_Model_Sync
 		{
 			$optionId = $option->getOptionId();
 			$optionName = $option->getTitle();
+			if(!$optionName) {
+				$optionName = '';
+			}
+			$optionName = html_entity_decode($optionName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 			$optionType = $option->getType();
 			$optionSortOrder = $option->getSortOrder();
 
@@ -1527,8 +1575,10 @@ class Codisto_Sync_Model_Sync
 				foreach($values as $value)
 				{
 					$valueName = $value->getTitle();
-					if(!$valueName)
+					if(!$valueName) {
 						$valueName = '';
+					}
+					$valueName = html_entity_decode($valueName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 					$valuePriceModifier = '';
 					if($value->getPriceType() == 'fixed')

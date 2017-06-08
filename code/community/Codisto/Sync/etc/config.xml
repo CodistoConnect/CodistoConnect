@@ -80,9 +80,9 @@
 				<class>Codisto_Sync_Model</class>
 			</codistosync>
 
-			<ebaypayment>
+			<codistoebaypayment>
 				<class>Codisto_Sync_Ebaypayment_Model</class>
-			</ebaypayment>
+			</codistoebaypayment>
 		</models>
 
 		<blocks>
@@ -269,7 +269,7 @@
 		<payment>
 			<ebay>
 				<active>1</active>
-				<model>ebaypayment/paymentmethod</model>
+				<model>codistoebaypayment/paymentmethod</model>
 				<order_status>pending</order_status>
 				<title>eBay Order</title>
 				<allowspecific>0</allowspecific>
@@ -279,7 +279,7 @@
 			<!-- legacy payment code -->
 			<ebaypayment>
 				<active>1</active>
-				<model>ebaypayment/paymentmethod</model>
+				<model>codistoebaypayment/paymentmethod</model>
 				<order_status>pending</order_status>
 				<title>eBay Order</title>
 				<allowspecific>0</allowspecific>
