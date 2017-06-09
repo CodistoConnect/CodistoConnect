@@ -20,53 +20,6 @@
 
 class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_Admin {
 
-	private function registerMerchant(Zend_Controller_Request_Http $request)
-	{
-		$merchantID = null;
-		$createMerchant = false;
-
-		try
-		{
-			if(!extension_loaded('pdo'))
-			{
-				throw new Exception('(PHP Data Objects) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>', 999);
-			}
-
-			if(!in_array("sqlite",PDO::getAvailableDrivers(), TRUE))
-			{
-				throw new PDOException('(sqlite PDO Driver) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>', 999);
-			}
-
-			$createMerchant = Mage::helper('codistosync')->createMerchantwithLock(5.0);
-		}
-
-		//Something else happened such as PDO related exception
-		catch(Exception $e)
-		{
-
-			//If competing requests are coming in as the extension is installed the lock above will be held ... don't report this back to Codisto .
-			if($e->getCode() != "HY000")
-			{
-				//Otherwise report  other exception details to Codisto regarding register
-				Mage::helper('codistosync')->logExceptionCodisto($e, "https://ui.codisto.com/installed");
-			}
-			throw $e;
-		}
-
-		if($createMerchant)
-		{
-			$merchantID = Mage::helper('codistosync')->registerMerchant($request);
-		}
-
-		if($merchantID)
-		{
-			$merchantID = Zend_Json::decode($merchantID);
-		}
-
-		return $merchantID;
-	}
-
-
 	public function match(Zend_Controller_Request_Http $request)
 	{
 		$path = $request->getPathInfo();
@@ -219,40 +172,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				// register merchant on default admin store if config isn't present
 				if(empty($Merchants))
 				{
-					try
-					{
-						$MerchantID = $this->registerMerchant($request);
-					}
-					catch(Exception $e)
-					{
-						if($e->getCode() == 999)
-						{
-							$response->setBody('<!DOCTYPE html><html><head></head><body><h1>Unable to Register</h1><p>Sorry, we were unable to register your Codisto account,
-							your Magento installation is missing a required Pre-requisite' . $e->getMessage() .
-							' or contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p></body></html>');
-						}
-						else
-						{
-							$response->setBody('<!DOCTYPE html><html><head></head><body><h1>Unable to Register</h1><p>Sorry, we are currently unable to register your Codisto account.
-							In most cases, this is due to your server configuration being unable to make outbound communication to the Codisto servers.</p>
-							<p>This is usually easily fixed - please contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p></body></html>');
-						}
-
-						return true;
-					}
-
-					if($MerchantID == null)
-					{
-						$response->setBody('<!DOCTYPE html><html><head></head><body><h1>Unable to Register</h1><p>Sorry, we are currently unable to register your Codisto account.
-						In most cases, this is due to your server configuration being unable to make outbound communication to the Codisto servers.</p>
-						<p>This is usually easily fixed - please contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p></body></html>');
-
-						return true;
-					}
-
-					$Merchants[0] = $MerchantID;
-					$HostKey = Mage::getStoreConfig('codisto/hostkey');
-					$HostKeys[$MerchantID] = $HostKey;
+					$this->_redirectUrl(Mage::getModel('adminhtml/url')->getUrl('/codisto/index'));
 				}
 
 				if(count($Merchants) == 1)

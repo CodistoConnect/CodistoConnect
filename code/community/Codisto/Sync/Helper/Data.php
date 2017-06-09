@@ -230,7 +230,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 	}
 
 	//Register a new merchant with Codisto
-	public function registerMerchant()
+	public function registerMerchant($method, $emailaddress, $regtoken)
 	{
 
 		try
@@ -269,7 +269,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 				$url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
 				$version = Mage::getVersion();
 				$storename = Mage::getStoreConfig('general/store_information/name', 0);
-				$email = $user->getEmail();
+				$email = $emailaddress;
 				$codistoversion = $this->getCodistoVersion();
 				$ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
 				if($ResellerKey)
@@ -290,16 +290,27 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 					'strict' => false,
 					'strictredirects' => true,
 					'maxredirects' => 0,
-					'timeout' => 30
+					'timeout' => 60
 				));
 
 				$client->setHeaders('Content-Type', 'application/json');
 				for($retry = 0; ; $retry++)
 				{
+
 					try
 					{
-						$remoteResponse = $client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
-						'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)))->request('POST');
+						if($method == "email")
+						{
+							$client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
+							'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)));
+						}
+						else
+						{
+							$client->setHeaders('Content-Type', 'application/json');
+							$client->setRawData(Zend_Json::encode([ 'regtoken' => $regtoken ]));
+						}
+
+						$remoteResponse = $client->request('POST');
 
 						if(!$remoteResponse->isSuccessful())
 						{
@@ -313,6 +324,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 						//If the merchantid and hostkey was present in response body
 						if(isset($data['merchantid']) && $data['merchantid'] &&	isset($data['hostkey']) && $data['hostkey'])
 						{
+
 							$MerchantID = $data['merchantid'];
 							$HostKey = $data['hostkey'];
 
