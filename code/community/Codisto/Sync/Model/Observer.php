@@ -711,7 +711,7 @@ class Codisto_Sync_Model_Observer
 				}
 			}
 
-			$helper->signal($merchants, 'action=syncorder&orderid='.$orderid);
+			$helper->signal($merchants, 'action=syncorder&orderid='.Zend_Json::encode($orderIds));
 		}
 	}
 
