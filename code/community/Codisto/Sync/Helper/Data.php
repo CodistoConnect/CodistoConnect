@@ -307,7 +307,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 						else
 						{
 							$client->setHeaders('Content-Type', 'application/json');
-							$client->setRawData(Zend_Json::encode([ 'regtoken' => $regtoken ]));
+							$client->setRawData(Zend_Json::encode(array( 'regtoken' => $regtoken )));
 						}
 
 						$remoteResponse = $client->request('POST');
