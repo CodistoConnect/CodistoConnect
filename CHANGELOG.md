@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.91.4](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.4) (2017-06-30)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.3...1.91.4)
+
+**Merged pull requests:**
+
+- Release [\#397](https://github.com/CodistoConnect/CodistoConnect/pull/397) ([jschiller](https://github.com/jschiller))
+- 	incremental order sync fix [\#396](https://github.com/CodistoConnect/CodistoConnect/pull/396) ([jlivas](https://github.com/jlivas))
+
 ## [1.91.3](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.3) (2017-06-05)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.2...1.91.3)
 
@@ -205,7 +213,6 @@
 - Release [\#344](https://github.com/CodistoConnect/CodistoConnect/pull/344) ([lamery](https://github.com/lamery))
 - clear payment amount due to updateTotals doubling base\_amountpaid and… [\#343](https://github.com/CodistoConnect/CodistoConnect/pull/343) ([lamery](https://github.com/lamery))
 - set free method weight [\#342](https://github.com/CodistoConnect/CodistoConnect/pull/342) ([jlivas](https://github.com/jlivas))
-- change register message [\#339](https://github.com/CodistoConnect/CodistoConnect/pull/339) ([jlivas](https://github.com/jlivas))
 
 ## [1.90.5](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.5) (2016-06-30)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.4...1.90.5)
