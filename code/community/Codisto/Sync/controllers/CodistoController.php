@@ -107,9 +107,9 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 						$type = 'magento';
 						$magentoversion = Mage::getVersion();
 						$url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
-						$storename = Mage::getStoreConfig('general/store_information/name', 0);
+						$storeName = Mage::getStoreConfig('general/store_information/name', 0);
 						$StoreID = 0;
-						$StoreCurrency = Mage::app()->getStore($StoreID)->getCurrentCurrencyCode();
+						$storeCurrency = Mage::app()->getStore($StoreID)->getCurrentCurrencyCode();
 						$resellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
 						if($resellerKey)
 						{
@@ -187,7 +187,7 @@ EOT;
 EOT;
 					}
 				}
-				if($MerchantID == null)
+				if($merchantID == null)
 				{
 					$registrationerror = true;
 					$registrationerrortext = <<<EOT
