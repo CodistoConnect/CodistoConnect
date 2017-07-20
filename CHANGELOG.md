@@ -614,6 +614,9 @@
 - disable visitor logging / who is online tracking [\#218](https://github.com/CodistoConnect/CodistoConnect/pull/218) ([lamery](https://github.com/lamery))
 
 ## [1.1.67](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.67) (2016-01-20)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.67...1.1.67)
+
+## [1.1.67](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.67) (2016-01-20)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.66...1.1.67)
 
 **Implemented enhancements:**
@@ -946,26 +949,17 @@
 - avoid breaking session by unsetting it [\#130](https://github.com/CodistoConnect/CodistoConnect/pull/130) ([jlivas](https://github.com/jlivas))
 
 ## [1.1.38](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.38) (2015-10-13)
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.37...1.1.38)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.36...1.1.38)
 
 **Fixed bugs:**
 
 - properly handle zliboutputbuffer php.ini setting [\#128](https://github.com/CodistoConnect/CodistoConnect/pull/128) ([lamery](https://github.com/lamery))
-
-**Merged pull requests:**
-
-- Release [\#129](https://github.com/CodistoConnect/CodistoConnect/pull/129) ([bradmccormack](https://github.com/bradmccormack))
-
-## [1.1.37](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.37) (2015-10-13)
-[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.36...1.1.37)
-
-**Fixed bugs:**
-
 - ensure resellerkey value is passed correctly [\#126](https://github.com/CodistoConnect/CodistoConnect/pull/126) ([lamery](https://github.com/lamery))
 - handle null list price [\#125](https://github.com/CodistoConnect/CodistoConnect/pull/125) ([lamery](https://github.com/lamery))
 
 **Merged pull requests:**
 
+- Release [\#129](https://github.com/CodistoConnect/CodistoConnect/pull/129) ([bradmccormack](https://github.com/bradmccormack))
 - Release [\#127](https://github.com/CodistoConnect/CodistoConnect/pull/127) ([bradmccormack](https://github.com/bradmccormack))
 
 ## [1.1.36](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.36) (2015-10-08)
@@ -1294,6 +1288,9 @@
 **Merged pull requests:**
 
 - release [\#36](https://github.com/CodistoConnect/CodistoConnect/pull/36) ([lamery](https://github.com/lamery))
+
+## [1.1.7](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.7) (2015-07-13)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.7...1.1.7)
 
 ## [1.1.7](https://github.com/CodistoConnect/CodistoConnect/tree/1.1.7) (2015-07-13)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.1.6...1.1.7)
