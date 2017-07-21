@@ -1,8 +1,6 @@
 [![GitHub release](https://img.shields.io/github/release/CodistoConnect/CodistoConnect.svg?style=plastic)](https://github.com/CodistoConnect/CodistoConnect/releases)
 [ ![License] [license-image] ] [license]
 
-![CodistoConnect eBay better logo](https://s3-ap-southeast-2.amazonaws.com/codisto/CodistoHeaderLogo.jpg)
-
 <h2>Welcome</h2>
 <p>
 Welcome to Codisto LINQ Magento to eBay Integration!
