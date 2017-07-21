@@ -888,30 +888,37 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_PROCESSING, "Exception Occurred Placing Order : ".$e->getMessage());
 		}
 
+		$customerInstruction = @count($ordercontent->instructions) ? strval($ordercontent->instructions) : '';
+
+		$customerNote = '';
+		if($customerInstruction) {
+			$customerNote = " <br><b>Checkout message from buyer:</b><br> " . $customerInstruction;
+		}
+
 		/* cancelled, processing, captured, inprogress, complete */
 		if($ordercontent->orderstate == 'cancelled') {
 
 			$order->setData('state', Mage_Sales_Model_Order::STATE_CANCELED);
 			$order->setData('status', Mage_Sales_Model_Order::STATE_CANCELED);
-			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_CANCELED, "eBay Order $ebaysalesrecordnumber has been cancelled");
+			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_CANCELED, "eBay Order $ebaysalesrecordnumber has been cancelled." . $customerNote);
 
 		} else if($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') {
 
 			$order->setData('state', Mage_Sales_Model_Order::STATE_PROCESSING);
 			$order->setData('status', Mage_Sales_Model_Order::STATE_PROCESSING);
-			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_PROCESSING, "eBay Order $ebaysalesrecordnumber is in progress");
+			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_PROCESSING, "eBay Order $ebaysalesrecordnumber is in progress." . $customerNote);
 
 		} else if ($ordercontent->orderstate == 'complete') {
 
 			$order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
 			$order->setData('status', Mage_Sales_Model_Order::STATE_COMPLETE);
-			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE, "eBay Order $ebaysalesrecordnumber is complete");
+			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE, "eBay Order $ebaysalesrecordnumber is complete." . $customerNote);
 
 		} else {
 
 			$order->setData('state', Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
 			$order->setData('status', Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
-			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, "eBay Order $ebaysalesrecordnumber has been captured");
+			$order->addStatusToHistory(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, "eBay Order $ebaysalesrecordnumber has been captured." . $customerNote);
 
 		}
 
