@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.91.8](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.8) (2017-07-23)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.7...1.91.8)
+
+**Merged pull requests:**
+
+- Release [\#400](https://github.com/CodistoConnect/CodistoConnect/pull/400) ([jlivas](https://github.com/jlivas))
+- add checkout message to status history [\#399](https://github.com/CodistoConnect/CodistoConnect/pull/399) ([jlivas](https://github.com/jlivas))
+- switch name of payment method model string to avoid conflicts [\#394](https://github.com/CodistoConnect/CodistoConnect/pull/394) ([lamery](https://github.com/lamery))
+
 ## [1.91.7](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.7) (2017-07-21)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.6...1.91.7)
 
