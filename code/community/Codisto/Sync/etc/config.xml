@@ -23,7 +23,7 @@
 <config>
 	<modules>
 		<Codisto_Sync>
-			<version>1.91.8</version>
+			<version>1.91.9</version>
 			<depends>
 				<Mage_Payment/>
 			</depends>
