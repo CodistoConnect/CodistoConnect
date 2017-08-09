@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.91.9](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.9) (2017-08-09)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.8...1.91.9)
+
+**Merged pull requests:**
+
+- Release [\#402](https://github.com/CodistoConnect/CodistoConnect/pull/402) ([jlivas](https://github.com/jlivas))
+- amazon order id order format support [\#401](https://github.com/CodistoConnect/CodistoConnect/pull/401) ([jlivas](https://github.com/jlivas))
+
 ## [1.91.8](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.8) (2017-07-23)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.7...1.91.8)
 
