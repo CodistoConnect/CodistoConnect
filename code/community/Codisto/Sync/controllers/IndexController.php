@@ -584,6 +584,10 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		if(!$ebaysalesrecordnumber)
 			$ebaysalesrecordnumber = '';
 
+		$amazonorderid = (string)$ordercontent->amazonorderid;
+		if(!$amazonorderid)
+			$amazonorderid = '';
+
 		$ebaytransactionid = (string)$ordercontent->ebaytransactionid;
 
 		$ebayusername = (string)$ordercontent->ebayusername;
@@ -601,11 +605,12 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 		$order->setCodistoOrderid((string)$ordercontent->orderid);
 		$order->setCodistoMerchantid((string)$ordercontent->merchantid);
 
-		if(preg_match('/\{ordernumber\}|\{ebaysalesrecordnumber\}|\{ebaytransactionid\}/', $ordernumberformat))
+		if(preg_match('/\{ordernumber\}|\{ebaysalesrecordnumber\}|\{ebaytransactionid\}|\{amazonorderid\}/', $ordernumberformat))
 		{
 			$incrementId = preg_replace('/\{ordernumber\}/', (string)$order->getIncrementId(), $ordernumberformat);
 			$incrementId = preg_replace('/\{ebaysalesrecordnumber\}/', $ebaysalesrecordnumber, $incrementId);
 			$incrementId = preg_replace('/\{ebaytransactionid\}/', $ebaytransactionid, $incrementId);
+			$incrementId = preg_replace('/\{amazonorderid\}/', $amazonorderid, $incrementId);
 			$order->setIncrementId($incrementId);
 		}
 		else
