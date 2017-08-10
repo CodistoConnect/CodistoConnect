@@ -1692,7 +1692,7 @@ class Codisto_Sync_Model_Sync
 	{
 		$helper = Mage::helper('codistosync');
 
-		$syncDbPath = $helper->getSyncPath('sync-'.$storeId.'.db');
+		$syncDbPath = $helper->getSyncPath('sync-'.($storeId == 0 ? 1 : $storeId).'.db');
 
 		$syncDb = null;
 
