@@ -666,12 +666,12 @@ class Codisto_Sync_Model_Sync
 					if(!$attributeName) {
 						$attributeName = '';
 					}
-					$attributeName = html_entity_decode($attributeName, ENT_QUOTES | 'ENT_HTML5', 'UTF-8');
+					$attributeName = html_entity_decode($attributeName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 					$attributeValue = $productAttribute->getSource()->getOptionText($productOptionValueId);
 					if(!$attributeValue) {
 						$attributeValue = '';
 					}
-					$attributeValue = html_entity_decode($attributeValue, ENT_QUOTES | 'ENT_HTML5', 'UTF-8');
+					$attributeValue = html_entity_decode($attributeValue, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 					$insertSKUMatrixSQL->execute(array(
 						$skuData['entity_id'],
@@ -970,13 +970,13 @@ class Codisto_Sync_Model_Sync
 		if(!$productName) {
 			$productName = '';
 		}
-		$productName = html_entity_decode($productName, ENT_QUOTES | 'ENT_HTML5', 'UTF-8');
+		$productName = html_entity_decode($productName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 		$productCode = $productData['sku'];
 		if(!$productCode) {
 			$productCode = '';
 		}
-		$productCode = html_entity_decode($productCode, ENT_QUOTES | 'ENT_HTML5', 'UTF-8');
+		$productCode = html_entity_decode($productCode, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 
 		$data = array();
@@ -1054,7 +1054,7 @@ class Codisto_Sync_Model_Sync
 						}
 					}
 				}
-				$attributeLabel = html_entity_decode($attributeLabel, ENT_QUOTES | 'ENT_HTML5', 'UTF-8');
+				$attributeLabel = html_entity_decode($attributeLabel, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 				$attributeCodeIDMap[$attributeID] = $attributeCode;
 
@@ -1077,7 +1077,7 @@ class Codisto_Sync_Model_Sync
 						if(!$attributeGroupName) {
 							$attributeGroupName = '';
 						}
-						$attributeGroupName = html_entity_decode($attributeGroupName, ENT_QUOTES | 'ENT_HTML5', 'UTF-8');
+						$attributeGroupName = html_entity_decode($attributeGroupName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 						$this->groupCache[$attributeGroupID] = $attributeGroupName;
 					}
@@ -1089,7 +1089,7 @@ class Codisto_Sync_Model_Sync
 				if(!$attributeName) {
 					$attributeName = '';
 				}
-				$attributeName = html_entity_decode($attributeName, ENT_QUOTES | 'ENT_HTML5', 'UTF-8');
+				$attributeName = html_entity_decode($attributeName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 				$attributeData = array(
 						'id' => $attributeID,
@@ -1269,7 +1269,7 @@ class Codisto_Sync_Model_Sync
 										if(!$attributeText) {
 											$attributeText = '';
 										}
-										$attributeText = html_entity_decode($attributeText, ENT_QUOTES | 'ENT_HTML5', 'UTF-8');
+										$attributeText = html_entity_decode($attributeText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 										$attributeData['source']->getAttribute()->setStoreId($store->getId());
 
@@ -1306,7 +1306,7 @@ class Codisto_Sync_Model_Sync
 									if(!$attributeText) {
 										$attributeText = '';
 									}
-									$attributeText = html_entity_decode($attributeText, ENT_QUOTES | 'ENT_HTML5', 'UTF-8');
+									$attributeText = html_entity_decode($attributeText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 									$attributeData['source']->getAttribute()->setStoreId($store->getId());
 
@@ -1343,7 +1343,7 @@ class Codisto_Sync_Model_Sync
 										if(!$attributeText) {
 											$attributeText = '';
 										}
-										$attributeText = html_entity_decode($attributeText, ENT_QUOTES | 'ENT_HTML5', 'UTF-8');
+										$attributeText = html_entity_decode($attributeText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 										$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeOptionId] = $attributeText;
 
@@ -1376,7 +1376,7 @@ class Codisto_Sync_Model_Sync
 									if(!$attributeText) {
 										$attributeText = '';
 									}
-									$attributeText = html_entity_decode($attributeText, ENT_QUOTES | 'ENT_HTML5', 'UTF-8');
+									$attributeText = html_entity_decode($attributeText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 									$this->optionTextCache[$store->getId().'-'.$attributeData['id'].'-'.$attributeValue] = $attributeText;
 
@@ -1619,7 +1619,7 @@ class Codisto_Sync_Model_Sync
 			if(!$optionName) {
 				$optionName = '';
 			}
-			$optionName = html_entity_decode($optionName, ENT_QUOTES | 'ENT_HTML5', 'UTF-8');
+			$optionName = html_entity_decode($optionName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 			$optionType = $option->getType();
 			$optionSortOrder = $option->getSortOrder();
 
@@ -1641,7 +1641,7 @@ class Codisto_Sync_Model_Sync
 					if(!$valueName) {
 						$valueName = '';
 					}
-					$valueName = html_entity_decode($valueName, ENT_QUOTES | 'ENT_HTML5', 'UTF-8');
+					$valueName = html_entity_decode($valueName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 					$valuePriceModifier = '';
 					if($value->getPriceType() == 'fixed')
