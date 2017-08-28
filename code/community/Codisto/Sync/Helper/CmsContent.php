@@ -8,10 +8,10 @@ try {
 
 	$contents = file_get_contents('php://stdin');
 
-	echo Mage::helper('cms')->getBlockTemplateProcessor()->filter(trim($contents));
+	echo Mage::helper('cms')->getBlockTemplateProcessor()->filter(trim($contents)); // @codingStandardsIgnoreLine
 
 } catch (Exception $e) {
 
-	echo $e->getMessage();
+	echo $e->getMessage(); // @codingStandardsIgnoreLine
 
 }

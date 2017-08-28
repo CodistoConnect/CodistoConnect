@@ -108,11 +108,13 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				return true;
 			}
 
+			// @codingStandardsIgnoreStart
 			if(isset($_SESSION))
 			{
 				session_write_close();
 				unset($_SESSION);
 			}
+			// @codingStandardsIgnoreEnd
 
 			$loggedIn = false;
 
@@ -155,10 +157,13 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			{
 				Zend_Session::writeClose();
 			}
+
+			// @codingStandardsIgnoreStart
 			if(isset($_SESSION))
 			{
 				session_write_close();
 			}
+			// @codingStandardsIgnoreEnd
 
 			if($loggedIn)
 			{

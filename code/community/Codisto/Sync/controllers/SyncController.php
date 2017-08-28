@@ -313,7 +313,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					die;
+					exit(0); // @codingStandardsIgnoreLine
 
 				case 'PRODUCTCOUNT':
 
@@ -330,7 +330,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					die;
+					exit(0); // @codingStandardsIgnoreLine
 
 				case 'EXECUTEFIRST':
 
@@ -418,7 +418,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					die;
+					exit(0); // @codingStandardsIgnoreLine
 
 				case 'EXECUTEINCREMENT':
 
@@ -426,7 +426,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					{
 						$this->sendPlainResponse($response, 400, 'Bad Request', 'No Action');
 						$response->sendResponse();
-						die;
+						exit(0); // @codingStandardsIgnoreLine
 					}
 
 				case 'EXECUTECHUNK':
@@ -465,7 +465,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 										$this->sendPlainResponse($response, 200, 'OK', 'incremental-'.$result);
 										$response->sendResponse();
-										die;
+										exit(0); // @codingStandardsIgnoreLine
 									}
 								}
 
@@ -565,7 +565,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					die;
+					exit(0); // @codingStandardsIgnoreLine
 
 				case 'CHANGECOMPLETE':
 
@@ -599,7 +599,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					die;
+					exit(0); // @codingStandardsIgnoreLine
 
 				case 'TAX':
 
@@ -644,7 +644,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					die;
+					exit(0); // @codingStandardsIgnoreLine
 
 				case 'STOREVIEW':
 
@@ -686,7 +686,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					die;
+					exit(0); // @codingStandardsIgnoreLine
 
 				case 'BLOCKS':
 
@@ -713,7 +713,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					die;
+					exit(0); // @codingStandardsIgnoreLine
 
 				case 'ORDERS':
 
@@ -762,7 +762,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					die;
+					exit(0); // @codingStandardsIgnoreLine
 
 				case 'TEMPLATE':
 
@@ -881,7 +881,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					die;
+					exit(0); // @codingStandardsIgnoreLine
 
 				case 'NOTIFICATION':
 
@@ -908,13 +908,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					die;
+					exit(0); // @codingStandardsIgnoreLine
 
 				default:
 
 					$this->sendPlainResponse($response, 400, 'Bad Request', 'No Action');
 					$response->sendResponse();
-					die;
+					exit(0); // @codingStandardsIgnoreLine
 			}
 		}
 	}
@@ -933,7 +933,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		{
 			$this->sendConfigError($response);
 			$response->sendResponse();
-			die;
+			exit(0); // @codingStandardsIgnoreLine
 		}
 
 		if($this->checkHash($helper, $server, $storeId))
@@ -956,7 +956,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			$this->sendSecurityError($response);
 			$response->sendResponse();
 		}
-		die;
+		exit(0); // @codingStandardsIgnoreLine
 	}
 
 	private function checkHash($helper, $server, $storeId)
