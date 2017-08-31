@@ -9,8 +9,8 @@ $msg = $argv[2];
 
 $curlOptions = array( CURLOPT_TIMEOUT => 20 );
 
-if(getEnv('CURL_CA_BUNDLE') {
-    $curlOptions[CURLOPT_CAINFO] = getEnv('CURL_CA_BUNDLE');
+if(getenv('CURL_CA_BUNDLE')) {
+    $curlOptions[CURLOPT_CAINFO] = getenv('CURL_CA_BUNDLE');
 }
 
 $client = new Zend_Http_Client();

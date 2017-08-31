@@ -1040,11 +1040,11 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                 if(!$curl_cainfo && getServer('SSL_CERT_FILE')) {
                     $curl_cainfo = getServer('SSL_CERT_FILE');
                 }
-                if(!$curl_cainfo && getEnv('CURL_CA_BUNDLE')) {
-                    $curl_cainfo = getEnv('CURL_CA_BUNDLE');
+                if(!$curl_cainfo && getenv('CURL_CA_BUNDLE')) {
+                    $curl_cainfo = getenv('CURL_CA_BUNDLE');
                 }
-                if(!$curl_cainfo && getEnv('SSL_CERT_FILE')) {
-                    $curl_cainfo = getEnv('SSL_CERT_FILE');
+                if(!$curl_cainfo && getenv('SSL_CERT_FILE')) {
+                    $curl_cainfo = getenv('SSL_CERT_FILE');
                 }
 
                 $cmdline = '';
@@ -1081,11 +1081,11 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                 if(!$curl_cainfo && getServer('SSL_CERT_FILE')) {
                     $curl_cainfo = getServer('SSL_CERT_FILE');
                 }
-                if(!$curl_cainfo && getEnv('CURL_CA_BUNDLE')) {
-                    $curl_cainfo = getEnv('CURL_CA_BUNDLE');
+                if(!$curl_cainfo && getenv('CURL_CA_BUNDLE')) {
+                    $curl_cainfo = getenv('CURL_CA_BUNDLE');
                 }
-                if(!$curl_cainfo && getEnv('SSL_CERT_FILE')) {
-                    $curl_cainfo = getEnv('SSL_CERT_FILE');
+                if(!$curl_cainfo && getenv('SSL_CERT_FILE')) {
+                    $curl_cainfo = getenv('SSL_CERT_FILE');
                 }
 
                 $cmdline = '';
