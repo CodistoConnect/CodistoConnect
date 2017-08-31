@@ -6,12 +6,12 @@ Mage::app();
 
 try {
 
-	$contents = file_get_contents('php://stdin');
+    $contents = file_get_contents('php://stdin');
 
-	echo Mage::helper('cms')->getBlockTemplateProcessor()->filter(trim($contents)); // @codingStandardsIgnoreLine
+    file_put_contents('php://stdout', Mage::helper('cms')->getBlockTemplateProcessor()->filter(trim($contents))); // @codingStandardsIgnoreLine
 
 } catch (Exception $e) {
 
-	echo $e->getMessage(); // @codingStandardsIgnoreLine
+    file_put_contents('php://stdout', $e->getMessage()); // @codingStandardsIgnoreLine
 
 }

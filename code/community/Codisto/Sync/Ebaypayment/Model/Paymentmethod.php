@@ -20,29 +20,29 @@
 
 class Codisto_Sync_Ebaypayment_Model_Paymentmethod extends Mage_Payment_Model_Method_Abstract
 {
-	protected $_code  = 'ebay';
+    protected $_code  = 'ebay';
 
-	protected $_infoBlockType = 'codisto/paymentInfo';
+    protected $_infoBlockType = 'codisto/paymentInfo';
 
-	protected $_isGateway = false;
-	protected $_canAuthorize = false;
-	protected $_canCapture = false;
-	protected $_canCapturePartial = false;
-	protected $_canRefund = false;
-	protected $_canVoid = false;
-	protected $_canUseInternal = false;
-	protected $_canUseCheckout = false;
-	protected $_canUseForMultiShipping = false;
-	protected $_canSaveCc = false;
+    protected $_isGateway = false;
+    protected $_canAuthorize = false;
+    protected $_canCapture = false;
+    protected $_canCapturePartial = false;
+    protected $_canRefund = false;
+    protected $_canVoid = false;
+    protected $_canUseInternal = false;
+    protected $_canUseCheckout = false;
+    protected $_canUseForMultiShipping = false;
+    protected $_canSaveCc = false;
 
-	public function isAvailable($quote = null)
-	{
-		return true;
-	}
+    public function isAvailable($quote = null)
+    {
+        return true;
+    }
 
-	public function isApplicableToQuote($quote, $checksBitMask)
-	{
-		 return true;
-	}
+    public function isApplicableToQuote($quote, $checksBitMask)
+    {
+         return true;
+    }
 
 }
