@@ -108,19 +108,19 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
                 return true;
             }
 
+            //@codingStandardsIgnoreStart
             if(version_compare(phpversion(), '5.4.0', '<')) {
                  if(session_id() != '') {
                     session_write_close();
                     session_unset();
                  }
             } else {
-                //@codingStandardsIgnoreStart
                 if (session_status() != PHP_SESSION_NONE) { // @codiingStandard
                     session_write_close();
                     session_unset();
                 }
-                //@codingStandardsIgnoreEnd
             }
+            //@codingStandardsIgnoreEnd
 
             $loggedIn = false;
 
@@ -164,6 +164,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
                 Zend_Session::writeClose();
             }
 
+            //@codingStandardsIgnoreStart
             if(version_compare(phpversion(), '5.4.0', '<')) {
                  if(session_id() != '') {
                     session_write_close();
@@ -173,6 +174,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
                     session_write_close();
                 }
             }
+            //@codingStandardsIgnoreEnd
 
             if($loggedIn)
             {
