@@ -313,7 +313,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					exit(0); // @codingStandardsIgnoreLine
+					$this->end(); //exit(0); //$this->exit();
 
 				case 'PRODUCTCOUNT':
 
@@ -330,7 +330,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					exit(0); // @codingStandardsIgnoreLine
+					$this->end(); //exit(0); //$this->exit();
 
 				case 'EXECUTEFIRST':
 
@@ -418,7 +418,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					exit(0); // @codingStandardsIgnoreLine
+					$this->end(); //exit(0); //$this->exit();
 
 				case 'EXECUTEINCREMENT':
 
@@ -426,7 +426,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 					{
 						$this->sendPlainResponse($response, 400, 'Bad Request', 'No Action');
 						$response->sendResponse();
-						exit(0); // @codingStandardsIgnoreLine
+						$this->end(); //exit(0); //$this->exit();
 					}
 
 				case 'EXECUTECHUNK':
@@ -465,7 +465,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
 										$this->sendPlainResponse($response, 200, 'OK', 'incremental-'.$result);
 										$response->sendResponse();
-										exit(0); // @codingStandardsIgnoreLine
+										$this->end(); //exit(0); //$this->exit();
 									}
 								}
 
@@ -565,7 +565,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					exit(0); // @codingStandardsIgnoreLine
+					$this->end(); //exit(0); //$this->exit();
 
 				case 'CHANGECOMPLETE':
 
@@ -599,7 +599,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					exit(0); // @codingStandardsIgnoreLine
+					$this->end(); //exit(0); //$this->exit();
 
 				case 'TAX':
 
@@ -644,7 +644,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					exit(0); // @codingStandardsIgnoreLine
+					$this->end(); //exit(0); //$this->exit();
 
 				case 'STOREVIEW':
 
@@ -686,7 +686,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					exit(0); // @codingStandardsIgnoreLine
+					$this->end();//exit(0); //$this->exit();
 
 				case 'BLOCKS':
 
@@ -713,7 +713,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					exit(0); // @codingStandardsIgnoreLine
+					$this->end(); //exit(0); //$this->exit();
 
 				case 'ORDERS':
 
@@ -762,7 +762,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					exit(0); // @codingStandardsIgnoreLine
+					$this->end(); //exit(0); //$this->exit();
 
 				case 'TEMPLATE':
 
@@ -881,7 +881,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					exit(0); // @codingStandardsIgnoreLine
+					$this->end(); //exit(0); //$this->exit();
 
 				case 'NOTIFICATION':
 
@@ -908,13 +908,13 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 						$this->sendSecurityError($response);
 						$response->sendResponse();
 					}
-					exit(0); // @codingStandardsIgnoreLine
+					$this->end(); //exit(0); //$this->exit();
 
 				default:
 
 					$this->sendPlainResponse($response, 400, 'Bad Request', 'No Action');
 					$response->sendResponse();
-					exit(0); // @codingStandardsIgnoreLine
+					$this->end(); //exit(0); //$this->exit();
 			}
 		}
 	}
@@ -933,7 +933,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		{
 			$this->sendConfigError($response);
 			$response->sendResponse();
-			exit(0); // @codingStandardsIgnoreLine
+			$this->end(); //exit(0); //$this->exit();
 		}
 
 		if($this->checkHash($helper, $server, $storeId))
@@ -956,7 +956,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 			$this->sendSecurityError($response);
 			$response->sendResponse();
 		}
-		exit(0); // @codingStandardsIgnoreLine
+		$this->end(); //exit(0); //$this->exit();
 	}
 
 	private function checkHash($helper, $server, $storeId)
@@ -1066,6 +1066,12 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 		flush();
 
 		readfile($syncDb);
+	}
+
+	private function end()
+	{
+		$r = new Codisto_Sync_Controller_Response_Http();
+		$r->sendHeadersAndExit();
 	}
 
 
