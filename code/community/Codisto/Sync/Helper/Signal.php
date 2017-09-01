@@ -9,7 +9,11 @@ $msg = $argv[2];
 
 $curlOptions = array( CURLOPT_TIMEOUT => 20 );
 
-if(isset($_ENV['CURL_CA_BUNDLE']) && $_ENV['CURL_CA_BUNDLE'])
+$curlCA = Mage::getBaseDir('var') . '/codisto/codisto.crt';
+if(is_file($curlCA)) {
+	$curlOptions[CURLOPT_CAINFO] = $curlCA;
+}
+else if(isset($_ENV['CURL_CA_BUNDLE']) && $_ENV['CURL_CA_BUNDLE'])
 {
 	$curlOptions[CURLOPT_CAINFO] = $_ENV['CURL_CA_BUNDLE'];
 }

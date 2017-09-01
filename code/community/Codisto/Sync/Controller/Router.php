@@ -409,6 +409,11 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 							if(!array_key_exists(CURLOPT_CAINFO, $curlOptions)) {
 								$this->getCACert();
+
+								if(is_file($curlCA)) {
+									$curlOptions[CURLOPT_CAINFO] = $curlCA;
+									$client->getAdapter()->setCurlOptions($curlOptions);
+								}
 							}
 
 						}

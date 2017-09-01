@@ -283,6 +283,11 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 				$curlOptions = array(CURLOPT_TIMEOUT => 60, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0);
 
+				$curlCA = Mage::getBaseDir('var') . '/codisto/codisto.crt';
+				if(is_file($curlCA)) {
+					$curlOptions[CURLOPT_CAINFO] = $curlCA;
+				}
+
 				$client = new Zend_Http_Client("https://ui.codisto.com/create", array(
 					'adapter' => 'Zend_Http_Client_Adapter_Curl',
 					'curloptions' => $curlOptions,
@@ -364,6 +369,19 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 					//Attempt to retry register
 					catch(Exception $e)
 					{
+						if(preg_match('/server\s+certificate\s+verification\s+failed/', $e->getMessage())) {
+
+							if(!array_key_exists(CURLOPT_CAINFO, $curlOptions)) {
+								$this->getCACert();
+
+								if(is_file($curlCA)) {
+									$curlOptions[CURLOPT_CAINFO] = $curlCA;
+									$client->getAdapter()->setCurlOptions($curlOptions);
+								}
+							}
+
+						}
+
 						Mage::log($e->getMessage());
 						//Attempt again to register if we
 						if($retry < 3)
@@ -1259,8 +1277,14 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
 			if(!$this->client)
 			{
+				$curlOptions = array(CURLOPT_TIMEOUT => 4, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0);
+				$curlCA = Mage::getBaseDir('var') . '/codisto/codisto.crt';
+				if(is_file($curlCA)) {
+					$curlOptions[CURLOPT_CAINFO] = $curlCA;
+				}
+
 				$this->client = new Zend_Http_Client();
-				$this->client->setConfig(array( 'adapter' => 'Zend_Http_Client_Adapter_Curl', 'curloptions' => array(CURLOPT_TIMEOUT => 4, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0), 'keepalive' => true, 'maxredirects' => 0 ));
+				$this->client->setConfig(array( 'adapter' => 'Zend_Http_Client_Adapter_Curl', 'curloptions' => $curlOptions, 'keepalive' => true, 'maxredirects' => 0 ));
 				$this->client->setStream();
 			}
 
