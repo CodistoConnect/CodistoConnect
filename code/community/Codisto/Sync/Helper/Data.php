@@ -70,6 +70,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 {
 	private $client;
 	private $phpInterpreter;
+	private $caCertRequested = false;
 
 	public function getCodistoVersion()
 	{
@@ -837,6 +838,34 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 		$db->exec('PRAGMA cache_size=15000');
 		$db->exec('PRAGMA soft_heap_limit=67108864');
 		$db->exec('PRAGMA journal_mode=MEMORY');
+	}
+
+	public function getCACert()
+	{
+		if(!$this->caCertRequested) {
+
+			try {
+				$client = new Zend_Http_Client('http://ui.codisto.com/codisto.crt');
+				$caResponse = $client->request('GET');
+
+				if(!$caResponse->isError()) {
+
+					$file = new Varien_Io_File();
+
+					$codistoPath = Mage::getBaseDir('var') . '/codisto/';
+
+					$file->checkAndCreateFolder($codistoPath, 0777);
+
+					file_put_contents($codistoPath . 'codisto.crt', $caResponse->getRawBody());
+
+				}
+
+			} catch(Exception $e) {
+
+			}
+
+			$this->caCertRequested = true;
+		}
 	}
 
 	private function phpTest($interpreter, $args, $script)

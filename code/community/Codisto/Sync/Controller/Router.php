@@ -20,8 +20,6 @@
 
 class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_Admin {
 
-	private $caCertRequested = false;
-
 	private function registerMerchant(Zend_Controller_Request_Http $request)
 	{
 		$merchantID = null;
@@ -408,7 +406,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 						if(preg_match('/server\s+certificate\s+verification\s+failed/', $exception->getMessage())) {
 
 							if(!array_key_exists(CURLOPT_CAINFO, $curlOptions)) {
-								$this->getCACert();
+								Mage::helper('codistosync')->getCACert();
 
 								if(is_file($curlCA)) {
 									$curlOptions[CURLOPT_CAINFO] = $curlCA;
@@ -537,35 +535,5 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			$headers = array_merge($headers, $extra);
 		}
 		return $headers;
-	}
-
-	private function getCACert()
-	{
-		if(!$this->caCertRequested) {
-
-			try {
-				$client = new Zend_Http_Client('http://ui.codisto.com/codisto.crt');
-				$caResponse = $client->request('GET');
-
-				if(!$caResponse->isError()) {
-
-					$file = new Varien_Io_File();
-
-					$codistoPath = Mage::getBaseDir('var') . '/codisto/';
-
-					$file->checkAndCreateFolder($codistoPath, 0777);
-
-					file_put_contents($codistoPath . 'codisto.crt', $caResponse->getRawBody());
-
-				}
-
-			} catch(Exception $e) {
-
-			}
-
-			$this->caCertRequested = true;
-
-		}
-
 	}
 }
