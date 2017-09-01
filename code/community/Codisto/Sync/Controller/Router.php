@@ -349,7 +349,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 
 				$curlCA = Mage::getBaseDir('var') . '/codisto/codisto.crt';
 				if(is_file($curlCA)) {
-					$curlOptions[CURLOPT_CAPATH] = $curlCA;
+					$curlOptions[CURLOPT_CAINFO] = $curlCA;
 				}
 
 				// proxy request
@@ -407,7 +407,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					{
 						if(preg_match('/server\s+certificate\s+verification\s+failed/', $exception->getMessage())) {
 
-							if(!array_key_exists(CURLOPT_CAPATH, $curlOptions)) {
+							if(!array_key_exists(CURLOPT_CAINFO, $curlOptions)) {
 								$this->getCACert();
 							}
 
