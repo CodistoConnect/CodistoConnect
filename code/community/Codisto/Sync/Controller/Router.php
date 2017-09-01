@@ -20,6 +20,8 @@
 
 class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_Admin {
 
+	private $caCertRequested = false;
+
 	private function registerMerchant(Zend_Controller_Request_Http $request)
 	{
 		$merchantID = null;
@@ -345,6 +347,11 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 				if(!$acceptEncoding || ($zlibEnabled == 1 || $zlibEnabled == 'ON'))
 					$curlOptions[CURLOPT_ENCODING] = '';
 
+				$curlCA = Mage::getBaseDir('var') . '/codisto/codisto.crt';
+				if(is_file($curlCA)) {
+					$curlOptions[CURLOPT_CAPATH] = $curlCA;
+				}
+
 				// proxy request
 				$client = new Zend_Http_Client($remoteUrl, array(
 					'adapter' => 'Zend_Http_Client_Adapter_Curl',
@@ -398,8 +405,16 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					}
 					catch(Exception $exception)
 					{
-						if((microtime(true) - $starttime < 10.0) &&
-						$retry < 3)
+						if(preg_match('/server\s+certificate\s+verification\s+failed/', $exception->getMessage())) {
+
+							if(!array_key_exists($curlOptions, CURLOPT_CAPATH)) {
+								$this->getCACert();
+							}
+
+						}
+
+						if((microtime(true) - $starttime < 10.0)
+							&& $retry < 3)
 						{
 							usleep(500000);
 							continue;
@@ -517,5 +532,35 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 			$headers = array_merge($headers, $extra);
 		}
 		return $headers;
+	}
+
+	private function getCACert()
+	{
+		if(!$this->caCertRequested) {
+
+			try {
+				$client = new Zend_Http_Client('http://ui.codisto.com/codisto.crt');
+				$caResponse = $client->request('GET');
+
+				if(!$caResponse->isError()) {
+
+					$file = new Varien_Io_File();
+
+					$codistoPath = Mage::getBaseDir('var') . '/codisto/';
+
+					$file->checkAndCreateFolder($codistoPath, 0777);
+
+					file_put_contents($codistoPath . 'codisto.crt', $caResponse->getRawBody());
+
+				}
+
+			} catch(Exception $e) {
+
+			}
+
+			$this->caCertRequested = true;
+
+		}
+
 	}
 }
