@@ -407,7 +407,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
 					{
 						if(preg_match('/server\s+certificate\s+verification\s+failed/', $exception->getMessage())) {
 
-							if(!array_key_exists($curlOptions, CURLOPT_CAPATH)) {
+							if(!array_key_exists(CURLOPT_CAPATH, $curlOptions)) {
 								$this->getCACert();
 							}
 
