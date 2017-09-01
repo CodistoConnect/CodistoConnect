@@ -863,15 +863,28 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $order->setBaseTaxAmount($ordertaxtotal);
         $order->setTaxAmount($ordertaxtotal);
 
-
         $order->setDiscountAmount(0.0);
         $order->setShippingDiscountAmount(0.0);
         $order->setBaseShippingDiscountAmount(0.0);
 
-        $order->setBaseHiddenTaxAmount(0.0);
-        $order->setHiddenTaxAmount(0.0);
-        $order->setBaseHiddenShippingTaxAmnt(0.0);
-        $order->setHiddenShippingTaxAmount(0.0);
+        $priceincludestax = Mage::getStoreConfig('tax/calculation/price_includes_tax', $store);
+        $shippingincludestax = Mage::getStoreConfig('tax/calculation/shipping_includes_tax', $store);
+
+        if($priceincludestax != 0) {
+            $order->setBaseHiddenTaxAmount($ordertaxtotal);
+            $order->setHiddenTaxAmount($ordertaxtotal);
+        } else {
+            $order->setBaseHiddenTaxAmount(0.0);
+            $order->setHiddenTaxAmount(0.0);
+        }
+
+        if($shippingincludestax != 0) {
+            $order->setBaseHiddenShippingTaxAmnt($freighttax);
+            $order->setHiddenShippingTaxAmount($freighttax);
+        } else {
+            $order->setBaseHiddenShippingTaxAmnt(0.0);
+            $order->setHiddenShippingTaxAmount(0.0);
+        }
 
         $order->setBaseGrandTotal($ordertotal);
         $order->setGrandTotal($ordertotal);
@@ -992,7 +1005,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
         Mage::dispatchEvent('sales_model_service_quote_submit_success', array('order'=>$order, 'quote'=>$quote));
         Mage::dispatchEvent('sales_model_service_quote_submit_after', array('order'=>$order, 'quote'=>$quote));
-
 
         if($ordercontent->paymentstatus == 'complete')
         {
@@ -1115,6 +1127,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $freighttax = 0.0;
         $taxpercent =  0.0;
         $taxrate =  1.0;
+        $shippingDescription = null;
 
         foreach($ordercontent->orderlines->orderline as $orderline)
         {
@@ -2181,6 +2194,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
     private function end()
     {
         $r = new Codisto_Sync_Controller_Response_Http();
-        $r->sendHeadersAndExit();
+        $r->finish();
     }
 }

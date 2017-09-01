@@ -1071,7 +1071,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
     private function end()
     {
         $r = new Codisto_Sync_Controller_Response_Http();
-        $r->sendHeadersAndExit();
+        $r->finish();
     }
 
 
