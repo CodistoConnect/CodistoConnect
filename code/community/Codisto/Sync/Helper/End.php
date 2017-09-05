@@ -18,7 +18,7 @@
 * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
 */
 
-class Codisto_Sync_Controller_Response_Http extends Zend_ProgressBar_Adapter_JsPull {
+class Codisto_Sync_Helper_End extends Zend_ProgressBar_Adapter_JsPull {
 
     public function finish()
     {
