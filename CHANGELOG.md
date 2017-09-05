@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.91.10](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.10) (2017-09-05)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.9...1.91.10)
+
+**Merged pull requests:**
+
+- Magento Extension Quality Program Improvements [\#403](https://github.com/CodistoConnect/CodistoConnect/pull/403) ([jlivas](https://github.com/jlivas))
+
 ## [1.91.9](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.9) (2017-08-09)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.8...1.91.9)
 
