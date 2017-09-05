@@ -24,53 +24,53 @@ $reindexRequired = true;
 
 if(!isset($MerchantID) || !isset($HostKey))
 {
-	$request = Mage::app()->getRequest();
-	$createMerchant = false;
-	$path = $request->getPathInfo();
+    $request = Mage::app()->getRequest();
+    $createMerchant = false;
+    $path = $request->getPathInfo();
 
-	if(!preg_match('/\/codisto-sync\//', $path))
-	{
-		try
-		{
+    if(!preg_match('/\/codisto-sync\//', $path))
+    {
+        try
+        {
 
-			if(!extension_loaded('pdo'))
-			{
-				throw new Exception('(PHP Data Objects) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>', 999);
-			}
+            if(!extension_loaded('pdo'))
+            {
+                throw new Exception('(PHP Data Objects) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>', 999);
+            }
 
-			if(!in_array("sqlite",PDO::getAvailableDrivers(), TRUE))
-			{
-				throw new PDOException('(sqlite PDO Driver) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>', 999);
-			}
+            if(!in_array("sqlite",PDO::getAvailableDrivers(), TRUE))
+            {
+                throw new PDOException('(sqlite PDO Driver) please refer to <a target="#blank" href="http://help.codisto.com/article/64-what-is-pdoexception-could-not-find-driver">Codisto help article</a>', 999);
+            }
 
-			//Can this request create a new merchant ?
-			$createMerchant  = Mage::helper('codistosync')->createMerchantwithLock(20.0);
+            //Can this request create a new merchant ?
+            $createMerchant  = Mage::helper('codistosync')->createMerchantwithLock(20.0);
 
-		}
+        }
 
-		//Something else happened such as PDO related exception
-		catch(Exception $e)
-		{
-			//If competing requests are coming in as the extension is installed the lock above will be held ... don't report this back to Codisto .
-			if($e->getCode() != "HY000")
-			{
-				//Otherwise report  other exception details to Codisto regarding register
-				Mage::helper('codistosync')->logExceptionCodisto($e, "https://ui.codisto.com/installed");
-			}
-		}
+        //Something else happened such as PDO related exception
+        catch(Exception $e)
+        {
+            //If competing requests are coming in as the extension is installed the lock above will be held ... don't report this back to Codisto .
+            if($e->getCode() != "HY000")
+            {
+                //Otherwise report  other exception details to Codisto regarding register
+                Mage::helper('codistosync')->logExceptionCodisto($e, "https://ui.codisto.com/installed");
+            }
+        }
 
-		$reindexRequired = false;
+        $reindexRequired = false;
 
-		if($createMerchant)
-		{
-			//If a merchant was succesfully created  (a MerchantID was returned) then re-index.
-			$MerchantID = Mage::helper('codistosync')->registerMerchant($request);
-			$reindexRequired = $MerchantID;
-		}
-	}
+        if($createMerchant)
+        {
+            //If a merchant was succesfully created  (a MerchantID was returned) then re-index.
+            $MerchantID = Mage::helper('codistosync')->registerMerchant($request);
+            $reindexRequired = $MerchantID;
+        }
+    }
 }
 
 if($reindexRequired)
 {
-	Mage::helper('codistosync')->eBayReIndex();
+    Mage::helper('codistosync')->eBayReIndex();
 }
