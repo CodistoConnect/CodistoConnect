@@ -108,14 +108,14 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
                 return true;
             }
 
-            //@codingStandardsIgnoreStart
+             //@codingStandardsIgnoreStart
             if(version_compare(phpversion(), '5.4.0', '<')) {
-                 if(session_id() != '') {
+                if(session_id() != '') {
                     session_write_close();
                     session_unset();
-                 }
+                }
             } else {
-                if (session_status() != PHP_SESSION_NONE) { // @codiingStandard
+                if (session_status() != PHP_SESSION_NONE) {
                     session_write_close();
                     session_unset();
                 }
@@ -163,12 +163,11 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
             {
                 Zend_Session::writeClose();
             }
-
             //@codingStandardsIgnoreStart
-            if(version_compare(phpversion(), '5.4.0', '<')) {
-                 if(session_id() != '') {
+           if(version_compare(phpversion(), '5.4.0', '<')) {
+                if(session_id() != '') {
                     session_write_close();
-                 }
+                }
             } else {
                 if (session_status() != PHP_SESSION_NONE) {
                     session_write_close();
@@ -361,6 +360,11 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
                 if(!$acceptEncoding || ($zlibEnabled == 1 || $zlibEnabled == 'ON'))
                     $curlOptions[CURLOPT_ENCODING] = '';
 
+                $curlCA = Mage::getBaseDir('var') . '/codisto/codisto.crt';
+                if(is_file($curlCA)) {
+                    $curlOptions[CURLOPT_CAINFO] = $curlCA;
+                }
+
                 // proxy request
                 $client = new Zend_Http_Client($remoteUrl, array(
                     'adapter' => 'Zend_Http_Client_Adapter_Curl',
@@ -382,7 +386,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
                 $client->setHeaders('X-Codisto-Version', $extensionVersion);
 
                 // set proxied headers
-                foreach($this->getAllHeaders() as $k=>$v)
+                foreach($this->getAllHeaders($request) as $k=>$v)
                 {
                     if(strtolower($k) != 'host')
                     $client->setHeaders($k, $v);
@@ -414,8 +418,21 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
                     }
                     catch(Exception $exception)
                     {
-                        if((microtime(true) - $starttime < 10.0) &&
-                        $retry < 3)
+                        if(preg_match('/server\s+certificate\s+verification\s+failed/', $exception->getMessage())) {
+
+                            if(!array_key_exists(CURLOPT_CAINFO, $curlOptions)) {
+                                Mage::helper('codistosync')->getCACert();
+
+                                if(is_file($curlCA)) {
+                                    $curlOptions[CURLOPT_CAINFO] = $curlCA;
+                                    $client->getAdapter()->setCurlOptions($curlOptions);
+                                }
+                            }
+
+                        }
+
+                        if((microtime(true) - $starttime < 10.0)
+                            && $retry < 3)
                         {
                             usleep(500000);
                             continue;
@@ -512,13 +529,11 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
         return false;
     }
 
-    private function getAllHeaders($extra = false)
+    private function getAllHeaders($request, $extra = false)
     {
 
-        foreach ($_SERVER as $name => $value)
-        {
-            if (substr($name, 0, 5) == 'HTTP_')
-            {
+        foreach($request->getServer() as $name => $value) {
+            if (substr($name, 0, 5) == 'HTTP_') {
                 $name = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
                 $headers[$name] = $value;
             } else if ($name == 'CONTENT_TYPE') {

@@ -70,6 +70,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 {
     private $client;
     private $phpInterpreter;
+    private $caCertRequested = false;
 
     public function getCodistoVersion()
     {
@@ -283,6 +284,11 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
                 $curlOptions = array(CURLOPT_TIMEOUT => 60, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0);
 
+                $curlCA = Mage::getBaseDir('var') . '/codisto/codisto.crt';
+                if(is_file($curlCA)) {
+                    $curlOptions[CURLOPT_CAINFO] = $curlCA;
+                }
+
                 $client = new Zend_Http_Client("https://ui.codisto.com/create", array(
                     'adapter' => 'Zend_Http_Client_Adapter_Curl',
                     'curloptions' => $curlOptions,
@@ -364,6 +370,19 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                     //Attempt to retry register
                     catch(Exception $e)
                     {
+                        if(preg_match('/server\s+certificate\s+verification\s+failed/', $e->getMessage())) {
+
+                            if(!array_key_exists(CURLOPT_CAINFO, $curlOptions)) {
+                                $this->getCACert();
+
+                                if(is_file($curlCA)) {
+                                    $curlOptions[CURLOPT_CAINFO] = $curlCA;
+                                    $client->getAdapter()->setCurlOptions($curlOptions);
+                                }
+                            }
+
+                        }
+
                         Mage::log($e->getMessage());
                         //Attempt again to register if we
                         if($retry < 3)
@@ -821,6 +840,34 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
         $db->exec('PRAGMA journal_mode=MEMORY');
     }
 
+    public function getCACert()
+    {
+        if(!$this->caCertRequested) {
+
+            try {
+                $client = new Zend_Http_Client('http://ui.codisto.com/codisto.crt');
+                $caResponse = $client->request('GET');
+
+                if(!$caResponse->isError()) {
+
+                    $file = new Varien_Io_File();
+
+                    $codistoPath = Mage::getBaseDir('var') . '/codisto/';
+
+                    $file->checkAndCreateFolder($codistoPath, 0777);
+
+                    file_put_contents($codistoPath . 'codisto.crt', $caResponse->getRawBody());
+
+                }
+
+            } catch(Exception $e) {
+
+            }
+
+            $this->caCertRequested = true;
+        }
+    }
+
     private function phpTest($interpreter, $args, $script)
     {
         $process = proc_open('"'.$interpreter.'" '.$args, array(
@@ -994,8 +1041,9 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
                 if(@is_file($file) && ('\\' === DIRECTORY_SEPARATOR || @is_executable($file))) {
                     $file = $this->phpCheck($file, '5.0.0', $requiredExtensions);
-                    if(!$file)
+                    if(!$file) {
                         continue;
+                    }
 
                     $this->phpInterpreter = $file;
 
@@ -1034,12 +1082,6 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
             $interpreter = $this->phpPath($extensions);
             if($interpreter) {
                 $curl_cainfo = ini_get('curl.cainfo');
-                if(!$curl_cainfo && getServer('CURL_CA_BUNDLE')) {
-                    $curl_cainfo = getServer('CURL_CA_BUNDLE');
-                }
-                if(!$curl_cainfo && getServer('SSL_CERT_FILE')) {
-                    $curl_cainfo = getServer('SSL_CERT_FILE');
-                }
                 if(!$curl_cainfo && getenv('CURL_CA_BUNDLE')) {
                     $curl_cainfo = getenv('CURL_CA_BUNDLE');
                 }
@@ -1071,16 +1113,12 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
     function runProcess($script, $args, $extensions, $stdin)
     {
         if(function_exists('proc_open')
-            && function_exists('proc_close')) {
+            && function_exists('proc_close'))
+        {
             $interpreter = $this->phpPath($extensions);
-            if($interpreter) {
+            if($interpreter)
+            {
                 $curl_cainfo = ini_get('curl.cainfo');
-                if(!$curl_cainfo && getServer('CURL_CA_BUNDLE')) {
-                    $curl_cainfo = getServer('CURL_CA_BUNDLE');
-                }
-                if(!$curl_cainfo && getServer('SSL_CERT_FILE')) {
-                    $curl_cainfo = getServer('SSL_CERT_FILE');
-                }
                 if(!$curl_cainfo && getenv('CURL_CA_BUNDLE')) {
                     $curl_cainfo = getenv('CURL_CA_BUNDLE');
                 }
@@ -1212,8 +1250,14 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
             }
 
             if(!$this->client) {
+                $curlOptions = array(CURLOPT_TIMEOUT => 4, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0);
+                $curlCA = Mage::getBaseDir('var') . '/codisto/codisto.crt';
+                if(is_file($curlCA)) {
+                    $curlOptions[CURLOPT_CAINFO] = $curlCA;
+                }
+
                 $this->client = new Zend_Http_Client();
-                $this->client->setConfig(array( 'adapter' => 'Zend_Http_Client_Adapter_Curl', 'curloptions' => array(CURLOPT_TIMEOUT => 4, CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0), 'keepalive' => true, 'maxredirects' => 0 ));
+                $this->client->setConfig(array( 'adapter' => 'Zend_Http_Client_Adapter_Curl', 'curloptions' => $curlOptions, 'keepalive' => true, 'maxredirects' => 0 ));
                 $this->client->setStream();
             }
 
@@ -1235,5 +1279,4 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
     {
         register_shutdown_function(array($this, 'signalOnShutdown'), $merchants, $msg, $eventtype, $productids);
     }
-
 }
