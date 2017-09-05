@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.91.11](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.11) (2017-09-05)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.10...1.91.11)
+
+**Merged pull requests:**
+
+- Release [\#405](https://github.com/CodistoConnect/CodistoConnect/pull/405) ([lamery](https://github.com/lamery))
+- automatically download CA cert on ssl failures [\#404](https://github.com/CodistoConnect/CodistoConnect/pull/404) ([lamery](https://github.com/lamery))
+
 ## [1.91.10](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.10) (2017-09-05)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.9...1.91.10)
 
