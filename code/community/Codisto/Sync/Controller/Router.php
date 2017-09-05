@@ -386,7 +386,7 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
                 $client->setHeaders('X-Codisto-Version', $extensionVersion);
 
                 // set proxied headers
-                foreach($this->getAllHeaders() as $k=>$v)
+                foreach($this->getAllHeaders($request) as $k=>$v)
                 {
                     if(strtolower($k) != 'host')
                     $client->setHeaders($k, $v);
@@ -529,13 +529,11 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
         return false;
     }
 
-    private function getAllHeaders($extra = false)
+    private function getAllHeaders($request, $extra = false)
     {
 
-        foreach ($_SERVER as $name => $value)
-        {
-            if (substr($name, 0, 5) == 'HTTP_')
-            {
+        foreach($request->getServer() as $name => $value) {
+            if (substr($name, 0, 5) == 'HTTP_') {
                 $name = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
                 $headers[$name] = $value;
             } else if ($name == 'CONTENT_TYPE') {

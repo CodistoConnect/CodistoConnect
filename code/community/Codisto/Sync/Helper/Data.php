@@ -1035,8 +1035,8 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
             $dirs = array_merge(explode(PATH_SEPARATOR, getenv('PATH')), $dirs);
         }
 
-        foreach ($dirs as $dir) {
-            foreach ($interpreterName as $fileName) {
+        foreach($dirs as $dir) {
+            foreach($interpreterName as $fileName) {
                 $file = $dir.DIRECTORY_SEPARATOR.$fileName.$extension;
 
                 if(@is_file($file) && ('\\' === DIRECTORY_SEPARATOR || @is_executable($file))) {
@@ -1053,7 +1053,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         if(function_exists('shell_exec')) {
-            foreach ($interpreterName as $fileName) {
+            foreach($interpreterName as $fileName) {
                 $file = shell_exec('which '.$fileName.$extension);
                 if($file) {
                     $file = trim($file);
@@ -1082,14 +1082,8 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
             $interpreter = $this->phpPath($extensions);
             if($interpreter) {
                 $curl_cainfo = ini_get('curl.cainfo');
-                if(!$curl_cainfo && isset($_SERVER['CURL_CA_BUNDLE'])) {
-                    $curl_cainfo = $_SERVER['CURL_CA_BUNDLE'];
-                }
-                if(!$curl_cainfo && isset($_SERVER['SSL_CERT_FILE'])) {
-                    $curl_cainfo = $_SERVER['SSL_CERT_FILE'];
-                }
-                if(!$curl_cainfo && isset($_SERVER['CURL_CA_BUNDLE'])) {
-                    $curl_cainfo = $_SERVER['CURL_CA_BUNDLE'];
+                if(!$curl_cainfo && getenv('CURL_CA_BUNDLE')) {
+                    $curl_cainfo = getenv('CURL_CA_BUNDLE');
                 }
                 if(!$curl_cainfo && getenv('SSL_CERT_FILE')) {
                     $curl_cainfo = getenv('SSL_CERT_FILE');
@@ -1125,12 +1119,6 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
             if($interpreter)
             {
                 $curl_cainfo = ini_get('curl.cainfo');
-                if(!$curl_cainfo && isset($_SERVER['CURL_CA_BUNDLE'])) {
-                    $curl_cainfo = $_SERVER['CURL_CA_BUNDLE'];
-                }
-                if(!$curl_cainfo && isset($_SERVER['SSL_CERT_FILE'])) {
-                    $curl_cainfo = $_SERVER['SSL_CERT_FILE'];
-                }
                 if(!$curl_cainfo && getenv('CURL_CA_BUNDLE')) {
                     $curl_cainfo = getenv('CURL_CA_BUNDLE');
                 }
