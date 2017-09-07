@@ -1,5 +1,8 @@
 # Change Log
 
+## [1.91.12](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.12) (2017-09-07)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.11...1.91.12)
+
 ## [1.91.11](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.11) (2017-09-05)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.10...1.91.11)
 
