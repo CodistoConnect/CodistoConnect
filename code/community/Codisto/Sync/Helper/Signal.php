@@ -13,7 +13,7 @@ $curlCA = Mage::getBaseDir('var') . '/codisto/codisto.crt';
 if(is_file($curlCA)) {
 	$curlOptions[CURLOPT_CAINFO] = $curlCA;
 }
-else if(getenv['CURL_CA_BUNDLE'])
+else if(getenv('CURL_CA_BUNDLE'))
 {
 	$curlOptions[CURLOPT_CAINFO] = getenv['CURL_CA_BUNDLE'];
 }
