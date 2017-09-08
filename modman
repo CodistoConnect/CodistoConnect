@@ -1,4 +1,4 @@
-# Codisto Connect modman configuration
+# Codisto LINQ modman configuration
 code/community/Codisto					app/code/community/Codisto/
 design/ebay/README			app/design/ebay/README
 etc/modules/Codisto_Sync.xml          app/etc/modules/Codisto_Sync.xml

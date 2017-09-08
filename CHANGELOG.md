@@ -1,5 +1,53 @@
 # Change Log
 
+## [1.91.12](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.12) (2017-09-07)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.11...1.91.12)
+
+## [1.91.11](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.11) (2017-09-05)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.10...1.91.11)
+
+**Merged pull requests:**
+
+- Release [\#405](https://github.com/CodistoConnect/CodistoConnect/pull/405) ([lamery](https://github.com/lamery))
+- automatically download CA cert on ssl failures [\#404](https://github.com/CodistoConnect/CodistoConnect/pull/404) ([lamery](https://github.com/lamery))
+
+## [1.91.10](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.10) (2017-09-05)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.9...1.91.10)
+
+**Merged pull requests:**
+
+- Magento Extension Quality Program Improvements [\#403](https://github.com/CodistoConnect/CodistoConnect/pull/403) ([jlivas](https://github.com/jlivas))
+
+## [1.91.9](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.9) (2017-08-09)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.8...1.91.9)
+
+**Merged pull requests:**
+
+- Release [\#402](https://github.com/CodistoConnect/CodistoConnect/pull/402) ([jlivas](https://github.com/jlivas))
+- amazon order id order format support [\#401](https://github.com/CodistoConnect/CodistoConnect/pull/401) ([jlivas](https://github.com/jlivas))
+
+## [1.91.8](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.8) (2017-07-23)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.7...1.91.8)
+
+**Merged pull requests:**
+
+- Release [\#400](https://github.com/CodistoConnect/CodistoConnect/pull/400) ([jlivas](https://github.com/jlivas))
+- add checkout message to status history [\#399](https://github.com/CodistoConnect/CodistoConnect/pull/399) ([jlivas](https://github.com/jlivas))
+- switch name of payment method model string to avoid conflicts [\#394](https://github.com/CodistoConnect/CodistoConnect/pull/394) ([lamery](https://github.com/lamery))
+
+## [1.91.7](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.7) (2017-07-21)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.6...1.91.7)
+
+## [1.91.6](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.6) (2017-07-20)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.5...1.91.6)
+
+## [1.91.5](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.5) (2017-07-13)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.4...1.91.5)
+
+**Merged pull requests:**
+
+- Release [\#398](https://github.com/CodistoConnect/CodistoConnect/pull/398) ([jlivas](https://github.com/jlivas))
+
 ## [1.91.4](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.4) (2017-06-30)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.3...1.91.4)
 
@@ -213,6 +261,7 @@
 - Release [\#344](https://github.com/CodistoConnect/CodistoConnect/pull/344) ([lamery](https://github.com/lamery))
 - clear payment amount due to updateTotals doubling base\_amountpaid and… [\#343](https://github.com/CodistoConnect/CodistoConnect/pull/343) ([lamery](https://github.com/lamery))
 - set free method weight [\#342](https://github.com/CodistoConnect/CodistoConnect/pull/342) ([jlivas](https://github.com/jlivas))
+- change register message [\#339](https://github.com/CodistoConnect/CodistoConnect/pull/339) ([jlivas](https://github.com/jlivas))
 
 ## [1.90.5](https://github.com/CodistoConnect/CodistoConnect/tree/1.90.5) (2016-06-30)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.90.4...1.90.5)

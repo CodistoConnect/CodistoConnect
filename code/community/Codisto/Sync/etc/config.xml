@@ -13,287 +13,287 @@
  * obtain it through the world-wide-web, please send an email
  * to license@magentocommerce.com so we can send you a copy immediately.
  *
- * @category	Codisto
- * @package		Codisto_Sync
- * @copyright	Copyright (c) 2015 On Technology Pty. Ltd. (http://codisto.com/)
- * @license		http://opensource.org/licenses/osl-3.0.php	Open Software License (OSL 3.0)
+ * @category    Codisto
+ * @package     Codisto_Sync
+ * @copyright   Copyright (c) 2015 On Technology Pty. Ltd. (http://codisto.com/)
+ * @license     http://opensource.org/licenses/osl-3.0.php    Open Software License (OSL 3.0)
  */
  -->
 
 <config>
-	<modules>
-		<Codisto_Sync>
-			<version>1.91.4</version>
-			<depends>
-				<Mage_Payment/>
-			</depends>
-		</Codisto_Sync>
-	</modules>
+    <modules>
+        <Codisto_Sync>
+            <version>1.91.12</version>
+            <depends>
+                <Mage_Payment/>
+            </depends>
+        </Codisto_Sync>
+    </modules>
 
-	<frontend>
-		<routers>
-			<codisto-sync>
-				<use>standard</use>
-				<args>
-					<module>Codisto_Sync</module>
-					<frontName>codisto-sync</frontName>
-				</args>
-			</codisto-sync>
-		</routers>
-	</frontend>
+    <frontend>
+        <routers>
+            <codisto-sync>
+                <use>standard</use>
+                <args>
+                    <module>Codisto_Sync</module>
+                    <frontName>codisto-sync</frontName>
+                </args>
+            </codisto-sync>
+        </routers>
+    </frontend>
 
-	<adminhtml>
-		<events>
-			<controller_action_layout_generate_blocks_after>
-				<observers>
-					<codisto>
-						<type>singleton</type>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>addScript</method>
-					</codisto>
-				</observers>
-			</controller_action_layout_generate_blocks_after>
-		</events>
-	</adminhtml>
+    <adminhtml>
+        <events>
+            <controller_action_layout_generate_blocks_after>
+                <observers>
+                    <codisto>
+                        <type>singleton</type>
+                        <class>Codisto_Sync_Model_Observer</class>
+                        <method>addScript</method>
+                    </codisto>
+                </observers>
+            </controller_action_layout_generate_blocks_after>
+        </events>
+    </adminhtml>
 
-	<crontab>
-		<jobs>
-			<Codisto_Sync>
-				<schedule>
-					<cron_expr>*/10 * * * *</cron_expr>
-				</schedule>
-				<run>
-					<model>codistosync/observer::cronSync</model>
-				</run>
-			</Codisto_Sync>
-		</jobs>
-	</crontab>
+    <crontab>
+        <jobs>
+            <Codisto_Sync>
+                <schedule>
+                    <cron_expr>*/10 * * * *</cron_expr>
+                </schedule>
+                <run>
+                    <model>codistosync/observer::cronSync</model>
+                </run>
+            </Codisto_Sync>
+        </jobs>
+    </crontab>
 
-	<global>
+    <global>
 
-		<ignore_user_agents>
-			<codisto_connect>CodistoConnect/1.0</codisto_connect>
-		</ignore_user_agents>
+        <ignore_user_agents>
+            <codisto_connect>CodistoConnect/1.0</codisto_connect>
+        </ignore_user_agents>
 
-		<models>
-			<codistosync>
-				<class>Codisto_Sync_Model</class>
-			</codistosync>
+        <models>
+            <codistosync>
+                <class>Codisto_Sync_Model</class>
+            </codistosync>
 
-			<ebaypayment>
-				<class>Codisto_Sync_Ebaypayment_Model</class>
-			</ebaypayment>
-		</models>
+            <codistoebaypayment>
+                <class>Codisto_Sync_Ebaypayment_Model</class>
+            </codistoebaypayment>
+        </models>
 
-		<blocks>
-			<codisto><class>Codisto_Sync_Block</class></codisto>
-		</blocks>
+        <blocks>
+            <codisto><class>Codisto_Sync_Block</class></codisto>
+        </blocks>
 
-		<events>
-			<payment_info_block_prepare_specific_information>
-				<observers>
-					<codisto>
-						<type>singleton</type>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>paymentInfoBlockPrepareSpecificInformation</method>
-					</codisto>
-				</observers>
-			</payment_info_block_prepare_specific_information>
+        <events>
+            <payment_info_block_prepare_specific_information>
+                <observers>
+                    <codisto>
+                        <type>singleton</type>
+                        <class>Codisto_Sync_Model_Observer</class>
+                        <method>paymentInfoBlockPrepareSpecificInformation</method>
+                    </codisto>
+                </observers>
+            </payment_info_block_prepare_specific_information>
 
-			<catalogrule_after_apply>
-				<observers>
-					<codisto>
-						<type>singleton</type>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>catalogRuleAfterApply</method>
-					</codisto>
-				</observers>
-			</catalogrule_after_apply>
+            <catalogrule_after_apply>
+                <observers>
+                    <codisto>
+                        <type>singleton</type>
+                        <class>Codisto_Sync_Model_Observer</class>
+                        <method>catalogRuleAfterApply</method>
+                    </codisto>
+                </observers>
+            </catalogrule_after_apply>
 
-			<sales_order_shipment_save_after>
-				<observers>
-					<codisto>
-						<type>singleton</type>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>salesOrderShipmentSaveAfter</method>
-					</codisto>
-				</observers>
-			</sales_order_shipment_save_after>
-			<sales_order_shipment_track_save_after>
-				<observers>
-					<codisto_shipping>
-						<type>singleton</type>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>salesOrderShipmentTrackSaveAfter</method>
-					</codisto_shipping>
-				</observers>
-			</sales_order_shipment_track_save_after>
-			<sales_order_invoice_save_commit_after>
-				<observers>
-					<codisto_save_invoice>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>salesOrderInvoiceSaveAfter</method>
-					</codisto_save_invoice>
-				</observers>
-			</sales_order_invoice_save_commit_after>
+            <sales_order_shipment_save_after>
+                <observers>
+                    <codisto>
+                        <type>singleton</type>
+                        <class>Codisto_Sync_Model_Observer</class>
+                        <method>salesOrderShipmentSaveAfter</method>
+                    </codisto>
+                </observers>
+            </sales_order_shipment_save_after>
+            <sales_order_shipment_track_save_after>
+                <observers>
+                    <codisto_shipping>
+                        <type>singleton</type>
+                        <class>Codisto_Sync_Model_Observer</class>
+                        <method>salesOrderShipmentTrackSaveAfter</method>
+                    </codisto_shipping>
+                </observers>
+            </sales_order_shipment_track_save_after>
+            <sales_order_invoice_save_commit_after>
+                <observers>
+                    <codisto_save_invoice>
+                        <class>Codisto_Sync_Model_Observer</class>
+                        <method>salesOrderInvoiceSaveAfter</method>
+                    </codisto_save_invoice>
+                </observers>
+            </sales_order_invoice_save_commit_after>
 
-			<checkout_submit_all_after>
-				<observers>
-					<codisto_stockmovements>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>checkoutAllSubmitAfter</method>
-					</codisto_stockmovements>
-				</observers>
-			</checkout_submit_all_after>
-			<catalog_product_import_finish_before>
-				<observers>
-					<codisto_stockmovements>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>catalogProductImportFinishBefore</method>
-					</codisto_stockmovements>
-				</observers>
-			</catalog_product_import_finish_before>
+            <checkout_submit_all_after>
+                <observers>
+                    <codisto_stockmovements>
+                        <class>Codisto_Sync_Model_Observer</class>
+                        <method>checkoutAllSubmitAfter</method>
+                    </codisto_stockmovements>
+                </observers>
+            </checkout_submit_all_after>
+            <catalog_product_import_finish_before>
+                <observers>
+                    <codisto_stockmovements>
+                        <class>Codisto_Sync_Model_Observer</class>
+                        <method>catalogProductImportFinishBefore</method>
+                    </codisto_stockmovements>
+                </observers>
+            </catalog_product_import_finish_before>
 
-			<tax_settings_change_after>
-				<observers>
-					<codisto_taxsync>
-						<type>singleton</type>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>taxSettingsChangeAfter</method>
-					</codisto_taxsync>
-				</observers>
-			</tax_settings_change_after>
+            <tax_settings_change_after>
+                <observers>
+                    <codisto_taxsync>
+                        <type>singleton</type>
+                        <class>Codisto_Sync_Model_Observer</class>
+                        <method>taxSettingsChangeAfter</method>
+                    </codisto_taxsync>
+                </observers>
+            </tax_settings_change_after>
 
-			<core_block_abstract_prepare_layout_after>
-				<observers>
-					<codisto_admin>
-						<type>singleton</type>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>addProductTab</method>
-					</codisto_admin>
-				</observers>
-			</core_block_abstract_prepare_layout_after>
+            <core_block_abstract_prepare_layout_after>
+                <observers>
+                    <codisto_admin>
+                        <type>singleton</type>
+                        <class>Codisto_Sync_Model_Observer</class>
+                        <method>addProductTab</method>
+                    </codisto_admin>
+                </observers>
+            </core_block_abstract_prepare_layout_after>
 
-			<core_abstract_save_commit_after>
-				<observers>
-					<codisto_staticblocksync>
-						<type>singleton</type>
-						<class>Codisto_Sync_Model_Observer</class>
-						<method>cmsStaticBlockSaveAfter</method>
-					</codisto_staticblocksync>
-				</observers>
-			</core_abstract_save_commit_after>
-		</events>
+            <core_abstract_save_commit_after>
+                <observers>
+                    <codisto_staticblocksync>
+                        <type>singleton</type>
+                        <class>Codisto_Sync_Model_Observer</class>
+                        <method>cmsStaticBlockSaveAfter</method>
+                    </codisto_staticblocksync>
+                </observers>
+            </core_abstract_save_commit_after>
+        </events>
 
-		<fieldsets>
-			<sales_convert_quote>
-				<codisto_orderid>
-					<to_order>*</to_order>
-				</codisto_orderid>
-			</sales_convert_quote>
-			<sales_convert_order>
-				<codisto_orderid>
-					<to_quote>*</to_quote>
-				</codisto_orderid>
-			</sales_convert_order>
-		</fieldsets>
+        <fieldsets>
+            <sales_convert_quote>
+                <codisto_orderid>
+                    <to_order>*</to_order>
+                </codisto_orderid>
+            </sales_convert_quote>
+            <sales_convert_order>
+                <codisto_orderid>
+                    <to_quote>*</to_quote>
+                </codisto_orderid>
+            </sales_convert_order>
+        </fieldsets>
 
-		<helpers>
-			<codistosync>
-				<class>Codisto_Sync_Helper</class>
-			</codistosync>
-		</helpers>
+        <helpers>
+            <codistosync>
+                <class>Codisto_Sync_Helper</class>
+            </codistosync>
+        </helpers>
 
-		<resources>
-			<codisto_setup>
-				<setup>
-					<module>Codisto_Sync</module>
-					<class>Codisto_Sync_Model_Resource_Mysql4_Setup</class>
-				</setup>
-				<connection>
-					<use>core_setup</use>
-				</connection>
-			</codisto_setup>
-			<Codisto_Sync_write>
-				<connection>
-					<use>local_write</use>
-				</connection>
-			</Codisto_Sync_write>
-			<Codisto_Sync_read>
-				<connection>
-					<use>local_read</use>
-				</connection>
-			</Codisto_Sync_read>
-		</resources>
+        <resources>
+            <codisto_setup>
+                <setup>
+                    <module>Codisto_Sync</module>
+                    <class>Codisto_Sync_Model_Resource_Mysql4_Setup</class>
+                </setup>
+                <connection>
+                    <use>core_setup</use>
+                </connection>
+            </codisto_setup>
+            <Codisto_Sync_write>
+                <connection>
+                    <use>local_write</use>
+                </connection>
+            </Codisto_Sync_write>
+            <Codisto_Sync_read>
+                <connection>
+                    <use>local_read</use>
+                </connection>
+            </Codisto_Sync_read>
+        </resources>
 
-		<index>
-			<indexer>
-					<codistoebayindex>
-						<model>codistosync/indexer_ebay</model>
-					</codistoebayindex>
-			</indexer>
-		</index>
-	</global>
+        <index>
+            <indexer>
+                    <codistoebayindex>
+                        <model>codistosync/indexer_ebay</model>
+                    </codistoebayindex>
+            </indexer>
+        </index>
+    </global>
 
-	<admin>
-		<routers>
-			<adminhtml>
-				<args>
-					<modules>
-						<Codisto_Sync after="Mage_Adminhtml">Codisto_Sync</Codisto_Sync>
-					</modules>
-				</args>
-			</adminhtml>
-			<codisto-sync>
-				<!-- does not leak admin url re: APPSEC-1034 -->
-				<!-- required to allow alternate admin base url to work -->
-				<use>admin</use>
-				<args>
-					<module>Codisto_Sync</module>
-					<frontName>codisto-sync</frontName>
-				</args>
-			</codisto-sync>
-		</routers>
-	</admin>
+    <admin>
+        <routers>
+            <adminhtml>
+                <args>
+                    <modules>
+                        <Codisto_Sync after="Mage_Adminhtml">Codisto_Sync</Codisto_Sync>
+                    </modules>
+                </args>
+            </adminhtml>
+            <codisto-sync>
+                <!-- does not leak admin url re: APPSEC-1034 -->
+                <!-- required to allow alternate admin base url to work -->
+                <use>admin</use>
+                <args>
+                    <module>Codisto_Sync</module>
+                    <frontName>codisto-sync</frontName>
+                </args>
+            </codisto-sync>
+        </routers>
+    </admin>
 
-	<default>
-		<web>
-			<routers>
-				<codisto-sync>
-					<area>admin</area>
-					<class>Codisto_Sync_Controller_Router</class>
-				</codisto-sync>
-			</routers>
-		</web>
+    <default>
+        <web>
+            <routers>
+                <codisto-sync>
+                    <area>admin</area>
+                    <class>Codisto_Sync_Controller_Router</class>
+                </codisto-sync>
+            </routers>
+        </web>
 
-		<payment>
-			<ebay>
-				<active>1</active>
-				<model>ebaypayment/paymentmethod</model>
-				<order_status>pending</order_status>
-				<title>eBay Order</title>
-				<allowspecific>0</allowspecific>
-				<group>offline</group>
-			</ebay>
+        <payment>
+            <ebay>
+                <active>1</active>
+                <model>codistoebaypayment/paymentmethod</model>
+                <order_status>pending</order_status>
+                <title>eBay Order</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </ebay>
 
-			<!-- legacy payment code -->
-			<ebaypayment>
-				<active>1</active>
-				<model>ebaypayment/paymentmethod</model>
-				<order_status>pending</order_status>
-				<title>eBay Order</title>
-				<allowspecific>0</allowspecific>
-				<group>offline</group>
-			</ebaypayment>
-		</payment>
-	</default>
+            <!-- legacy payment code -->
+            <ebaypayment>
+                <active>1</active>
+                <model>codistoebaypayment/paymentmethod</model>
+                <order_status>pending</order_status>
+                <title>eBay Order</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </ebaypayment>
+        </payment>
+    </default>
 
-	<phpunit>
-		<suite>
-			<modules>
-				<Codisto_Sync />
-			</modules>
-		</suite>
-	</phpunit>
+    <phpunit>
+        <suite>
+            <modules>
+                <Codisto_Sync />
+            </modules>
+        </suite>
+    </phpunit>
 
 </config>
