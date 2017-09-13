@@ -751,6 +751,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
                 $orderItem->setRowTotal($subtotal);
                 $orderItem->setRowTotalInclTax($subtotalinctax);
                 $orderItem->setWeeeTaxApplied(serialize(array()));
+                $orderItem->setHiddenTaxAmount(0.0);
+                $orderItem->setBaseHiddenTaxAmount(0.0);
 
                 $order->addItem($orderItem);
 
@@ -845,8 +847,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $ordersubtotalincltax -= $freighttotal;
         $ordertaxtotal -= $freighttax;
 
-        $order->setBaseShippingAmount($freighttotal);
-        $order->setShippingAmount($freighttotal);
+        $order->setBaseShippingAmount($freighttotalextax);
+        $order->setShippingAmount($freighttotalextax);
+
+        $order->setShippingHiddenTaxAmount(0.0);
+        $order->setBaseShippingHiddenTaxAmount(0.0);
 
         $order->setBaseShippingInclTax($freighttotal);
         $order->setShippingInclTax($freighttotal);
@@ -867,24 +872,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $order->setShippingDiscountAmount(0.0);
         $order->setBaseShippingDiscountAmount(0.0);
 
-        $priceincludestax = Mage::getStoreConfig('tax/calculation/price_includes_tax', $store);
-        $shippingincludestax = Mage::getStoreConfig('tax/calculation/shipping_includes_tax', $store);
+        $order->setBaseHiddenTaxAmount(0.0);
+        $order->setHiddenTaxAmount(0.0);
 
-        if($priceincludestax != 0) {
-            $order->setBaseHiddenTaxAmount($ordertaxtotal);
-            $order->setHiddenTaxAmount($ordertaxtotal);
-        } else {
-            $order->setBaseHiddenTaxAmount(0.0);
-            $order->setHiddenTaxAmount(0.0);
-        }
-
-        if($shippingincludestax != 0) {
-            $order->setBaseHiddenShippingTaxAmnt($freighttax);
-            $order->setHiddenShippingTaxAmount($freighttax);
-        } else {
-            $order->setBaseHiddenShippingTaxAmnt(0.0);
-            $order->setHiddenShippingTaxAmount(0.0);
-        }
+        $order->setBaseHiddenShippingTaxAmnt(0.0);
+        $order->setHiddenShippingTaxAmount(0.0);
 
         $order->setBaseGrandTotal($ordertotal);
         $order->setGrandTotal($ordertotal);
@@ -1593,8 +1585,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         {
             if($ordercontent->paymentstatus == 'complete' && $order->canInvoice())
             {
-                $order->setBaseTotalPaid($ordertotal);
-                $order->setTotalPaid($ordertotal);
+                $order->setBaseTotalPaid($ordersubtotal);
+                $order->setTotalPaid($order);
                 $order->setBaseTotalDue(0.0);
                 $order->setTotalDue(0.0);
                 $order->setDue(0.0);
