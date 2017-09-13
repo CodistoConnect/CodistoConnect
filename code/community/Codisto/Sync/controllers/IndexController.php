@@ -1585,8 +1585,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         {
             if($ordercontent->paymentstatus == 'complete' && $order->canInvoice())
             {
-                $order->setBaseTotalPaid($ordersubtotal);
-                $order->setTotalPaid($order);
+                $order->setBaseTotalPaid($ordertotal);
+                $order->setTotalPaid($ordertotal);
                 $order->setBaseTotalDue(0.0);
                 $order->setTotalDue(0.0);
                 $order->setDue(0.0);
