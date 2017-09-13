@@ -1169,8 +1169,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $ordersubtotalincltax -= $freighttotal;
         $ordertaxtotal -= $freighttax;
 
-        $order->setBaseShippingAmount($freighttotal);
-        $order->setShippingAmount($freighttotal);
+        $order->setBaseShippingAmount($freighttotalextax);
+        $order->setShippingAmount($freighttotalextax);
 
         $order->setBaseShippingInclTax($freighttotal);
         $order->setShippingInclTax($freighttotal);
@@ -2172,8 +2172,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $shippingAddress->addShippingRate($freightRate);
         $shippingAddress->setShippingMethod($freightcode);
         $shippingAddress->setShippingDescription($freightcarriertitle.' - '.$freightmethodtitle);
-        $shippingAddress->setShippingAmount($freighttotal);
-        $shippingAddress->setBaseShippingAmount($freighttotal);
+        $shippingAddress->setShippingAmount($freighttotalextax);
+        $shippingAddress->setBaseShippingAmount($freighttotalextax);
         $shippingAddress->save();
     }
 
