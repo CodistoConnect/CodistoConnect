@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.91.13](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.13) (2017-09-13)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.12...1.91.13)
+
+**Merged pull requests:**
+
+- shipping tax adjustments [\#406](https://github.com/CodistoConnect/CodistoConnect/pull/406) ([jlivas](https://github.com/jlivas))
+
 ## [1.91.12](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.12) (2017-09-07)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.11...1.91.12)
 
