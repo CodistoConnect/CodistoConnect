@@ -85,117 +85,50 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
     public function registerAction()
     {
         $request = $this->getRequest();
+        $response = $this->getResponse();
 
-        $form_key = Mage::getSingleton('core/session')->getFormKey();
         $registertemplate;
         $registrationerror = false;
 
-        if ($request->isPost() ||
-                $request->getQuery('action') == 'codisto_create') {
+        try {
+            if($request->isPost()
+                && $request->getPost('action') === 'codisto_create') {
 
-                if($request->isPost())
-                {
-                    $method = $request->getPost('method');
-                    if($method == "email")
-                    {
-                        $emailaddress = $request->getPost('email');
-                    }
-                    else
-                    {
-                        $response = $this->getResponse();
+                $emailaddress = $request->getPost('email');
 
-                        $type = 'magento';
-                        $magentoversion = Mage::getVersion();
-                        $url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
-                        $storeName = Mage::getStoreConfig('general/store_information/name', 0);
-                        $StoreID = 0;
-                        $storeCurrency = Mage::app()->getStore($StoreID)->getCurrentCurrencyCode();
-                        $resellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
-                        if($resellerKey)
-                        {
-                            $resellerKey = intval(trim((string)$resellerKey));
-                        }
-                        else
-                        {
-                            $resellerKey = '0';
-                        }
-                        $codistoVersion = Mage::getConfig()->getNode()->modules->Codisto_Sync->version;
+                $merchantID = Mage::helper('codistosync')->registerMerchant($emailaddress);
 
-                        $this->_redirectUrl(
-                                'https://ui.codisto.com/register?finalurl='.
-                                urlencode(Mage::helper('core/url')->getCurrentUrl().'?action=codisto_create').
-                                '&type='.urlencode($type).
-                                '&version='.urlencode($magentoversion).
-                                '&url='.urlencode($url).
-                                '&storename='.urlencode($storeName).
-                                '&storecurrency='.urlencode($storeCurrency).
-                                '&resellerkey='.urlencode($resellerKey).
-                                '&codistoversion='.urlencode($codistoVersion)
-                        );
-                    }
-                }
-                else
-                {
-                    // eBay auth return
-                    $method = "ebay";
-                    $regtoken = $request->getQuery('regtoken');
-                }
-
-                try
-                {
-                    $merchantID = null;
-                    $createMerchant = false;
-                    try
-                    {
-                        $createMerchant = Mage::helper('codistosync')->createMerchantwithLock(5.0);
-                    }
-                    //Something else happened such as PDO related exception
-                    catch(Exception $e)
-                    {
-                        // Report exception details to Codisto regarding register
-                        Mage::helper('codistosync')->logExceptionCodisto($e, "https://ui.codisto.com/installed");
-                        throw $e;
-                    }
-                    if($createMerchant)
-                    {
-                        $merchantID = Mage::helper('codistosync')->registerMerchant($method, $emailaddress, $regtoken);
-                    }
-                    if($merchantID)
-                    {
-                        $merchantID = Zend_Json::decode($merchantID);
-                        $this->_redirectUrl(Mage::getModel('adminhtml/url')->getUrl('/codisto/index'));
-                    }
-                }
-                catch(Exception $e)
-                {
-                    if($e->getCode() == 999)
-                    {
-                        $registrationerror = true;
-                        $registrationerrortext = <<<EOT
-                        <h1>Unable to Register</h1><p>Sorry, we were unable to register your Codisto account,
-                        your Magento installation is missing a required Pre-requisite' . $e->getMessage() .
-                        ' or contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p>
-EOT;
-                    }
-                    else
-                    {
-                        $registrationerror = true;
-                        $registrationerrortext = <<<EOT
-                        <h1>Unable to Register</h1><p>Sorry, we are currently unable to register your Codisto account.
-                        In most cases, this is due to your server configuration being unable to make outbound communication to the Codisto servers.</p>
-                        <p>This is usually easily fixed - please contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p>
-EOT;
-                    }
-                }
-                if($merchantID == null)
-                {
+                if($merchantID == null) {
                     $registrationerror = true;
                     $registrationerrortext = <<<EOT
                     <h1>Unable to Register</h1><p>Sorry, we are currently unable to register your Codisto account.
                     In most cases, this is due to your server configuration being unable to make outbound communication to the Codisto servers.</p>
                     <p>This is usually easily fixed - please contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p>
 EOT;
+                } else {
+
+                    $response->setRedirect(Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/index'), 303);
+                    return true;
+                    
                 }
+            }
+        }
+        catch(Exception $e)
+        {
+            if($e->getCode() == 999)
+            {
+                $registrationerror = true;
+                $registrationerrortext = '<h1>Unable to Register</h1><p>Sorry, we were unable to register your Codisto account,'.
+                'your Magento installation is missing a required Pre-requisite' . htmlspecialchars($e->getMessage()).
+                ' or contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p>';
+            }
+            else
+            {
+                $registrationerror = true;
+                $registrationerrortext = '<h1>Unable to Register</h1><p>Sorry, we are currently unable to register your Codisto account.'.
+                'In most cases, this is due to your server configuration being unable to make outbound communication to the Codisto servers.</p>'.
+                '<p>This is usually easily fixed - please contact <a href="mailto:support@codisto.com">support@codisto.com</a> and our team will help to resolve the issue</p>';
+            }
         }
 
         if(!extension_loaded('pdo'))
@@ -301,11 +234,12 @@ EOT;
             $session = Mage::getSingleton('admin/session');
             // Get the user object from the session
             $user = $session->getUser();
-            if(!$user)
-            {
+            if(!$user) {
                 $user = Mage::getModel('admin/user')->getCollection()->setPageSize(1)->setCurPage(1)->getFirstItem();
             }
-            $email = $user->getEmail();
+            $email = htmlspecialchars($user->getEmail());
+            $registerUrl = htmlspecialchars(Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/register'));
+            $form_key = htmlspecialchars(Mage::getSingleton('core/session')->getFormKey());
 
             $registertemplate = <<<EOT
             <style>
@@ -337,6 +271,7 @@ EOT;
                     padding-left: 15px;
                     font-weight: 500;
                     border-bottom: 1px solid #e5e5e5;
+                    font-size: 26px;
             }
 
 
@@ -370,12 +305,18 @@ EOT;
                     background-color: #fff;
                     padding-top: 20px;
                     padding-bottom: 20px;
+                    margin: 0px;
             }
 
             #create-account-modal .or
             {
                     padding: 20px;
                     text-align: center;
+            }
+
+            #create-account-modal FORM INPUT[type=text]
+            {
+                font-size: 14px;
             }
 
             #create-account-modal .next
@@ -386,6 +327,26 @@ EOT;
             #create-account-modal .next .button
             {
                     width: 80px;
+                    display: inline-block;
+                    text-decoration: none;
+                    font-size: 13px;
+                    line-height: 26px;
+                    height: 28px;
+                    margin: 0;
+                    padding: 0 10px 1px;
+                    cursor: pointer;
+                    border-width: 1px;
+                    border-style: solid;
+                    -webkit-appearance: none;
+                    border-radius: 3px;
+                    white-space: nowrap;
+                    box-sizing: border-box;
+                    background: #0085ba;
+                    border-color: #0073aa #006799 #006799;
+                    box-shadow: 0 1px 0 #006799;
+                    color: #fff;
+                    text-decoration: none;
+                    text-shadow: 0 -1px 1px #006799, 1px 0 1px #006799, 0 1px 1px #006799, -1px 0 1px #006799;
             }
 
             #create-account-modal .footer
@@ -435,11 +396,11 @@ EOT;
             <div id="codisto-control-panel-wrapper">
                 <div id="create-account-modal">
                     <h1>Codisto Connect - Account Creation</h1>
-                    <form method="post" target="_top">
+                    <form method="post" action="$registerUrl" target="_top">
                         <input type="hidden" name="action" value="codisto_create"/>
                         <input type="hidden" name="form_key" value="$form_key"/>
 
-                        <div class="option active">
+                        <!-- div class="option active">
                             <label>
                                 <input type="radio" name="method" checked="checked" value="ebay">
                                 <div style="display: inline-block;">
@@ -451,14 +412,14 @@ EOT;
 
                         <div class="or">
                         <strong>OR</strong>
-                        </div>
+                        </div -->
 
-                        <div class="option">
+                        <div class="option active">
                             <label>
-                                <input type="radio" name="method" value="email">
+                                <input type="radio" name="method" value="email" checked="checked">
                                 <div style="display: inline-block;">
                                     <input type="text" name="email" value="$email" size="40">
-                                    <div style="padding-top: 10px;">Use your email address (you can link eBay later)</div>
+                                    <div style="padding-top: 10px;">Use your email address (you can link Amazon &amp; eBay later)</div>
                                 </div>
                             </label>
                         </div>
@@ -492,9 +453,21 @@ EOT;
     {
         $this->loadLayout();
 
-        $block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" class="codisto-iframe '. htmlspecialchars($class) .'" src="'. htmlspecialchars($url) . '" frameborder="0" onmousewheel=""></iframe></div>');
-        $this->_addContent($block);
+        $MerchantID = Mage::getStoreConfig('codisto/merchantid', 0);
+        $HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 
+        if(!isset($MerchantID) || !isset($HostKey)) {
+
+            $block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" class="codisto-iframe register" src="'. htmlspecialchars(Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/register')) . '" frameborder="0" onmousewheel=""></iframe></div>');
+
+
+        } else {
+
+            $block = $this->getLayout()->createBlock('core/text', 'green-block')->setText('<div id="codisto-control-panel-wrapper"><iframe id="codisto-control-panel" class="codisto-iframe '. htmlspecialchars($class) .'" src="'. htmlspecialchars($url) . '" frameborder="0" onmousewheel=""></iframe></div>');
+
+        }
+
+        $this->_addContent($block);
         $this->renderLayout();
     }
 
