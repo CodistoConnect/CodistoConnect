@@ -109,7 +109,7 @@ EOT;
 
                     $response->setRedirect(Mage::getModel('adminhtml/url')->getUrl('adminhtml/codisto/index'), 303);
                     return true;
-                    
+
                 }
             }
         }
@@ -446,7 +446,11 @@ EOT;
 EOT;
         }
 
-        echo $registertemplate;
+        $response->setHttpResponseCode(200);
+        $response->setHeader('Cache-Control', 'private, max-age=0', true);
+        $response->setHeader('Pragma', 'no-cache', true);
+        $response->setBody($registertemplate);
+        return true;
     }
 
     private function renderPane($url, $class)
