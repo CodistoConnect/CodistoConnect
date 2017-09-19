@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.91.14](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.14) (2017-09-19)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.13...1.91.14)
+
+**Merged pull requests:**
+
+- Registration form [\#395](https://github.com/CodistoConnect/CodistoConnect/pull/395) ([jschiller](https://github.com/jschiller))
+
 ## [1.91.13](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.13) (2017-09-13)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.12...1.91.13)
 
