@@ -472,7 +472,7 @@ class Codisto_Sync_Model_Observer
     public function addProductTab($observer)
     {
         $block = $observer->getEvent()->getBlock();
-Mage::log('addproducttab', null, 'codisto.log');
+        
         if($block instanceof Mage_Adminhtml_Block_Catalog_Product_Edit_Tabs) {
 
             $product = Mage::registry('product');
