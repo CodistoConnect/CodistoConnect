@@ -450,7 +450,7 @@ EOT;
         $response->setHeader('Cache-Control', 'private, max-age=0', true);
         $response->setHeader('Pragma', 'no-cache', true);
         $response->setBody($registertemplate);
-        $response->sendResponse();
+        return true;
     }
 
     private function renderPane($url, $class)
