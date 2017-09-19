@@ -20,8 +20,14 @@
 
 class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 {
-
     const EVENT_MATCH_RESULT_KEY = 'codisto_sync_match_result';
+
+    private static function inhibitReindexSet()
+    {
+        return array(
+            array('class' => 'POS_System_Model_Import_Abstract', 'function' => '_startBulk')
+        );
+    }
 
     public function getName()
     {
@@ -462,6 +468,33 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
     public function reindexAll()
     {
+        $inhibitSet = $this->inhibitReindexSet();
+
+        $callFrames = debug_backtrace();
+
+        $inhibit = false;
+
+        foreach($callFrames as $callFrame) {
+            foreach($inhibitSet as $inhibitFrame) {
+
+                foreach(array('class', 'function', 'file') as $inhibitProp) {
+                    if(isset($inhibitFrame[$inhibitProp])) {
+                        if(isset($callFrame[$inhibitProp])
+                            && $callFrame[$inhibitProp] === $inhibitFrame[$inhibitProp]) {
+                            $inhibit = true;
+                        } else {
+                            $inhibit = false;
+                            break;
+                        }
+                    }
+                }
+
+                if($inhibit === true) {
+                    break;
+                }
+            }
+        }
+
         $helper = Mage::helper('codistosync');
 
         $merchants = array();
@@ -476,9 +509,17 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
                     $merchantlist = array($merchantlist);
                 }
 
+                $storeId = $store->getId();
+
                 foreach($merchantlist as $merchantId) {
                     if(!in_array($merchantId, $visited, true)) {
-                        $merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $store->getConfig('codisto/hostkey'), 'storeid' => $store->getId() );
+
+                        $syncDbPath = $helper->getSyncPath('sync-'.$storeId.'.db');
+
+                        if(!$inhibit ||
+                            !$helper->canSyncIncrementally($syncDbPath, $store->getId())) {
+                            $merchants[] = array( 'merchantid' => $merchantId, 'hostkey' => $store->getConfig('codisto/hostkey'), 'storeid' => $storeId );
+                        }
                         $visited[] = $merchantId;
                     }
                 }

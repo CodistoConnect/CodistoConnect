@@ -84,17 +84,18 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
     public function checkRequestHash($key, $server)
     {
-        if(!isset($server['HTTP_X_NONCE']))
+        if(!isset($server['HTTP_X_NONCE'])) {
             return false;
+        }
 
-        if(!isset($server['HTTP_X_HASH']))
+        if(!isset($server['HTTP_X_HASH'])) {
             return false;
+        }
 
         $nonce = $server['HTTP_X_NONCE'];
         $hash = $server['HTTP_X_HASH'];
 
-        try
-        {
+        try {
             $nonceDbPath = $this->getSyncPath('nonce.db');
 
             $nonceDb = new PDO('sqlite:' . $nonceDbPath);
@@ -102,29 +103,25 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
             $nonceDb->exec('CREATE TABLE IF NOT EXISTS nonce (value text NOT NULL PRIMARY KEY)');
             $qry = $nonceDb->prepare('INSERT OR IGNORE INTO nonce (value) VALUES(?)');
             $qry->execute( array( $nonce ) );
-            if($qry->rowCount() !== 1)
+            if($qry->rowCount() !== 1) {
                 return false;
-        }
-        catch(Exception $e)
-        {
+            }
+        } catch(Exception $e) {
             if(property_exists($e, 'errorInfo') &&
                     $e->errorInfo[0] == 'HY000' &&
                     $e->errorInfo[1] == 8 &&
-                    $e->errorInfo[2] == 'attempt to write a readonly database')
-            {
-                if(file_exists($nonceDbPath))
+                    $e->errorInfo[2] == 'attempt to write a readonly database') {
+                if(file_exists($nonceDbPath)) {
                     unlink($nonceDbPath);
-            }
-            else if(property_exists($e, 'errorInfo') &&
+                }
+            } else if(property_exists($e, 'errorInfo') &&
                     $e->errorInfo[0] == 'HY000' &&
                     $e->errorInfo[1] == 11 &&
-                    $e->errorInfo[2] == 'database disk image is malformed')
-            {
-                if(file_exists($nonceDbPath))
+                    $e->errorInfo[2] == 'database disk image is malformed') {
+                if(file_exists($nonceDbPath)) {
                     unlink($nonceDbPath);
-            }
-            else
-            {
+                }
+            } else {
                 $this->logExceptionCodisto($e, 'https://ui.codisto.com/installed');
             }
         }
@@ -134,9 +131,9 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
     private function checkHash($Key, $Nonce, $Hash)
     {
-        $Sig = base64_encode( hash('sha256', $Key . $Nonce, true) );
+        $Sig = base64_encode(hash('sha256', $Key . $Nonce, true));
 
-        return hash_equals( $Hash, $Sig );
+        return hash_equals($Hash, $Sig);
     }
 
     public function getConfig($storeId)
@@ -144,114 +141,31 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
         $merchantID = Mage::getStoreConfig('codisto/merchantid', $storeId);
         $hostKey = Mage::getStoreConfig('codisto/hostkey', $storeId);
 
-        return isset($merchantID) && $merchantID != ""    &&    isset($hostKey) && $hostKey != "";
+        return isset($merchantID) && $merchantID != ""
+                && isset($hostKey) && $hostKey != "";
     }
 
     public function getMerchantId($storeId)
     {
         $merchantlist = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', $storeId));
-        if($merchantlist)
-        {
-            if(is_array($merchantlist))
-            {
+        if($merchantlist) {
+            if(is_array($merchantlist)) {
                 return $merchantlist[0];
             }
             return $merchantlist;
-        }
-        else
-        {
+        } else {
             return 0;
         }
     }
 
-    //Determine if we can create a new merchant. Prevent multiple requests from being able to complete signups
-    public function createMerchantwithLock($timeout)
-    {
-        $createMerchant = false;
-
-        $lockFile;
-
-        try
-        {
-            $file = new Varien_Io_File();
-            $file->checkAndCreateFolder( Mage::getBaseDir('var') . '/codisto/', 0777 );
-
-            $lockFile = Mage::getBaseDir('var') . '/codisto/lock';
-        }
-        catch(Exception $e)
-        {
-            $lockFile = Mage::getBaseDir('var') . '/codisto-lock';
-        }
-
-        for($retry = 0;;$retry++)
-        {
-            try
-            {
-                $lockDb = new PDO('sqlite:' . $lockFile);
-                $lockDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                $lockDb->setAttribute(PDO::ATTR_TIMEOUT, 1);
-                $lockDb->exec('BEGIN EXCLUSIVE TRANSACTION');
-                $lockDb->exec('CREATE TABLE IF NOT EXISTS Lock (id real NOT NULL)');
-
-                $lockQuery = $lockDb->query('SELECT id FROM Lock UNION SELECT 0 WHERE NOT EXISTS(SELECT 1 FROM Lock)');
-                $lockQuery->execute();
-                $lockRow = $lockQuery->fetch();
-                $timeStamp = $lockRow['id'];
-
-                $lockQuery->closeCursor();
-
-                if($timeStamp + $timeout < microtime(true))
-                {
-                    $createMerchant = true;
-
-                    $lockDb->exec('DELETE FROM Lock');
-                    $lockDb->exec('INSERT INTO Lock (id) VALUES('. microtime(true) .')');
-                }
-
-                $lockDb->exec('COMMIT TRANSACTION');
-                $lockDb = null;
-            }
-            catch(Exception $e)
-            {
-                if($retry > 3)
-                {
-                    throw $e;
-                    break;
-                }
-
-                @unlink($lockFile);
-                sleep(1);
-                continue;
-            }
-
-            break;
-        }
-
-        return $createMerchant;
-    }
-
     //Register a new merchant with Codisto
-    public function registerMerchant()
+    public function registerMerchant($emailaddress)
     {
 
         try
         {
-
             $MerchantID  = null;
             $HostKey = null;
-
-            // Load admin/user so that cookie deserialize will work properly
-            Mage::getModel("admin/user");
-
-            // Get the admin session
-            $session = Mage::getSingleton('admin/session');
-
-            // Get the user object from the session
-            $user = $session->getUser();
-            if(!$user)
-            {
-                $user = Mage::getModel('admin/user')->getCollection()->setPageSize(1)->setCurPage(1)->getFirstItem();
-            }
 
             $createLockFile = Mage::getBaseDir('var') . '/codisto-create-lock';
 
@@ -270,15 +184,11 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                 $url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
                 $version = Mage::getVersion();
                 $storename = Mage::getStoreConfig('general/store_information/name', 0);
-                $email = $user->getEmail();
                 $codistoversion = $this->getCodistoVersion();
                 $ResellerKey = Mage::getConfig()->getNode('codisto/resellerkey');
-                if($ResellerKey)
-                {
+                if($ResellerKey) {
                     $ResellerKey = intval(trim((string)$ResellerKey));
-                }
-                else
-                {
+                } else {
                     $ResellerKey = '0';
                 }
 
@@ -304,8 +214,19 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                 {
                     try
                     {
-                        $remoteResponse = $client->setRawData(Zend_Json::encode(array( 'type' => 'magento', 'version' => Mage::getVersion(),
-                        'url' => $url, 'email' => $email, 'storename' => $storename , 'resellerkey' => $ResellerKey, 'codistoversion' => $codistoversion)))->request('POST');
+                        $remoteResponse = $client->setRawData(
+                            Zend_Json::encode(
+                                array(
+                                    'type' => 'magento',
+                                    'version' => $version,
+                                    'url' => $url,
+                                    'email' => $emailaddress,
+                                    'storename' => $storename ,
+                                    'resellerkey' => $ResellerKey,
+                                    'codistoversion' => $codistoversion
+                                )
+                            )
+                        )->request('POST');
 
                         if(!$remoteResponse->isSuccessful())
                         {
@@ -317,8 +238,11 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                         // @codingStandardsIgnoreEnd
 
                         //If the merchantid and hostkey was present in response body
-                        if(isset($data['merchantid']) && $data['merchantid'] &&    isset($data['hostkey']) && $data['hostkey'])
-                        {
+                        if(isset($data['merchantid'])
+                            && $data['merchantid']
+                            && isset($data['hostkey'])
+                            && $data['hostkey']) {
+
                             $MerchantID = $data['merchantid'];
                             $HostKey = $data['hostkey'];
 
@@ -411,11 +335,11 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
     public function canSyncIncrementally($syncDbPath, $storeId)
     {
-        if(!$this->getTriggerMode())
+        if(!$this->getTriggerMode()) {
             return false;
+        }
 
-        try
-        {
+        try {
             $adapter = Mage::getModel('core/resource')->getConnection(Mage_Core_Model_Resource::DEFAULT_WRITE_RESOURCE);
 
             $tablePrefix = Mage::getConfig()->getTablePrefix();
@@ -430,14 +354,11 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
             $changeTablesExist = true;
 
             $changeTables = $adapter->fetchCol('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE \''.$tablePrefix.'codisto_%_change\'');
-            if(is_array($changeTables))
-            {
+            if(is_array($changeTables)) {
                 $changeTables = array_flip( $changeTables );
 
-                foreach($changeTableDefs as $table => $createStatement)
-                {
-                    if(!isset($changeTables[$tablePrefix.$table]))
-                    {
+                foreach($changeTableDefs as $table => $createStatement) {
+                    if(!isset($changeTables[$tablePrefix.$table])) {
                         $adapter->query($changeTableDefs[$table]);
 
                         $changeTablesExist = false;
@@ -508,14 +429,12 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                             );
 
             $triggerRules = array();
-            foreach($triggerStaticRules as $table => $statements)
-            {
+            foreach($triggerStaticRules as $table => $statements) {
                 $triggerRules[$tablePrefix.$table] = array( 'table' => $table, 'statements' => $statements );
             }
 
             $adapter->query('CREATE TEMPORARY TABLE `codisto_triggers` ( `table` varchar(100) NOT NULL PRIMARY KEY, `insert_statement` varchar(2000) NOT NULL, `update_statement` varchar(2000) NOT NULL, `delete_statement` varchar(2000) NOT NULL )');
-            foreach($triggerRules as $table => $tableData)
-            {
+            foreach($triggerRules as $table => $tableData) {
                 $adapter->insert('codisto_triggers', array( 'table' => $table, 'insert_statement' => $tableData['statements'][0], 'update_statement' => $tableData['statements'][1], 'delete_statement' => $tableData['statements'][2] ) );
             }
 
@@ -536,18 +455,15 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
             $changeTriggersExist = true;
 
-            if(count($missingTriggers) > 0)
-            {
+            if(count($missingTriggers) > 0) {
                 $changeTriggersExist = false;
 
                 $triggerTypeMap = array( 'INSERT' => 0, 'UPDATE' => 1, 'DELETE' => 2 );
 
                 $existingTriggers = array();
-                foreach($missingTriggers as $trigger)
-                {
+                foreach($missingTriggers as $trigger) {
                     if(isset($trigger['current_name']) && $trigger['current_name'] &&
-                        $trigger['current_statement'])
-                    {
+                        $trigger['current_statement']) {
                         $existingTriggers[] = array(
                             'current_definer' => $trigger['current_definer'],
                             'current_schema' => $trigger['current_schema'],
@@ -560,12 +476,10 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                     }
                 }
 
-                if(!empty($existingTriggers))
-                {
+                if(!empty($existingTriggers)) {
                     $adapter->query('CREATE TABLE IF NOT EXISTS `'.$tablePrefix.'codisto_trigger_backup` (definer text NOT NULL, current_schema text NOT NULL, current_name text NOT NULL, current_statement text NOT NULL, type text NOT NULL, `table` text NOT NULL, stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)');
 
-                    foreach($existingTriggers as $trigger)
-                    {
+                    foreach($existingTriggers as $trigger) {
                         $adapter->insert($tablePrefix.'codisto_trigger_backup', array(
                             'definer' => $trigger['current_definer'],
                             'current_schema' => $trigger['current_schema'],
@@ -577,30 +491,25 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                     }
                 }
 
-                foreach($missingTriggers as $trigger)
-                {
+                foreach($missingTriggers as $trigger) {
                     $triggerRule = $triggerRules[$trigger['table']];
 
                     $table = $triggerRule['table'];
                     $statement = $triggerRule['statements'][$triggerTypeMap[$trigger['type']]];
 
-                    try
-                    {
+                    try {
                         $final_statement = "\n/* start codisto change tracking trigger */\n".$statement."\n/* end codisto change tracking trigger */\n";
 
                         $adapter->query('DROP TRIGGER IF EXISTS codisto_'.$table.'_'.strtolower($trigger['type']));
                         $adapter->query('CREATE DEFINER = CURRENT_USER TRIGGER codisto_'.$table.'_'.strtolower($trigger['type']).' AFTER '.$trigger['type'].' ON `'.$trigger['table'].'`'."\n".'FOR EACH ROW BEGIN '.$final_statement.'END');
 
                         // TODO: loop on existing triggers for this class that match /* start codisto change tracking trigger */ and remove
-                    }
-                    catch(Exception $e)
-                    {
+                    } catch(Exception $e) {
                         if(method_exists($e, 'hasChainedException') &&
                             $e->hasChainedException() &&
                             $e->getChainedException() instanceof PDOException &&
                             is_array($e->getChainedException()->errorInfo) &&
-                            $e->getChainedException()->errorInfo[1] == 1235)
-                        {
+                            $e->getChainedException()->errorInfo[1] == 1235) {
                             // this version of mysql doesn't support multiple triggers so let's modify the existing trigger
 
                             $current_statement = preg_replace('/^BEGIN|END$/i', '', $trigger['current_statement']);
@@ -608,51 +517,40 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                             $final_statement = preg_replace('/;\s*;/', ';', $cleaned_statement."\n/* start codisto change tracking trigger */\n".$statement)
                                                 ."\n/* end codisto change tracking trigger */\n";
 
-                            if(!preg_match('/^\s/', $final_statement))
-                            {
+                            if(!preg_match('/^\s/', $final_statement)) {
                                 $final_statement = "\n".$final_statement;
                             }
-                            if(!preg_match('/\s$/', $final_statement))
-                            {
+                            if(!preg_match('/\s$/', $final_statement)) {
                                 $final_statement = $final_statement."\n";
                             }
 
                             $definer = $trigger['current_definer'];
-                            if(strpos($definer, '@') !== false)
-                            {
+                            if(strpos($definer, '@') !== false) {
                                 $definer = explode('@', $definer);
                                 $definer[0] = '\''.$definer[0].'\'';
                                 $definer[1] = '\''.$definer[1].'\'';
                                 $definer = implode('@', $definer);
                             }
 
-                            try
-                            {
+                            try {
                                 $adapter->query('SET @saved_sql_mode = @@sql_mode');
                                 $adapter->query('SET sql_mode = \''.$trigger['current_sqlmode'].'\'');
                                 $adapter->query('DROP TRIGGER `'.$trigger['current_schema'].'`.`'.$trigger['current_name'].'`');
                                 $adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON `'.$trigger['table'].'`'."\n".' FOR EACH ROW BEGIN'.$final_statement.'END');
                                 $adapter->query('SET sql_mode = @saved_sql_mode');
-                            }
-                            catch(Exception $e2)
-                            {
-                                try
-                                {
+                            } catch(Exception $e2) {
+                                try {
                                     $adapter->query('SET @saved_sql_mode = @@sql_mode');
                                     $adapter->query('SET sql_mode = \''.$trigger['current_sqlmode'].'\'');
                                     $adapter->query('CREATE DEFINER = '.$definer.' TRIGGER `'.$trigger['current_name'].'` AFTER '.$trigger['type'].' ON `'.$trigger['table'].'`'."\n".'FOR EACH ROW '.$trigger['current_statement']);
                                     $adapter->query('SET sql_mode = @saved_sql_mode');
-                                }
-                                catch(Exception $e3)
-                                {
+                                } catch(Exception $e3) {
                                     throw new Exception($e2->getMessage().' '.$e3->getMessage());
                                 }
 
                                 throw $e2;
                             }
-                        }
-                        else
-                        {
+                        } else {
                             throw $e;
                         }
                     }
@@ -665,8 +563,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
             $syncDbExists = false;
             $syncDb = null;
 
-            try
-            {
+            try {
                 $syncDb = new PDO('sqlite:' . $syncDbPath);
 
                 $this->prepareSqliteDatabase( $syncDb, 60 );
@@ -677,45 +574,35 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
                 $qry->closeCursor();
 
-                if($checkResult == 'ok')
+                if($checkResult == 'ok') {
                     $syncDbExists = true;
-            }
-            catch(Exception $e)
-            {
+                }
+            } catch(Exception $e) {
 
             }
 
             // check sync db uuid and mage uuid
             $changeToken = null;
-            try
-            {
+            try {
                 $changeToken = $adapter->fetchOne('SELECT token FROM `'.$tablePrefix.'codisto_sync` WHERE store_id = '.(int)$storeId);
-            }
-            catch(Exception $e)
-            {
+            } catch(Exception $e) {
 
             }
 
             $syncToken = null;
-            if($syncDb)
-            {
+            if($syncDb) {
                 $qry = null;
-                try
-                {
-                    try
-                    {
+                try {
+                    try {
                         $qry = $syncDb->query('SELECT token FROM sync');
 
                         $syncToken = $qry->fetchColumn();
-                    }
-                    catch(Exception $e)
-                    {
-                        if($qry)
+                    } catch(Exception $e) {
+                        if($qry) {
                             $qry->closeCursor();
+                        }
                     }
-                }
-                catch(Exception $e)
-                {
+                } catch(Exception $e) {
 
                 }
             }
@@ -725,9 +612,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                         $changeTablesExist &&
                         $changeTriggersExist &&
                         $syncDbExists;
-        }
-        catch(Exception $e)
-        {
+        } catch(Exception $e) {
             return false;
         }
     }
@@ -738,14 +623,10 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
         $syncFolder = Mage::getBaseDir('var') . '/codisto/';
 
-        if($file->fileExists($syncFolder, false /* dirs as well */))
-        {
-            foreach(@glob($syncFolder.'sync-*', GLOB_NOESCAPE|GLOB_NOSORT) as $filePath)
-            {
-                if(preg_match('/-first-\d+\.db$/', $filePath) === 1 || preg_match('/\.db$/', $filePath) === 0)
-                {
-                    if(@filemtime($filePath) < time() - 86400)
-                    {
+        if($file->fileExists($syncFolder, false /* dirs as well */)) {
+            foreach(@glob($syncFolder.'sync-*', GLOB_NOESCAPE|GLOB_NOSORT) as $filePath) {
+                if(preg_match('/-first-\d+\.db$/', $filePath) === 1 || preg_match('/\.db$/', $filePath) === 0) {
+                    if(@filemtime($filePath) < time() - 86400) {
                         @unlink($filePath);
                     }
                 }
@@ -757,9 +638,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
     {
         $request = Mage::app()->getRequest();
 
-        try
-        {
-
+        try {
             $url = ($request->getServer('SERVER_PORT') == '443' ? 'https://' : 'http://') . $request->getServer('HTTP_HOST') . $request->getServer('REQUEST_URI');
             $magentoversion = Mage::getVersion();
             $codistoversion = $this->getCodistoVersion();
@@ -779,24 +658,19 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                 $client->setHeaders('Content-Type', 'application/json');
                 $client->setRawData($logEntry);
                 $client->request('POST');
-        }
-        catch(Exception $e2)
-        {
+        } catch(Exception $e2) {
             Mage::log("Couldn't notify " . $endpoint . " endpoint of install error. Exception details " . $e->getMessage() . " on line: " . $e->getLine());
         }
     }
 
     public function eBayReIndex()
     {
-        try
-        {
+        try {
             $indexer = Mage::getModel('index/process');
             $indexer->load('codistoebayindex', 'indexer_code');
             $indexer->reindexAll();
             $indexer->changeStatus(Mage_Index_Model_Process::STATUS_REQUIRE_REINDEX);
-        }
-        catch (Exception $e)
-        {
+        } catch (Exception $e) {
             Mage::log($e->getMessage());
         }
     }
