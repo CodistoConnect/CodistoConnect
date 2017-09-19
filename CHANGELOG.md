@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.91.15](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.15) (2017-09-19)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.14...1.91.15)
+
+**Merged pull requests:**
+
+- Release [\#408](https://github.com/CodistoConnect/CodistoConnect/pull/408) ([lamery](https://github.com/lamery))
+- remove echo [\#407](https://github.com/CodistoConnect/CodistoConnect/pull/407) ([lamery](https://github.com/lamery))
+
 ## [1.91.14](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.14) (2017-09-19)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.13...1.91.14)
 
