@@ -573,7 +573,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
     private function ProcessOrderCreate($quote, $xml, &$productsToReindex, &$orderids, &$invoiceids, $store, $request)
     {
-
         $ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
 
         $paypaltransactionid = $ordercontent->orderpayments[0]->orderpayment->transactionid;
@@ -592,15 +591,21 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         if(!$ebaysalesrecordnumber)
             $ebaysalesrecordnumber = '';
 
-        $amazonorderid = (string)$ordercontent->amazonorderid;
-        if(!$amazonorderid)
-            $amazonorderid = '';
-
         $ebaytransactionid = (string)$ordercontent->ebaytransactionid;
+        if(!$ebaytransactionid)
+            $ebaytransactionid = '';
 
         $ebayusername = (string)$ordercontent->ebayusername;
         if(!$ebayusername)
             $ebayusername = '';
+
+        $amazonorderid = (string)$ordercontent->amazonorderid;
+        if(!$amazonorderid)
+            $amazonorderid = '';
+
+        $amazonfulfillmentchannel = (string)$ordercontent->amazonfulfillmentchannel;
+        if(!$amazonfulfillmentchannel)
+            $amazonfulfillmentchannel = '';
 
         $quoteConverter =  Mage::getModel('sales/convert_quote');
 
@@ -957,14 +962,24 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $payment->setTransactionId(0);
 
         $transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_PAYMENT, null, false, '');
-        if($paypaltransactionid)
-        {
+        if($paypaltransactionid) {
             $transaction->setTxnId($paypaltransactionid);
             $payment->setLastTransId($paypaltransactionid);
         }
 
-        $payment->setAdditionalInformation('ebaysalesrecordnumber', $ebaysalesrecordnumber);
-        $payment->setAdditionalInformation('ebayuser', $ebayusername);
+        $additionalPaymentInfo = array(
+            'ebaysalesrecordnumber' => $ebaysalesrecordnumber,
+            'ebaytransactionid' => $ebaytransactionid,
+            'ebayuser' => $ebayusername,
+            'amazonorderid' => $amazonorderid,
+            'amazonfulfillmentchannel' => $amazonfulfillmentchannel
+        );
+
+        foreach($additionalPaymentInfo as $k => $v) {
+            if($v) {
+                $payment->setAdditionalInformation($k, $v);
+            }
+        }
 
         if($ordercontent->paymentstatus == 'complete')
         {
@@ -2051,8 +2066,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $customerInstruction = @count($ordercontent->instructions) ? strval($ordercontent->instructions) : '';
 
         $checkoutSession = Mage::getSingleton('checkout/session');
-        if($customer)
+        if($customer) {
             $checkoutSession->setCustomer($customer);
+        }
         $checkoutSession->replaceQuote($quote);
         $checkoutSession->setData('customer_comment', $customerInstruction);
         $checkoutSession->setData('destination_type', 'residence');
