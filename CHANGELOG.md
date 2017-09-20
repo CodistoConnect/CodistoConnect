@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.91.16](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.16) (2017-09-20)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.15...1.91.16)
+
+**Merged pull requests:**
+
+- Avoid 'Last Name' length must be equal or greater than 1 characters error [\#409](https://github.com/CodistoConnect/CodistoConnect/pull/409) ([jschiller](https://github.com/jschiller))
+
 ## [1.91.15](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.15) (2017-09-19)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.14...1.91.15)
 
