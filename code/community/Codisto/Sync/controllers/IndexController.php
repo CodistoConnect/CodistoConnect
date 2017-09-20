@@ -1706,6 +1706,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
             $shipping_last_name = $shipping_name[1];
         } else {
             $shipping_first_name = $shipping_address->name;
+            $shipping_last_name = '-';
         }
 
         $shipping_phone = (string)$shipping_address->phone;
