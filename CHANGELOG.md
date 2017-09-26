@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.91.18](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.18) (2017-09-26)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.17...1.91.18)
+
+**Merged pull requests:**
+
+- post amazon order status to status history [\#411](https://github.com/CodistoConnect/CodistoConnect/pull/411) ([lamery](https://github.com/lamery))
+
 ## [1.91.17](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.17) (2017-09-26)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.16...1.91.17)
 
