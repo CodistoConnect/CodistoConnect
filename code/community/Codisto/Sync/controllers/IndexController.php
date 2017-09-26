@@ -1039,6 +1039,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
             $order->save();
         }
 
+        $this->ProcessOrderDetail($order, $additionalPaymentInfo);
+
         $response = $this->getResponse();
 
         $response->clearAllHeaders();
@@ -1061,7 +1063,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
     private function ProcessOrderSync($quote, $order, $xml, &$productsToReindex, &$orderids, &$invoiceids, $store, $request)
     {
-
         $orderstatus = $order->getStatus();
         $ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
         $weightunit = (string)$ordercontent->weightunit;
@@ -1117,6 +1118,22 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $ebaysalesrecordnumber = (string)$ordercontent->ebaysalesrecordnumber;
         if(!$ebaysalesrecordnumber)
             $ebaysalesrecordnumber = '';
+
+        $ebaytransactionid = (string)$ordercontent->ebaytransactionid;
+        if(!$ebaytransactionid)
+            $ebaytransactionid = '';
+
+        $ebayusername = (string)$ordercontent->ebayusername;
+        if(!$ebayusername)
+            $ebayusername = '';
+
+        $amazonorderid = (string)$ordercontent->amazonorderid;
+        if(!$amazonorderid)
+            $amazonorderid = '';
+
+        $amazonfulfillmentchannel = (string)$ordercontent->amazonfulfillmentchannel;
+        if(!$amazonfulfillmentchannel)
+            $amazonfulfillmentchannel = '';
 
         $currencyCode = (string)$ordercontent->transactcurrency[0];
         $ordertotal = floatval($ordercontent->ordertotal[0]);
@@ -1648,6 +1665,16 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
                 $order->save();
             }
         }
+
+        $additionalPaymentInfo = array(
+            'ebaysalesrecordnumber' => $ebaysalesrecordnumber,
+            'ebaytransactionid' => $ebaytransactionid,
+            'ebayuser' => $ebayusername,
+            'amazonorderid' => $amazonorderid,
+            'amazonfulfillmentchannel' => $amazonfulfillmentchannel
+        );
+
+        $this->ProcessOrderDetail($order, $additionalPaymentInfo);
 
         $response = $this->getResponse();
 
@@ -2191,6 +2218,32 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $shippingAddress->setShippingAmount($freighttotalextax);
         $shippingAddress->setBaseShippingAmount($freighttotalextax);
         $shippingAddress->save();
+    }
+
+    private function ProcessOrderDetail($order, $detail)
+    {
+        try {
+            $adapter = Mage::getModel('core/resource')->getConnection(Mage_Core_Model_Resource::DEFAULT_WRITE_RESOURCE);
+            $tablePrefix = Mage::getConfig()->getTablePrefix();
+
+            $adapter->query('CREATE TABLE IF NOT EXISTS `'.$tablePrefix.'codisto_order_detail` '.
+                '(order_id int(10) unsigned NOT NULL PRIMARY KEY,'.
+                ' ebaysalesrecordnumber varchar(255) NOT NULL,'.
+                ' ebaytransactionid varchar(255) NOT NULL,'.
+                ' ebayuser varchar(255) NOT NULL,'.
+                ' amazonorderid varchar(255) NOT NULL,'.
+                ' amazonfulfillmentchannel varchar(255) NOT NULL)');
+
+            $orderDetail = array_merge( array( 'order_id' => $order->getId() ), $detail );
+
+            $adapter->query(
+                'REPLACE INTO `'.$tablePrefix.'codisto_order_detail` '.
+                    '('.implode(',',array_keys($orderDetail)).') '.
+                    'VALUES ('.implode(',',array_fill(1, count($orderDetail), '?')).')',
+                array_values($orderDetail));
+        } catch(Exception $e) {
+
+        }
     }
 
     private function getRegionCollection($countryCode)
