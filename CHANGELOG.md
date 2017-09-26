@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.91.17](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.17) (2017-09-26)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.16...1.91.17)
+
+**Merged pull requests:**
+
+- record marketplace order detail data separately [\#410](https://github.com/CodistoConnect/CodistoConnect/pull/410) ([lamery](https://github.com/lamery))
+
 ## [1.91.16](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.16) (2017-09-20)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.15...1.91.16)
 
