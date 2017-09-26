@@ -947,7 +947,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
                 Mage_Sales_Model_Order::STATE_COMPLETE,
                 $amazonorderid ?
                     "Amazon Order $amazonorderid is complete." . $customerNote
-                    "eBay Order $ebaysalesrecordnumber is complete." . $customerNote);
+                    : "eBay Order $ebaysalesrecordnumber is complete." . $customerNote);
 
         } else {
 
@@ -957,7 +957,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
                 Mage_Sales_Model_Order::STATE_PENDING_PAYMENT,
                 $amazonorderid ?
                     "Amazon Order $amazonorderid has been captured." . $customerNote
-                    "eBay Order $ebaysalesrecordnumber has been captured." . $customerNote);
+                    : "eBay Order $ebaysalesrecordnumber has been captured." . $customerNote);
 
         }
 
@@ -1553,8 +1553,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
             $order->addStatusToHistory(
                 $order->getStatus(),
                 $amazonorderid ?
-                    "Amazon Order $amazonorderid has been cancelled" :
-                    "eBay Order $ebaysalesrecordnumber has been cancelled");
+                    "Amazon Order $amazonorderid has been cancelled"
+                    : "eBay Order $ebaysalesrecordnumber has been cancelled");
         }
 
         if(($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') &&
