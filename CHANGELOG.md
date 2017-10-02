@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.91.19](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.19) (2017-10-02)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.18...1.91.19)
+
+**Merged pull requests:**
+
+- fix curl ca bundle reference in signal [\#412](https://github.com/CodistoConnect/CodistoConnect/pull/412) ([lamery](https://github.com/lamery))
+
 ## [1.91.18](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.18) (2017-09-26)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.17...1.91.18)
 
