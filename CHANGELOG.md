@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.91.20](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.20) (2017-11-13)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.19...1.91.20)
+
+**Merged pull requests:**
+
+- fix tax total calculation and read default currency totals [\#413](https://github.com/CodistoConnect/CodistoConnect/pull/413) ([jlivas](https://github.com/jlivas))
+
 ## [1.91.19](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.19) (2017-10-02)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.18...1.91.19)
 
