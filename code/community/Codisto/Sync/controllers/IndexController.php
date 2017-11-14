@@ -579,9 +579,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $ordernumberformat = (string)$ordercontent->ordernumberformat;
         $weightunit = (string)$ordercontent->weightunit;
 
-        $ordertotal = floatval($ordercontent->ordertotal[0]);
-        $ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
-        $ordertaxtotal = floatval($ordercontent->ordertaxtotal[0]);
+        $ordertotal = floatval($ordercontent->defaultcurrencytotal[0]);
+        $ordersubtotal = floatval($ordercontent->defaultcurrencysubtotal[0]);
+        $ordertaxtotal = floatval($ordercontent->defaultcurrencytaxtotal[0]);
 
         $ordersubtotal = $store->roundPrice($ordersubtotal);
         $ordersubtotalincltax = $store->roundPrice($ordersubtotal + $ordertaxtotal);
