@@ -960,6 +960,16 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
         }
 
+        $merchantInstruction = @count($ordercontent->merchantinstructions) ? strval($ordercontent->merchantinstructions) : '';
+
+        if($merchantInstruction) {
+            $merchantInstruction = nl2br($merchantInstruction);
+            $order->addStatusToHistory(
+                $order->getStatus(),
+                $merchantInstruction
+            );
+        }
+
         if($adjustStock == false) {
             $order->addStatusToHistory($order->getStatus(), "NOTE: Stock level not adjusted, please check your inventory.");
         }
@@ -1270,7 +1280,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         {
             if($orderline->productcode[0] != 'FREIGHT')
             {
-                $adjustStock = true;
+
+                $adjustStock = @count($ordercontent->adjuststock) ? (($ordercontent->adjuststock == "false") ? false : true) : true;
 
                 $product = null;
 
@@ -1983,7 +1994,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         {
             if($orderline->productcode[0] != 'FREIGHT')
             {
-                $adjustStock = true;
+                $adjustStock = @count($ordercontent->adjuststock) ? (($ordercontent->adjuststock == "false") ? false : true) : true;
 
                 $product = null;
                 $productcode = (string)$orderline->productcode;
