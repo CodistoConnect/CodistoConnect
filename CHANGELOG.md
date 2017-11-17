@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.91.22](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.22) (2017-11-17)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.21...1.91.22)
+
+**Merged pull requests:**
+
+- optionally adjust stock and add additional merchant notes [\#414](https://github.com/CodistoConnect/CodistoConnect/pull/414) ([jlivas](https://github.com/jlivas))
+
 ## [1.91.21](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.21) (2017-11-14)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.20...1.91.21)
 
