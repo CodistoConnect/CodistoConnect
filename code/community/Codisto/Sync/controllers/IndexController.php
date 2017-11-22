@@ -579,9 +579,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $ordernumberformat = (string)$ordercontent->ordernumberformat;
         $weightunit = (string)$ordercontent->weightunit;
 
-        $ordertotal = floatval($ordercontent->ordertotal[0]);
-        $ordersubtotal = floatval($ordercontent->ordersubtotal[0]);
-        $ordertaxtotal = floatval($ordercontent->ordertaxtotal[0]);
+        $ordertotal = floatval($ordercontent->defaultcurrencytotal[0]);
+        $ordersubtotal = floatval($ordercontent->defaultcurrencysubtotal[0]);
+        $ordertaxtotal = floatval($ordercontent->defaultcurrencytaxtotal[0]);
 
         $ordersubtotal = $store->roundPrice($ordersubtotal);
         $ordersubtotalincltax = $store->roundPrice($ordersubtotal + $ordertaxtotal);
@@ -685,11 +685,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
                 }
 
                 $qty = (int)$orderline->quantity[0];
-                $subtotalinctax = floatval($orderline->linetotalinctax[0]);
-                $subtotal = floatval($orderline->linetotal[0]);
+                $subtotalinctax = floatval($orderline->defaultcurrencylinetotalinctax[0]);
+                $subtotal = floatval($orderline->defaultcurrencylinetotal[0]);
 
-                $price = floatval($orderline->price[0]);
-                $priceinctax = floatval($orderline->priceinctax[0]);
+                $price = floatval($orderline->defaultcurrencyprice[0]);
+                $priceinctax = floatval($orderline->defaultcurrencypriceinctax[0]);
                 $taxamount = $priceinctax - $price;
                 $taxpercent = $price == 0 ? 0 : round($priceinctax / $price - 1.0, 2) * 100;
                 $weight = $orderline->weight[0];
@@ -808,8 +808,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         {
             if($orderline->productcode[0] == 'FREIGHT')
             {
-                $freighttotal += floatval($orderline->linetotalinctax[0]);
-                $freighttotalextax += floatval($orderline->linetotal[0]);
+                $freighttotal += floatval($orderline->defaultcurrencylinetotalinctax[0]);
+                $freighttotalextax += floatval($orderline->defaultcurrencylinetotal[0]);
                 $freighttax = $freighttotal - $freighttotalextax;
                 $freightservice = (string)$orderline->productname[0];
             }
@@ -850,7 +850,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
         $ordersubtotal -= $freighttotalextax;
         $ordersubtotalincltax -= $freighttotal;
-        $ordertaxtotal -= $freighttax;
 
         $order->setBaseShippingAmount($freighttotalextax);
         $order->setShippingAmount($freighttotalextax);
@@ -959,6 +958,16 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
                     "Amazon Order $amazonorderid has been captured." . $customerNote
                     : "eBay Order $ebaysalesrecordnumber has been captured." . $customerNote);
 
+        }
+
+        $merchantInstruction = @count($ordercontent->merchantinstructions) ? strval($ordercontent->merchantinstructions) : '';
+
+        if($merchantInstruction) {
+            $merchantInstruction = nl2br($merchantInstruction);
+            $order->addStatusToHistory(
+                $order->getStatus(),
+                $merchantInstruction
+            );
         }
 
         if($adjustStock == false) {
@@ -1173,8 +1182,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         {
             if($orderline->productcode[0] == 'FREIGHT')
             {
-                $freighttotal += floatval($orderline->linetotalinctax[0]);
-                $freighttotalextax += floatval($orderline->linetotal[0]);
+                $freighttotal += floatval($orderline->defaultcurrencylinetotalinctax[0]);
+                $freighttotalextax += floatval($orderline->defaultcurrencylinetotal[0]);
                 $freighttax = $freighttotal - $freighttotalextax;
                 $freightservice = (string)$orderline->productname[0];
             }
@@ -1215,7 +1224,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
         $ordersubtotal -= $freighttotalextax;
         $ordersubtotalincltax -= $freighttotal;
-        $ordertaxtotal -= $freighttax;
 
         $order->setBaseShippingAmount($freighttotalextax);
         $order->setShippingAmount($freighttotalextax);
@@ -1272,7 +1280,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         {
             if($orderline->productcode[0] != 'FREIGHT')
             {
-                $adjustStock = true;
+
+                $adjustStock = @count($ordercontent->adjuststock) ? (($ordercontent->adjuststock == "false") ? false : true) : true;
 
                 $product = null;
 
@@ -1317,13 +1326,13 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
                 }
 
                 $qty = (int)$orderline->quantity[0];
-                $subtotalinctax = floatval($orderline->linetotalinctax[0]);
-                $subtotal = floatval($orderline->linetotal[0]);
+                $subtotalinctax = floatval($orderline->defaultcurrencylinetotalinctax[0]);
+                $subtotal = floatval($orderline->defaultcurrencylinetotal[0]);
 
                 $totalquantity += $qty;
 
-                $price = floatval($orderline->price[0]);
-                $priceinctax = floatval($orderline->priceinctax[0]);
+                $price = floatval($orderline->defaultcurrencyprice[0]);
+                $priceinctax = floatval($orderline->defaultcurrencypriceinctax[0]);
                 $taxamount = $priceinctax - $price;
                 $taxpercent = $price == 0 ? 0 : round($priceinctax / $price - 1.0, 2) * 100;
                 $weight = $orderline->weight[0];
@@ -1985,7 +1994,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         {
             if($orderline->productcode[0] != 'FREIGHT')
             {
-                $adjustStock = true;
+                $adjustStock = @count($ordercontent->adjuststock) ? (($ordercontent->adjuststock == "false") ? false : true) : true;
 
                 $product = null;
                 $productcode = (string)$orderline->productcode;
@@ -2024,14 +2033,14 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
                 $product->setIsSuperMode(true);
 
                 $qty = (int)$orderline->quantity[0];
-                $subtotalinctax = floatval($orderline->linetotalinctax[0]);
-                $subtotal = floatval($orderline->linetotal[0]);
+                $subtotalinctax = floatval($orderline->defaultcurrencylinetotalinctax[0]);
+                $subtotal = floatval($orderline->defaultcurrencylinetotal[0]);
 
                 $totalitemcount += 1;
                 $totalitemqty += $qty;
 
-                $price = floatval($orderline->price[0]);
-                $priceinctax = floatval($orderline->priceinctax[0]);
+                $price = floatval($orderline->defaultcurrencyprice[0]);
+                $priceinctax = floatval($orderline->defaultcurrencypriceinctax[0]);
                 $taxamount = $priceinctax - $price;
                 $taxpercent = $price == 0 ? 0 : round($priceinctax / $price - 1.0, 2) * 100;
                 $weight = floatval($orderline->weight[0]);
@@ -2091,8 +2100,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         {
             if($orderline->productcode[0] == 'FREIGHT')
             {
-                $freighttotal += floatval($orderline->linetotalinctax[0]);
-                $freighttotalextax += floatval($orderline->linetotal[0]);
+                $freighttotal += floatval($orderline->defaultcurrencylinetotalinctax[0]);
+                $freighttotalextax += floatval($orderline->defaultcurrencylinetotal[0]);
                 $freighttax = (float)$freighttotal - $freighttotalextax;
                 $freightservice = $orderline->productname[0];
             }
@@ -2100,7 +2109,6 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
         $ordersubtotal -= $freighttotalextax;
         $ordersubtotalincltax -= $freighttotal;
-        $ordertaxtotal -= $freighttax;
 
         $quotePayment = $quote->getPayment();
         $quotePayment->setMethod('ebay');

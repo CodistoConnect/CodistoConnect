@@ -1,5 +1,29 @@
 # Change Log
 
+## [1.91.22](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.22) (2017-11-17)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.21...1.91.22)
+
+**Merged pull requests:**
+
+- optionally adjust stock and add additional merchant notes [\#414](https://github.com/CodistoConnect/CodistoConnect/pull/414) ([jlivas](https://github.com/jlivas))
+
+## [1.91.21](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.21) (2017-11-14)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.20...1.91.21)
+
+## [1.91.20](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.20) (2017-11-13)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.19...1.91.20)
+
+**Merged pull requests:**
+
+- fix tax total calculation and read default currency totals [\#413](https://github.com/CodistoConnect/CodistoConnect/pull/413) ([jlivas](https://github.com/jlivas))
+
+## [1.91.19](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.19) (2017-10-02)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.18...1.91.19)
+
+**Merged pull requests:**
+
+- fix curl ca bundle reference in signal [\#412](https://github.com/CodistoConnect/CodistoConnect/pull/412) ([lamery](https://github.com/lamery))
+
 ## [1.91.18](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.18) (2017-09-26)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.17...1.91.18)
 
