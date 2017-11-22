@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.91.23](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.23) (2017-11-22)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.22...1.91.23)
+
+**Merged pull requests:**
+
+- handle null values in tax code and tax postal code [\#415](https://github.com/CodistoConnect/CodistoConnect/pull/415) ([lamery](https://github.com/lamery))
+
 ## [1.91.22](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.22) (2017-11-17)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.21...1.91.22)
 
