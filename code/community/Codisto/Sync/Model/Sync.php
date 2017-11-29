@@ -2293,6 +2293,7 @@ class Codisto_Sync_Model_Sync
 
             $insertConfiguration->execute(array('currency', $store->getBaseCurrencyCode()));
             $insertConfiguration->execute(array('defaultcountry', Mage::getStoreConfig('tax/defaults/country', $store)));
+            $insertConfiguration->execute(array('shippingtaxclass', Mage::getStoreConfig('tax/classes/shipping_tax_class', $store)));
 
             $state = 'simple';
         }
