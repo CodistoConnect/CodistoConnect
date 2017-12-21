@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 /**
- * Codisto eBay Sync Extension
+ * Codisto eBay & Amazon Sync Extension
  *
  * NOTICE OF LICENSE
  *
@@ -83,6 +83,10 @@
             <codistoebaypayment>
                 <class>Codisto_Sync_Ebaypayment_Model</class>
             </codistoebaypayment>
+
+            <codistoamazonpayment>
+                <class>Codisto_Sync_Amazonpayment_Model</class>
+            </codistoamazonpayment>
         </models>
 
         <blocks>
@@ -275,6 +279,15 @@
                 <allowspecific>0</allowspecific>
                 <group>offline</group>
             </ebay>
+
+            <amazon>
+                <active>1</active>
+                <model>codistoamazonpayment/paymentmethod</model>
+                <order_status>pending</order_status>
+                <title>Amazon Order</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </amazon>
 
             <!-- legacy payment code -->
             <ebaypayment>

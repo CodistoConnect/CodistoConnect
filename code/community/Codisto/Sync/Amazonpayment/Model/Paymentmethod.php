@@ -18,9 +18,9 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Codisto_Sync_Ebaypayment_Model_Paymentmethod extends Mage_Payment_Model_Method_Abstract
+class Codisto_Sync_Amazonpayment_Model_Paymentmethod extends Mage_Payment_Model_Method_Abstract
 {
-    protected $_code  = 'ebay';
+    protected $_code  = 'amazon';
 
     protected $_infoBlockType = 'codisto/paymentInfo';
 
