@@ -1,6 +1,6 @@
 <?php
 /**
-* Codisto eBay Sync Extension
+* Codisto eBay & Amazon Sync Extension
 *
 * NOTICE OF LICENSE
 *
@@ -190,6 +190,21 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
                         }
 
                         $path = preg_replace('/(^\/codisto\/(?:ebaytab|ebaypayment|ebaysale|ebayuser)\/)(\d+\/?)/', '$1', $path);
+                    }
+                    else if(preg_match('/^\/codisto\/(?:amazonsale)\/(\d+)/', $path, $merchantmatch))
+                    {
+                        $requestedMerchantID = (int)$merchantmatch[1];
+
+                        if(in_array($requestedMerchantID, $Merchants))
+                        {
+                            $MerchantID = $requestedMerchantID;
+                        }
+                        else
+                        {
+                            $MerchantID = $Merchants[0];
+                        }
+
+                        $path = preg_replace('/(^\/codisto\/(?:amazonsale)\/)(\d+\/?)/', '$1', $path);
                     }
                     else
                     {

@@ -1,6 +1,6 @@
 <?php
 /**
- * Codisto eBay Sync Extension
+ * Codisto eBay & Amazon Sync Extension
  *
  * NOTICE OF LICENSE
  *
@@ -981,8 +981,14 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $order->setDue(0);
 
         $payment = $order->getPayment();
-
-        $payment->setMethod('ebay');
+        if($amazonorderid != '')
+        {
+            $payment->setMethod('amazon');
+        }
+        else
+        {
+            $payment->setMethod('ebay');
+        }
         $payment->resetTransactionAdditionalInfo();
         $payment->setTransactionId(0);
 
@@ -1676,7 +1682,14 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
                     }
                 }
 
-                $payment->setMethod('ebay');
+                if($amazonorderid != '')
+                {
+                    $payment->setMethod('amazon');
+                }
+                else
+                {
+                    $payment->setMethod('ebay');
+                }
                 $payment->setParentTransactionId(null)
                     ->setIsTransactionClosed(1);
 
@@ -2110,8 +2123,19 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $ordersubtotal -= $freighttotalextax;
         $ordersubtotalincltax -= $freighttotal;
 
+        $amazonorderid = (string)$ordercontent->amazonorderid;
+        if(!$amazonorderid)
+            $amazonorderid = '';
+
         $quotePayment = $quote->getPayment();
-        $quotePayment->setMethod('ebay');
+        if($amazonorderid != '')
+        {
+            $quotePayment->setMethod('amazon');
+        }
+        else
+        {
+            $quotePayment->setMethod('ebay');
+        }
         $quotePayment->save();
 
         $quote->setBaseCurrencyCode($currencyCode);

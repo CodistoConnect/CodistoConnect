@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Codisto eBay Sync Extension
+ * Codisto eBay & Amazon Sync Extension
  *
  * NOTICE OF LICENSE
  *
