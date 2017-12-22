@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.91.25](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.25) (2017-12-22)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.24...1.91.25)
+
+**Merged pull requests:**
+
+- amazon payment information block + store context price fix [\#416](https://github.com/CodistoConnect/CodistoConnect/pull/416) ([jlivas](https://github.com/jlivas))
+
 ## [1.91.24](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.24) (2017-11-30)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.23...1.91.24)
 
