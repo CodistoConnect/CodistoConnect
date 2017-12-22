@@ -1,6 +1,6 @@
 <?php
 /**
- * Codisto eBay Sync Extension
+ * Codisto eBay & Amazon Sync Extension
  *
  * NOTICE OF LICENSE
  *
@@ -247,7 +247,10 @@ class Codisto_Sync_Model_Sync
 
     public function UpdateProducts($syncDb, $ids, $storeId)
     {
+        $currentStore = Mage::app()->getStore();
+
         $store = Mage::app()->getStore($storeId);
+        Mage::app()->setCurrentStore($store);
 
         $db = $this->GetSyncDb($syncDb, 60 );
 
@@ -446,6 +449,9 @@ class Codisto_Sync_Model_Sync
         }
 
         $db->exec('COMMIT TRANSACTION');
+
+        Mage::app()->setCurrentStore($currentStore);
+
     }
 
     public function DeleteProducts($syncDb, $ids, $storeId)

@@ -1,6 +1,6 @@
 <?php
 /**
- * Codisto eBay Sync Extension
+ * Codisto eBay & Amazon Sync Extension
  *
  * NOTICE OF LICENSE
  *
@@ -334,6 +334,34 @@ class Codisto_Sync_Model_Observer
             }
         }
 
+        if($paymentmethod == 'amazon' && Mage::getDesign()->getArea() == 'adminhtml') {
+            $helper = Mage::helper('codistosync');
+
+            $transactionid = $payment->getLastTransId();
+            $order = $payment->getOrder();
+            $orderid = $order->getCodistoOrderid();
+            $storeid = $order->getStoreId();
+            $merchantid = $order->getCodistoMerchantid();
+            if(!$merchantid) {
+                $merchantid = $helper->getMerchantId($storeid);
+            }
+
+            if($transactionid) {
+                $transport['Transaction ID_HTML'] = $transactionid;
+                $transport['Transaction ID'] = $transactionid;
+            }
+
+            $additionalInfo = $payment->getData('additional_information');
+
+            if(is_array($additionalInfo)) {
+                if(isset($additionalInfo['amazonorderid']) &&
+                    $additionalInfo['amazonorderid']) {
+                    $transport['Amazon Order ID_HTML'] = '<a href="'.htmlspecialchars(Mage::getUrl('', array('_secure' => true))).'codisto/amazonsale/' . $merchantid . '?orderid='.htmlspecialchars($orderid).'" target="codisto!ebaysale" class="codisto-ebay-sales-link">'.htmlspecialchars($additionalInfo['amazonorderid']).'</a>';
+                    $transport['Amazon Order ID'] = $additionalInfo['amazonorderid'];
+                }
+            }
+        }
+
         return $this;
     }
 
@@ -472,7 +500,7 @@ class Codisto_Sync_Model_Observer
     public function addProductTab($observer)
     {
         $block = $observer->getEvent()->getBlock();
-        
+
         if($block instanceof Mage_Adminhtml_Block_Catalog_Product_Edit_Tabs) {
 
             $product = Mage::registry('product');
@@ -504,7 +532,7 @@ class Codisto_Sync_Model_Observer
                 }
 
                 $block->addTab('codisto_ebay_tab', array(
-                    'label' => 'eBay',
+                    'label' => 'eBay | Amazon',
                     'class' => 'ajax',
                     'url'   => $url
                 ));
