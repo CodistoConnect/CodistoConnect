@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.91.26](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.26) (2017-12-22)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.25...1.91.26)
+
+**Merged pull requests:**
+
+- Fix column reference in exception handler [\#417](https://github.com/CodistoConnect/CodistoConnect/pull/417) ([jschiller](https://github.com/jschiller))
+
 ## [1.91.25](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.25) (2017-12-22)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.24...1.91.25)
 
