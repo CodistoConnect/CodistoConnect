@@ -3001,7 +3001,7 @@ class Codisto_Sync_Model_Sync
         catch(Exception $e)
         {
             $db->exec('CREATE TABLE NewProductAttributeValue (ProductExternalReference integer NOT NULL, AttributeID integer NOT NULL, Value text, PRIMARY KEY (ProductExternalReference, AttributeID))');
-            $db->exec('INSERT INTO NewProductAttributeValue SELECT ProductID, AttributeID, Value FROM ProductAttributeValue');
+            $db->exec('INSERT INTO NewProductAttributeValue SELECT ProductExternalReference, AttributeID, Value FROM ProductAttributeValue');
             $db->exec('DROP TABLE ProductAttributeValue');
             $db->exec('ALTER TABLE NewProductAttributeValue RENAME TO ProductAttributeValue');
         }
