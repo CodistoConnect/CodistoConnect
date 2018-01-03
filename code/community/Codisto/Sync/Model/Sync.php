@@ -944,6 +944,11 @@ class Codisto_Sync_Model_Sync
             $description = $productData['description'];
         }
 
+        if(is_array($description))
+        {
+            $description = implode('', $description);
+        }
+
         $description = Mage::helper('codistosync')->processCmsContent($description);
         if(($type == 'simple' || $type == 'virtual') &&
             $description == '')
@@ -1010,7 +1015,13 @@ class Codisto_Sync_Model_Sync
 
         if(isset($productData['short_description']) && strlen($productData['short_description']) > 0)
         {
-            $shortDescription = Mage::helper('codistosync')->processCmsContent($productData['short_description']);
+            $shortDescription = $productData['short_description'];
+            if(is_array($shortDescription))
+            {
+                $shortDescription = implode('', $shortDescription);
+            }
+
+            $shortDescription = Mage::helper('codistosync')->processCmsContent($shortDescription);
 
             $insertHTMLSQL->execute(array($product_id, 'Short Description', $shortDescription));
         }
@@ -1241,11 +1252,25 @@ class Codisto_Sync_Model_Sync
                 {
                     if($defaultValue == $attributeValue)
                     {
+                        if(is_array($attributeValue))
+                        {
+                            $attributeValue = implode('', $attributeValue);
+                        }
+
                         $defaultValue = $attributeValue = Mage::helper('codistosync')->processCmsContent($attributeValue);
                     }
                     else
                     {
+                        if(is_array($defaultValue))
+                        {
+                            $defaultValue = implode('', $defaultValue);
+                        }
                         $defaultValue = Mage::helper('codistosync')->processCmsContent($defaultValue);
+
+                        if(is_array($attributeValue))
+                        {
+                            $attributeValue = implode('', $attributeValue);
+                        }
                         $attributeValue = Mage::helper('codistosync')->processCmsContent($attributeValue);
                     }
                 }
@@ -2673,7 +2698,12 @@ class Codisto_Sync_Model_Sync
             $BlockID = $block->getId();
             $Title = $block->getTitle();
             $Identifier = $block->getIdentifier();
-            $Content = Mage::helper('codistosync')->processCmsContent($block->getContent());
+            $Content = $block->getContent();
+            if(is_array($Content))
+            {
+                $Content = implode('', $Content);
+            }
+            $Content = Mage::helper('codistosync')->processCmsContent($Content);
 
             $insertStaticBlock->bindParam(1, $BlockID);
             $insertStaticBlock->bindParam(2, $Title);
