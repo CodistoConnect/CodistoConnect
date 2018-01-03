@@ -161,6 +161,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
                     $defaultMerchantId = Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
 
                     $stores = Mage::getModel('core/store')->getCollection();
+                    $stores->setLoadDefault(true);
 
                     if($stores->count() > 1) {
                         foreach($stores as $store) {
@@ -249,6 +250,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
                     $defaultMerchantId = Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
 
                     $stores = Mage::getModel('core/store')->getCollection();
+                    $stores->setLoadDefault(true);
 
                     if($stores->count() > 1) {
                         foreach($stores as $store) {
@@ -353,6 +355,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
                     $defaultMerchantId = Mage::getConfig()->getNode('stores/admin/codisto/merchantid');
 
                     $stores = Mage::getModel('core/store')->getCollection();
+                    $stores->setLoadDefault(true);
 
                     if($stores->count() > 1) {
                         foreach($stores as $store) {
@@ -435,6 +438,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
                 $visited = array();
 
                 $stores = Mage::getModel('core/store')->getCollection();
+                $stores->setLoadDefault(true);
 
                 foreach($stores as $store) {
                     $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
@@ -501,6 +505,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
         $visited = array();
 
         $stores = Mage::getModel('core/store')->getCollection();
+        $stores->setLoadDefault(true);
 
         foreach($stores as $store) {
             $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));

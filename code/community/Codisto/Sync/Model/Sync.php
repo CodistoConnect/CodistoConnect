@@ -2816,6 +2816,7 @@ class Codisto_Sync_Model_Sync
         $db->exec('DELETE FROM StoreMerchant');
 
         $stores = Mage::getModel('core/store')->getCollection();
+        $stores->setLoadDefault(true);
 
         $insertStore = $db->prepare('INSERT OR REPLACE INTO Store (ID, Code, Name, Currency) VALUES (?, ?, ?, ?)');
         $insertStoreMerchant = $db->prepare('INSERT OR REPLACE INTO StoreMerchant (StoreID, MerchantID) VALUES (?, ?)');
