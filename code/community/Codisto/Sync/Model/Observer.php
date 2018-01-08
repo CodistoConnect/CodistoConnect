@@ -50,6 +50,8 @@ class Codisto_Sync_Model_Observer
             $visited = array();
 
             $stores = Mage::getModel('core/store')->getCollection();
+            $stores->setLoadDefault(true);
+
             foreach($stores as $store) {
                 $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
 
@@ -373,6 +375,7 @@ class Codisto_Sync_Model_Observer
         $helper = Mage::helper('codistosync');
 
         $stores = Mage::getModel('core/store')->getCollection();
+        $stores->setLoadDefault(true);
 
         foreach($stores as $store) {
             $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
@@ -598,6 +601,7 @@ class Codisto_Sync_Model_Observer
                         $visited = array();
 
                         $stores = Mage::getModel('core/store')->getCollection();
+                        $stores->setLoadDefault(true);
 
                         foreach($stores as $store) {
                             $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
@@ -632,6 +636,7 @@ class Codisto_Sync_Model_Observer
         $visited = array();
 
         $stores = Mage::getModel('core/store')->getCollection();
+        $stores->setLoadDefault(true);
 
         foreach($stores as $store) {
             $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
@@ -695,6 +700,7 @@ class Codisto_Sync_Model_Observer
             $visited = array();
 
             $stores = Mage::getModel('core/store')->getCollection();
+            $stores->setLoadDefault(true);
 
             foreach($stores as $store) {
                 $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));

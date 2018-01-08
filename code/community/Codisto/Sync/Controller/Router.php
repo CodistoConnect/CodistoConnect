@@ -136,6 +136,8 @@ class Codisto_Sync_Controller_Router extends Mage_Core_Controller_Varien_Router_
                 $HostKeys = array();
 
                 $stores = Mage::getModel('core/store')->getCollection();
+                $stores->setLoadDefault(true);
+
                 foreach ($stores as $store) {
                     $MerchantList = $store->getConfig('codisto/merchantid');
 
