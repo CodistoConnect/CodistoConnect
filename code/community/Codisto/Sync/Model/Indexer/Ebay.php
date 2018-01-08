@@ -435,6 +435,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
                 $visited = array();
 
                 $stores = Mage::getModel('core/store')->getCollection();
+                $stores->setLoadDefault(true);
 
                 foreach($stores as $store) {
                     $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
@@ -501,6 +502,7 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
         $visited = array();
 
         $stores = Mage::getModel('core/store')->getCollection();
+        $stores->setLoadDefault(true);
 
         foreach($stores as $store) {
             $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
