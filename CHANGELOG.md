@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.91.27](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.27) (2018-01-08)
+[Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.26...1.91.27)
+
+**Merged pull requests:**
+
+- force inclusion default store in store collection for some instances [\#419](https://github.com/CodistoConnect/CodistoConnect/pull/419) ([jlivas](https://github.com/jlivas))
+- ensure description strings that appear as arrays are converted back t… [\#418](https://github.com/CodistoConnect/CodistoConnect/pull/418) ([lamery](https://github.com/lamery))
+
 ## [1.91.26](https://github.com/CodistoConnect/CodistoConnect/tree/1.91.26) (2017-12-22)
 [Full Changelog](https://github.com/CodistoConnect/CodistoConnect/compare/1.91.25...1.91.26)
 
