@@ -95,8 +95,9 @@ class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
                 && $request->getPost('action') === 'codisto_create') {
 
                 $emailaddress = $request->getPost('email');
+                $countrycode = $request->getPost('countrycode');
 
-                $merchantID = Mage::helper('codistosync')->registerMerchant($emailaddress);
+                $merchantID = Mage::helper('codistosync')->registerMerchant($emailaddress, $countrycode);
 
                 if($merchantID == null) {
                     $registrationerror = true;
@@ -265,7 +266,7 @@ EOT;
                     margin: 0px;
                     background-color: rgba(255,255,255,0.9);
                     padding: 6px;
-                    padding-top: 34px;
+                    padding-top: 14px;
                     padding-bottom: 10px;
                     height: 36px;
                     padding-left: 15px;
@@ -287,10 +288,35 @@ EOT;
                     margin-right: auto;
             }
 
+            #create-account-modal .selection
+            {
+                border: 1px solid #ccc;
+                margin-top: 1px;
+                margin-bottom: 1px;
+                padding: 22px;
+                width: 80%;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
             #create-account-modal .option INPUT[type=radio]
             {
                     vertical-align: top;
                     margin-top: 3px;
+            }
+
+            #create-account-modal input[name=email]
+            {
+                    padding:5px;
+                    border-radius:5px;
+            }
+
+            #create-account-modal .country-code-chooser
+            {
+                    margin-top: 10px;
+                    margin-bottom: 10px;
+                    padding:5px;
+                    border-radius:5px;
             }
 
             #create-account-modal .option.active
@@ -388,6 +414,25 @@ EOT;
                     $(this).addClass("active").find("INPUT[type=radio]").attr("checked", "checked");
 
                 });
+
+                $("#create-account-modal .selection").css({
+                    opacity : 0.1
+                });
+
+                $.ajax({
+                    type: "GET",
+                    url: "https://ui.codisto.com/getcountrylist",
+                    dataType : "jsonp",
+                    success: function(o){
+                        $(".select-html-wrapper").html(o);
+                    },
+                    complete: function(){
+                        $("#create-account-modal .selection").css({
+                            opacity : 1
+                        });
+                    }
+                });
+
             });
             </script>
             <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:500,900,700,400">
@@ -422,6 +467,13 @@ EOT;
                                     <div style="padding-top: 10px;">Use your email address (you can link Amazon &amp; eBay later)</div>
                                 </div>
                             </label>
+                        </div>
+
+                        <div class="selection">
+                            Default Store Country:<br/>
+                            <div class="select-html-wrapper"></div>
+                            <br/>
+                            This is important for creating your initial store defaults.
                         </div>
 
                         <div class="next">
