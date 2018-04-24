@@ -432,9 +432,9 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
                             if(is_string($request->getQuery('incremental'))) {
                                 $result = $syncObject->SyncIncremental($simpleCount, $configurableCount);
-                                if($result == 'nochange') {
-                                    $result = 'complete';
-                                }
+
+                                $result = 'incremental-'.$result;
+                                
                             } else {
                                 $indexer = Mage::getModel('index/process');
 
