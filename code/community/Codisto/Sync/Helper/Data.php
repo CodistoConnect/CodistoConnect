@@ -346,9 +346,9 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
 
             // change tables
             $changeTableDefs = array(
-                'codisto_product_change' => 'CREATE TABLE `'.$tablePrefix.'codisto_product_change` (product_id int(10) unsigned NOT NULL PRIMARY KEY, stamp datetime NOT NULL)',
-                'codisto_order_change' => 'CREATE TABLE `'.$tablePrefix.'codisto_order_change` (order_id int(10) unsigned NOT NULL PRIMARY KEY, stamp datetime NOT NULL)',
-                'codisto_category_change' => 'CREATE TABLE `'.$tablePrefix.'codisto_category_change` (category_id int(10) unsigned NOT NULL PRIMARY KEY, stamp datetime NOT NULL)'
+                'codisto_product_change' => 'CREATE TABLE `'.$tablePrefix.'codisto_product_change` (product_id int(10) unsigned NOT NULL PRIMARY KEY, stamp datetime NOT NULL, event datetime NOT NULL DEFAULT CURRENT_TIMESTAMP)',
+                'codisto_order_change' => 'CREATE TABLE `'.$tablePrefix.'codisto_order_change` (order_id int(10) unsigned NOT NULL PRIMARY KEY, stamp datetime NOT NULL, event datetime NOT NULL DEFAULT CURRENT_TIMESTAMP)',
+                'codisto_category_change' => 'CREATE TABLE `'.$tablePrefix.'codisto_category_change` (category_id int(10) unsigned NOT NULL PRIMARY KEY, stamp datetime NOT NULL, event datetime NOT NULL DEFAULT CURRENT_TIMESTAMP)'
             );
 
             $changeTablesExist = true;
@@ -362,6 +362,15 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                         $adapter->query($changeTableDefs[$table]);
 
                         $changeTablesExist = false;
+                    } else {
+
+                        try {
+                            $adapter->query('ALTER TABLE `'.$tablePrefix.$table.'` ADD COLUMN event datetime NOT NULL DEFAULT CURRENT_TIMESTAMP');
+
+                        } catch(Exception $e) {
+
+                        }
+
                     }
                 }
             }
