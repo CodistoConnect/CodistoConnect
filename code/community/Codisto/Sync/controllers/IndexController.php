@@ -250,9 +250,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
                 if($shippingRate instanceof Mage_Shipping_Model_Rate_Result_Method)
                 {
                     $isPickup = $shippingRate->getPrice() == 0 &&
-                                (preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethod())) ||
-                                    preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getCarrierTitle())) ||
-                                    preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethodTitle())));
+                                (preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)|(?:^|\W|_)click\s+.*\s+collect(?:\W|_|$)/i', strval($shippingRate->getMethod())) ||
+                                    preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)|(?:^|\W|_)click\s+.*\s+collect(?:\W|_|$)/i', strval($shippingRate->getCarrierTitle())) ||
+                                    preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)|(?:^|\W|_)click\s+.*\s+collect(?:\W|_|$)/i', strval($shippingRate->getMethodTitle())));
 
                     if(!$isPickup)
                     {
@@ -2239,9 +2239,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
                         if(is_null($freightcost) || (!is_null($shippingRate->getPrice()) && $shippingRate->getPrice() < $freightcost))
                         {
                             $isPickup = $shippingRate->getPrice() == 0 &&
-                                        (preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethod())) ||
-                                            preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getCarrierTitle())) ||
-                                            preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)/i', strval($shippingRate->getMethodTitle())));
+                                        (preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)|(?:^|\W|_)click\s+.*\s+collect(?:\W|_|$)/i', strval($shippingRate->getMethod())) ||
+                                            preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)|(?:^|\W|_)click\s+.*\s+collect(?:\W|_|$)/i', strval($shippingRate->getCarrierTitle())) ||
+                                            preg_match('/(?:^|\W|_)pick\s*up(?:\W|_|$)|(?:^|\W|_)click\s+.*\s+collect(?:\W|_|$)/i', strval($shippingRate->getMethodTitle())));
 
                             if(!$isPickup)
                             {
