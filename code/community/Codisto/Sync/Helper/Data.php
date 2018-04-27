@@ -159,7 +159,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     //Register a new merchant with Codisto
-    public function registerMerchant($emailaddress)
+    public function registerMerchant($emailaddress, $countrycode)
     {
 
         try
@@ -212,6 +212,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                 $client->setHeaders('Content-Type', 'application/json');
                 for($retry = 0; ; $retry++)
                 {
+
                     try
                     {
                         $remoteResponse = $client->setRawData(
@@ -221,6 +222,7 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                                     'version' => $version,
                                     'url' => $url,
                                     'email' => $emailaddress,
+                                    'country' => $countrycode,
                                     'storename' => $storename ,
                                     'resellerkey' => $ResellerKey,
                                     'codistoversion' => $codistoversion
