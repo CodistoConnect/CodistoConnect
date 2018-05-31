@@ -1277,6 +1277,11 @@ class Codisto_Sync_Model_Sync
 
                 else if( in_array($attributeData['frontend_type'], array( 'select', 'multiselect' ) ) )
                 {
+                    if(($attributeData['frontend_type'] == 'multiselect') && (strpos($attributeValue, ',') !== false))
+                    {
+                      $attributeValue = explode(',', $attributeValue);
+                    }
+
                     if(is_array($attributeValue))
                     {
                         if(isset($attributeData['source']) &&
