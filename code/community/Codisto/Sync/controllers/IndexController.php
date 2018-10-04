@@ -1634,13 +1634,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
                             {
                                 if($stockItem->canSubtractQty())
                                 {
-                                    if($ordercontent->orderstate == 'cancelled') {
-
-                                        $productsToReindex[$product->getId()] = $product->getId();
-
-                                        $stockItem->addQty(intval($qty));
-
-                                    } else {
+                                    if($ordercontent->orderstate != 'cancelled') {
 
                                         $productsToReindex[$product->getId()] = $product->getId();
 
