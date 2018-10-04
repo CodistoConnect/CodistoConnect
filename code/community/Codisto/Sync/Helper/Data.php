@@ -1089,6 +1089,12 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
     public function signalOnShutdown($merchants, $msg, $eventtype, $productids)
     {
         try {
+
+            $backgroundSignal = $this->runProcessBackground(realpath(dirname(__FILE__)).'/Signal.php', array(serialize($merchants), $msg, $eventtype, serialize($productids)), array('pdo', 'curl', 'simplexml'));
+            if($backgroundSignal) {
+                return;
+            }
+
             if(is_array($productids)) {
                 $syncObject = Mage::getModel('codistosync/sync');
 
@@ -1125,11 +1131,6 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
                         $storeVisited[$storeId] = 1;
                     }
                 }
-            }
-
-            $backgroundSignal = $this->runProcessBackground(realpath(dirname(__FILE__)).'/Signal.php', array(serialize($merchants), $msg), array('pdo', 'curl', 'simplexml'));
-            if($backgroundSignal) {
-                return;
             }
 
             if(!$this->client) {
