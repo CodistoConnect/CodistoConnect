@@ -1761,9 +1761,21 @@ class Codisto_Sync_Model_Sync
 
         $stores = array_map( array($this, 'SyncIncrementalStores'), $storeIds );
 
-        $productUpdateEntries = $adapter->fetchPairs('SELECT product_id, stamp FROM `'.$tablePrefix.'codisto_product_change` ORDER BY product_id LIMIT '.(int)$simpleCount);
-        $categoryUpdateEntries = $adapter->fetchPairs('SELECT category_id, stamp FROM `'.$tablePrefix.'codisto_category_change` ORDER BY category_id');
-        $orderUpdateEntries = $adapter->fetchPairs('SELECT order_id, stamp FROM `'.$tablePrefix.'codisto_order_change` ORDER BY order_id LIMIT 1000');
+        try {
+            $productUpdateEntries = $adapter->fetchPairs('SELECT product_id, stamp FROM `'.$tablePrefix.'codisto_product_change` ORDER BY event LIMIT '.(int)$simpleCount);
+        } catch(Exception $e) {
+            $productUpdateEntries = $adapter->fetchPairs('SELECT product_id, stamp FROM `'.$tablePrefix.'codisto_product_change` ORDER BY product_id LIMIT '.(int)$simpleCount);
+        }
+        try {
+            $categoryUpdateEntries = $adapter->fetchPairs('SELECT category_id, stamp FROM `'.$tablePrefix.'codisto_category_change` ORDER BY event');
+        } catch(Exception $e) {
+            $categoryUpdateEntries = $adapter->fetchPairs('SELECT category_id, stamp FROM `'.$tablePrefix.'codisto_category_change` ORDER BY category_id');
+        }
+        try {
+            $orderUpdateEntries = $adapter->fetchPairs('SELECT order_id, stamp FROM `'.$tablePrefix.'codisto_order_change` ORDER BY order_id LIMIT 1000');
+        } catch(Exception $e) {
+            $orderUpdateEntries = $adapter->fetchPairs('SELECT order_id, stamp FROM `'.$tablePrefix.'codisto_order_change` ORDER BY event LIMIT 1000');
+        }
 
         if(empty($productUpdateEntries) &&
             empty($categoryUpdateEntries) &&

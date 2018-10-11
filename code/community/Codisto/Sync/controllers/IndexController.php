@@ -1696,6 +1696,9 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
                     $payment->setBaseAmountPaid(0.0);
                     $payment->setAmountPaid(0.0);
 
+                    $order->setBaseTotalPaid(0.0);
+                    $order->setTotalPaid(0.0);
+
                     $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
                     $invoice->register();
                 }
