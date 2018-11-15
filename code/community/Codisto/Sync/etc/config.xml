@@ -24,9 +24,9 @@
     <modules>
         <Codisto_Sync>
 <<<<<<< Updated upstream
-            <version>1.91.32</version>
+            <version>1.91.33</version>
 =======
-            <version>1.91.32</version>
+            <version>1.91.33</version>
 >>>>>>> Stashed changes
             <depends>
                 <Mage_Payment/>
