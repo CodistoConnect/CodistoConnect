@@ -23,7 +23,11 @@
 <config>
     <modules>
         <Codisto_Sync>
-            <version>1.91.31</version>
+<<<<<<< Updated upstream
+            <version>1.91.32</version>
+=======
+            <version>1.91.32</version>
+>>>>>>> Stashed changes
             <depends>
                 <Mage_Payment/>
             </depends>
