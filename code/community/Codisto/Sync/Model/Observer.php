@@ -53,7 +53,7 @@ class Codisto_Sync_Model_Observer
             $stores->setLoadDefault(true);
 
             foreach($stores as $store) {
-                $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
+                $merchantlist = $this->getMerchantId();
 
                 if($merchantlist) {
                     if(!is_array($merchantlist)) {
@@ -69,7 +69,7 @@ class Codisto_Sync_Model_Observer
                 }
             }
 
-            $merchantlist = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', 0));
+            $merchantlist = $this->getMerchantId(0);
             if($merchantlist) {
                 $HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 
@@ -378,7 +378,7 @@ class Codisto_Sync_Model_Observer
         $stores->setLoadDefault(true);
 
         foreach($stores as $store) {
-            $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
+            $merchantlist = $this->getMerchantId();
             if($merchantlist) {
                 if(!is_array($merchantlist)) {
                     $merchantlist = array($merchantlist);
@@ -393,7 +393,7 @@ class Codisto_Sync_Model_Observer
             }
         }
 
-        $merchantlist = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', 0));
+        $merchantlist = $this->getMerchantId(0);
         if($merchantlist) {
             $HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
 
@@ -604,7 +604,7 @@ class Codisto_Sync_Model_Observer
                         $stores->setLoadDefault(true);
 
                         foreach($stores as $store) {
-                            $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
+                            $merchantlist = $this->getMerchantId();
                             if($merchantlist) {
                                 if(!is_array($merchantlist)) {
                                     $merchantlist = array($merchantlist);
@@ -639,7 +639,7 @@ class Codisto_Sync_Model_Observer
         $stores->setLoadDefault(true);
 
         foreach($stores as $store) {
-            $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
+            $merchantlist = $this->getMerchantId();
             if($merchantlist) {
                 if(!is_array($merchantlist)) {
                     $merchantlist = array($merchantlist);
@@ -654,7 +654,7 @@ class Codisto_Sync_Model_Observer
             }
         }
 
-        $MerchantID = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', 0));
+        $MerchantID = $this->getMerchantId(0);
         $HostKey = Mage::getStoreConfig('codisto/hostkey', 0);
         if(!in_array($MerchantID, $visited, true)) {
             $merchants[] = array( 'merchantid' => $MerchantID, 'hostkey' => $HostKey, 'storeid' => 0);
@@ -703,7 +703,7 @@ class Codisto_Sync_Model_Observer
             $stores->setLoadDefault(true);
 
             foreach($stores as $store) {
-                $merchantlist = Zend_Json::decode($store->getConfig('codisto/merchantid'));
+                $merchantlist = $this->getMerchantId();
                 if($merchantlist) {
                     if(!is_array($merchantlist)) {
                         $merchantlist = array($merchantlist);
@@ -718,7 +718,7 @@ class Codisto_Sync_Model_Observer
                 }
             }
 
-            $MerchantID = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', 0));
+            $MerchantID = $this->getMerchantId(0);
             if(is_array($MerchantID)) {
                 $MerchantID = $MerchantID[0];
             }
@@ -769,4 +769,16 @@ class Codisto_Sync_Model_Observer
     {
 
     }
+
+    protected function getMerchantId($storeId = null)
+    {
+        try {
+            $merchantId = Zend_Json::decode(Mage::getStoreConfig('codisto/merchantid', $storeId));
+        } catch (\Exception $e) {
+            Mage::log($e->getMessage());
+        }
+
+        return $merchantId;
+    }
+
 }
