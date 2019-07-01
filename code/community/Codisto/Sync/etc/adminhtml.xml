@@ -47,7 +47,7 @@
                     <action>adminhtml/codisto/attributemapping</action>
                 </attributes>
                 <import translate="title">
-                    <title>Link eBay Listings</title>
+                    <title>Link Listings</title>
                     <sort_order>5</sort_order>
                     <action>adminhtml/codisto/import</action>
                 </import>
@@ -95,7 +95,7 @@
                                 <sort_order>4</sort_order>
                             </attributes>
                             <import>
-                                <title>Link eBay Listings</title>
+                                <title>Link Listings</title>
                                 <sort_order>5</sort_order>
                             </import>
                             <!-- getstarted>
