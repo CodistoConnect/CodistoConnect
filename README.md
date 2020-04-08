@@ -1,5 +1,5 @@
 [![GitHub release](https://img.shields.io/github/release/CodistoConnect/CodistoConnect.svg?style=plastic)](https://github.com/CodistoConnect/CodistoConnect/releases)
-[ ![License] [license-image] ] [license]
+[![GitHub release](https://img.shields.io/badge/license-OSL%203.0-brightgreen?style=plastic)](https://opensource.org/licenses/OSL-3.0)
 
 <h2>Welcome</h2>
 <p>
