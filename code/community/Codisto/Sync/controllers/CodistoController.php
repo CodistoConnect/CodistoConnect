@@ -20,11 +20,18 @@
 
 class Codisto_Sync_CodistoController extends Mage_Adminhtml_Controller_Action
 {
-    public $_publicActions = array('index', 'intro', 'settings', 'orders');
+    public $_publicActions = array('index', 'intro', 'settings', 'orders', 'listings');
 
     public function indexAction()
     {
         $url = preg_replace('/\/ebaytab(?:\/index)?(\/key\/)?/', '/ebaytab$1', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
+
+        $this->renderPane($url, 'codisto-bulk-editor');
+    }
+
+    public function listingsAction()
+    {
+        $url = preg_replace('/\/ebaytab(?:\/listings)?(\/key\/)?/', '/listings$1', Mage::getModel('adminhtml/url')->getUrl('codisto/ebaytab'));
 
         $this->renderPane($url, 'codisto-bulk-editor');
     }
@@ -440,7 +447,7 @@ EOT;
             <div id="dummy-data-overlay"></div>
             <div id="codisto-control-panel-wrapper">
                 <div id="create-account-modal">
-                    <h1>Codisto Connect - Account Creation</h1>
+                    <h1>Codisto - Account Creation</h1>
                     <form method="post" action="$registerUrl" target="_top">
                         <input type="hidden" name="action" value="codisto_create"/>
                         <input type="hidden" name="form_key" value="$form_key"/>

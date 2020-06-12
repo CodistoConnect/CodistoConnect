@@ -23,47 +23,32 @@
 <config>
     <menu>
         <codisto translate="title">
-            <title>Amazon &amp; eBay | Codisto</title>
+            <title>Codisto</title>
             <sort_order>99</sort_order>
             <children>
-                <listings translate="title">
-                    <title>Marketplace Listings</title>
+                <home translate="title">
+                    <title>Home</title>
                     <sort_order>1</sort_order>
                     <action>adminhtml/codisto/index</action>
+                </home>
+                <listings translate="title">
+                    <title>Listings</title>
+                    <sort_order>2</sort_order>
+                    <action>adminhtml/codisto/listings</action>
                 </listings>
                 <orders translate="title">
-                    <title>Marketplace Orders</title>
-                    <sort_order>2</sort_order>
+                    <title>Orders</title>
+                    <sort_order>3</sort_order>
                     <action>adminhtml/codisto/orders</action>
                 </orders>
-                <categories translate="title">
-                    <title>eBay Store Categories</title>
-                    <sort_order>3</sort_order>
-                    <action>adminhtml/codisto/categories</action>
-                </categories>
-                <attributes translate="title">
-                    <title>Attribute Mapping</title>
-                    <sort_order>4</sort_order>
-                    <action>adminhtml/codisto/attributemapping</action>
-                </attributes>
-                <import translate="title">
-                    <title>Link Listings</title>
-                    <sort_order>5</sort_order>
-                    <action>adminhtml/codisto/import</action>
-                </import>
-                <!-- getstarted translate="title">
-                    <title>Getting Started</title>
-                    <sort_order>6</sort_order>
-                    <action>adminhtml/codisto/intro</action>
-                </getstarted -->
                 <settings translate="title">
                     <title>Settings</title>
-                    <sort_order>7</sort_order>
+                    <sort_order>4</sort_order>
                     <action>adminhtml/codisto/settings</action>
                 </settings>
                 <account translate="title">
                     <title>Account</title>
-                    <sort_order>8</sort_order>
+                    <sort_order>5</sort_order>
                     <action>adminhtml/codisto/account</action>
                 </account>
             </children>
@@ -75,41 +60,29 @@
             <admin>
                 <children>
                     <codisto translate="title">
-                        <title>Amazon &amp; eBay | Codisto</title>
+                        <title>Codisto</title>
                         <sort_order>1</sort_order>
                         <children>
-                            <listings>
-                                <title>Marketplace Listings</title>
-                                <sort_order>1</sort_order>
-                            </listings>
-                            <orders>
-                                <title>Marketplace Orders</title>
-                                <sort_order>2</sort_order>
-                            </orders>
-                            <categories>
-                                <title>eBay Store Categories</title>
-                                <sort_order>3</sort_order>
-                            </categories>
-                            <attributes>
-                                <title>Attribute Mapping</title>
-                                <sort_order>4</sort_order>
-                            </attributes>
-                            <import>
-                                <title>Link Listings</title>
-                                <sort_order>5</sort_order>
-                            </import>
-                            <!-- getstarted>
-                                <title>Getting Started</title>
-                                <sort_order>6</sort_order>
-                            </getstarted -->
-                            <settings>
-                                <title>Settings</title>
-                                <sort_order>7</sort_order>
-                            </settings>
-                            <account>
-                                <title>Account</title>
-                                <sort_order>8</sort_order>
-                            </account>
+	                        <home>
+	                            <title>Home</title>
+	                            <sort_order>1</sort_order>
+	                        </home>
+	                        <listings>
+	                            <title>Listings</title>
+	                            <sort_order>2</sort_order>
+	                        </listings>
+	                         <orders>
+	                            <title>Orders</title>
+	                            <sort_order>3</sort_order>
+	                        </orders>
+	                        <settings>
+	                            <title>Settings</title>
+	                            <sort_order>3</sort_order>
+	                        </settings>
+	                        <account>
+	                            <title>Account</title>
+	                            <sort_order>4</sort_order>
+	                        </account>
                         </children>
                     </codisto>
                 </children>
