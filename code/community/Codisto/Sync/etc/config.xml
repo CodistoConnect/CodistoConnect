@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 /**
- * Codisto eBay & Amazon Sync Extension
+ * Codisto Sales Channels Sync Extension
  *
  * NOTICE OF LICENSE
  *
@@ -87,6 +87,10 @@
             <codistoamazonpayment>
                 <class>Codisto_Sync_Amazonpayment_Model</class>
             </codistoamazonpayment>
+
+            <codistokoganpayment>
+                <class>Codisto_Sync_Koganpayment_Model</class>
+            </codistokoganpayment>
         </models>
 
         <blocks>
@@ -288,6 +292,15 @@
                 <allowspecific>0</allowspecific>
                 <group>offline</group>
             </amazon>
+
+            <kogan>
+                <active>1</active>
+                <model>codistokoganpayment/paymentmethod</model>
+                <order_status>pending</order_status>
+                <title>Kogan Order</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </kogan>
 
             <!-- legacy payment code -->
             <ebaypayment>
