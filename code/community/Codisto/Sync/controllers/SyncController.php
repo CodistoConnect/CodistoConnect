@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Codisto eBay & Amazon Sync Extension
+ * Codisto Sales Channels Sync Extension
  *
  * NOTICE OF LICENSE
  *
@@ -434,7 +434,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
                                 $result = $syncObject->SyncIncremental($simpleCount, $configurableCount);
 
                                 $result = 'incremental-'.$result;
-                                
+
                             } else {
                                 $indexer = Mage::getModel('index/process');
 

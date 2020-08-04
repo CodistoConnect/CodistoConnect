@@ -3,11 +3,11 @@
 
 <h2>Welcome</h2>
 <p>
-Welcome to Codisto LINQ Magento to eBay Integration!
+Welcome to Codisto LINQ Magento Amazon, eBay and Kogan Integration!
 </p>
 
 <p>
-Codisto LINQ is revolutionary eBay integration for Magento. Incredibly fast set up and super easy maintenance. Integrate in minutes.
+Codisto LINQ is a revolutionary Sales Channel integration for Magento. Incredibly fast set up and super easy maintenance. Integrate in minutes.
 </p>
 
 
@@ -140,7 +140,7 @@ Please contact <a href="https://codisto.com/contact-us.html">support</a> with yo
 Codisto LINQ code set is licensed under the Open Software License 3.0 (OSL-3.0)
 <a href="[license]">http://opensource.org/licenses/OSL-3.0</a> You may not claim intellectual property or exclusive ownership rights to Codisto LINQ. Codisto LINQ is the property of On Technology.
 
-**Codisto LINQ - Magento to eBay Integration**
+**Codisto LINQ - Magento to Amazon, eBay and Kogan Integration**
 [Twitter](https://twitter.com/Codisto/) | [Facebook](https://www.facebook.com/Codisto) | [Google](https://plus.google.com/+CodistoConnect/)
 
 [feature]: FeatureBranch

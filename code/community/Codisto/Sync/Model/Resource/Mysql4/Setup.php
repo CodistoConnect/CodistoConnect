@@ -1,6 +1,6 @@
 <?php
 /**
- * Codisto eBay & Amazon Sync Extension
+ * Codisto Sales Channels Sync Extension
  *
  * NOTICE OF LICENSE
  *

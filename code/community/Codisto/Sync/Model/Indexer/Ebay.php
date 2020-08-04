@@ -1,6 +1,6 @@
 <?php
 /**
- * Codisto eBay & Amazon Sync Extension
+ * Codisto Sales Channels Sync Extension
  *
  * NOTICE OF LICENSE
  *
@@ -31,12 +31,12 @@ class Codisto_Sync_Model_Indexer_Ebay extends Mage_Index_Model_Indexer_Abstract
 
     public function getName()
     {
-        return 'eBay Index';
+        return 'Codisto Index';
     }
 
     public function getDescription()
     {
-        return 'Index Catalog data for synchronisation with eBay';
+        return 'Index Catalog data for synchronisation with Codisto';
     }
 
     public function matchEvent(Mage_Index_Model_Event $event)

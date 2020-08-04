@@ -1,6 +1,6 @@
 <?php
 /**
- * Codisto eBay & Amazon Sync Extension
+ * Codisto Sales Channels Sync Extension
  *
  * NOTICE OF LICENSE
  *
@@ -603,6 +603,10 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         if(!$amazonorderid)
             $amazonorderid = '';
 
+        $koganorderid = (string)$ordercontent->koganorderid;
+        if(!$koganorderid)
+            $koganorderid = '';
+
         $amazonfulfillmentchannel = (string)$ordercontent->amazonfulfillmentchannel;
         if(!$amazonfulfillmentchannel)
             $amazonfulfillmentchannel = '';
@@ -618,12 +622,13 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $order->setCodistoOrderid((string)$ordercontent->orderid);
         $order->setCodistoMerchantid((string)$ordercontent->merchantid);
 
-        if(preg_match('/\{ordernumber\}|\{ebaysalesrecordnumber\}|\{ebaytransactionid\}|\{amazonorderid\}/', $ordernumberformat))
+        if(preg_match('/\{ordernumber\}|\{ebaysalesrecordnumber\}|\{ebaytransactionid\}|\{amazonorderid\}|\{koganorderid\}/', $ordernumberformat))
         {
             $incrementId = preg_replace('/\{ordernumber\}/', (string)$order->getIncrementId(), $ordernumberformat);
             $incrementId = preg_replace('/\{ebaysalesrecordnumber\}/', $ebaysalesrecordnumber, $incrementId);
             $incrementId = preg_replace('/\{ebaytransactionid\}/', $ebaytransactionid, $incrementId);
             $incrementId = preg_replace('/\{amazonorderid\}/', $amazonorderid, $incrementId);
+            $incrementId = preg_replace('/\{koganorderid\}/', $koganorderid, $incrementId);
             $order->setIncrementId($incrementId);
         }
         else
@@ -922,41 +927,94 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
 
             $order->setData('state', Mage_Sales_Model_Order::STATE_CANCELED);
             $order->setData('status', Mage_Sales_Model_Order::STATE_CANCELED);
-            $order->addStatusToHistory(
-                Mage_Sales_Model_Order::STATE_CANCELED,
-                $amazonorderid ?
-                    "Amazon Order $amazonorderid has been cancelled." . $customerNote
-                    : "eBay Order $ebaysalesrecordnumber has been cancelled." . $customerNote);
+
+            if($ebaysalesrecordnumber) {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_CANCELED,
+                        "eBay Order $ebaysalesrecordnumber has been cancelled." . $customerNote);
+
+            } else if($amazonorderid) {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_CANCELED,
+                        "Amazon Order $amazonorderid has been cancelled." . $customerNote);
+            } else if($koganorderid) {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_CANCELED,
+                        "Kogan Order $koganorderid has been cancelled." . $customerNote);
+            } else {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_CANCELED,
+                        "Codisto Order has been cancelled." . $customerNote);
+            }
 
         } else if($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') {
 
             $order->setData('state', Mage_Sales_Model_Order::STATE_PROCESSING);
             $order->setData('status', Mage_Sales_Model_Order::STATE_PROCESSING);
-            $order->addStatusToHistory(
-                Mage_Sales_Model_Order::STATE_PROCESSING,
-                $amazonorderid ?
-                    "Amazon Order $amazonorderid is in progress." . $customerNote
-                    : "eBay Order $ebaysalesrecordnumber is in progress." . $customerNote);
+
+            if($ebaysalesrecordnumber) {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_PROCESSING,
+                    "eBay Order $ebaysalesrecordnumber is in progress." . $customerNote);
+            } else if($amazonorderid) {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_PROCESSING,
+                        "Amazon Order $amazonorderid is in progress." . $customerNote);
+            } else if($koganorderid) {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_PROCESSING,
+                        "Kogan Order $koganorderid is in progress." . $customerNote);
+            } else {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_PROCESSING,
+                    "Codisto Order is in progress." . $customerNote);
+            }
 
         } else if ($ordercontent->orderstate == 'complete') {
 
             $order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
             $order->setData('status', Mage_Sales_Model_Order::STATE_COMPLETE);
-            $order->addStatusToHistory(
-                Mage_Sales_Model_Order::STATE_COMPLETE,
-                $amazonorderid ?
-                    "Amazon Order $amazonorderid is complete." . $customerNote
-                    : "eBay Order $ebaysalesrecordnumber is complete." . $customerNote);
+
+            if($ebaysalesrecordnumber) {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_COMPLETE,
+                    "eBay Order $ebaysalesrecordnumber is complete." . $customerNote);
+            } else if($amazonorderid) {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_COMPLETE,
+                        "Amazon Order $amazonorderid is complete." . $customerNote);
+            } else if($koganorderid) {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_COMPLETE,
+                        "Kogan Order $koganorderid is complete." . $customerNote);
+            } else {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_COMPLETE,
+                    "Codisto Order is complete." . $customerNote);
+            }
 
         } else {
 
             $order->setData('state', Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
             $order->setData('status', Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
-            $order->addStatusToHistory(
-                Mage_Sales_Model_Order::STATE_PENDING_PAYMENT,
-                $amazonorderid ?
-                    "Amazon Order $amazonorderid has been captured." . $customerNote
-                    : "eBay Order $ebaysalesrecordnumber has been captured." . $customerNote);
+
+            if($ebaysalesrecordnumber) {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_PENDING_PAYMENT,
+                    "eBay Order $ebaysalesrecordnumber has been captured." . $customerNote);
+            } else if($amazonorderid) {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_PENDING_PAYMENT,
+                        "Amazon Order $amazonorderid has been captured." . $customerNote);
+            } else if($koganorderid) {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_PENDING_PAYMENT,
+                        "Kogan Order $koganorderid has been captured." . $customerNote);
+            } else {
+                $order->addStatusToHistory(
+                    Mage_Sales_Model_Order::STATE_PENDING_PAYMENT,
+                    "Codisto Order has been captured." . $customerNote);
+            }
 
         }
 
@@ -981,12 +1039,11 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         $order->setDue(0);
 
         $payment = $order->getPayment();
-        if($amazonorderid != '')
-        {
+        if($amazonorderid != '') {
             $payment->setMethod('amazon');
-        }
-        else
-        {
+        } else if($koganorderid != '') {
+            $payment->setMethod('kogan');
+        } else {
             $payment->setMethod('ebay');
         }
         $payment->resetTransactionAdditionalInfo();
@@ -1003,7 +1060,8 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
             'ebaytransactionid' => $ebaytransactionid,
             'ebayuser' => $ebayusername,
             'amazonorderid' => $amazonorderid,
-            'amazonfulfillmentchannel' => $amazonfulfillmentchannel
+            'amazonfulfillmentchannel' => $amazonfulfillmentchannel,
+            'koganorderid' => $koganorderid
         );
 
         foreach($additionalPaymentInfo as $k => $v) {

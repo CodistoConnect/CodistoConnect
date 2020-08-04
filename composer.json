@@ -2,9 +2,9 @@
   "name": "CodistoConnect/CodistoConnect",
   "license": "OSL-3.0",
   "type": "magento-module",
-  "description": "Magento to eBay Integration",
+  "description": "Magento to Codisto Sales Channels Integration",
   "keywords": [
-    "installer", "Magento", "Codisto" , "Connect", "eBay"
+    "installer", "Magento", "Codisto" , "Connect", "eBay", "Amazon", "Kogan"
   ],
   "authors": [
     {

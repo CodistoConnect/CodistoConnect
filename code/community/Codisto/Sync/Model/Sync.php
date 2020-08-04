@@ -1,6 +1,6 @@
 <?php
 /**
- * Codisto eBay & Amazon Sync Extension
+ * Codisto Sales Channels Sync Extension
  *
  * NOTICE OF LICENSE
  *
@@ -80,7 +80,6 @@ class Codisto_Sync_Model_Sync
 
         $ebayGroup = Mage::getModel('customer/group');
         $ebayGroup->load('eBay', 'customer_group_code');
-
         $this->ebayGroupId = $ebayGroup->getId();
         if(!$this->ebayGroupId)
             $this->ebayGroupId = Mage_Customer_Model_Group::NOT_LOGGED_IN_ID;
@@ -317,6 +316,7 @@ class Codisto_Sync_Model_Sync
         {
 
         }
+
         $db->exec('DELETE FROM Product WHERE ExternalReference IN (SELECT entity_id FROM TmpChanged)');
         $db->exec('DELETE FROM ProductImage WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
         $db->exec('DELETE FROM ProductHTML WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
