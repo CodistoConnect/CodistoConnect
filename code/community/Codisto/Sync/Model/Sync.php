@@ -118,7 +118,7 @@ class Codisto_Sync_Model_Sync
 
             $filelist = $this->FilesInDir(Mage::getBaseDir('design').'/ebay/');
 
-            $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+            $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
             foreach ($filelist as $key => $name)
             {
@@ -223,7 +223,7 @@ class Codisto_Sync_Model_Sync
                             ->addAttributeToSelect(array('name', 'image', 'is_active'), 'left')
                             ->addAttributeToFilter('entity_id', array('eq' => $id));
 
-        $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+        $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
         Mage::getSingleton('core/resource_iterator')->walk($category->getSelect(), array(array($this, 'SyncCategoryData')), array( 'db' => $db, 'preparedStatement' => $insertCategory, 'store' => $store ));
 
@@ -234,7 +234,7 @@ class Codisto_Sync_Model_Sync
     {
         $db = $this->GetSyncDb($syncDb, 60 );
 
-        $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+        $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
         $db->exec('CREATE TABLE IF NOT EXISTS CategoryDelete(ExternalReference text NOT NULL PRIMARY KEY);'.
                     'INSERT OR IGNORE INTO CategoryDelete VALUES('.$id.');'.
@@ -300,7 +300,7 @@ class Codisto_Sync_Model_Sync
                                     ->columns(array('codisto_in_store' => new Zend_Db_Expr('CASE WHEN `e`.entity_id IN (SELECT product_id FROM `'.$catalogWebsiteName.'` WHERE website_id IN (SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))) THEN -1 ELSE 0 END')));
 
 
-        $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+        $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
         $db->exec('CREATE TEMPORARY TABLE TmpChanged (entity_id text NOT NULL PRIMARY KEY)');
         foreach($ids as $id)
@@ -326,15 +326,13 @@ class Codisto_Sync_Model_Sync
         $db->exec('DELETE FROM ProductQuestion WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
         $db->exec('DELETE FROM SKUMatrix WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
         $db->exec('DELETE FROM SKULink WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
-        $db->exec('DELETE FROM SKU WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
         $db->exec('DELETE FROM CategoryProduct WHERE ProductExternalReference IN (SELECT entity_id FROM TmpChanged)');
 
         $db->exec('DROP TABLE TmpChanged');
 
         $insertCategoryProduct = $db->prepare('INSERT OR IGNORE INTO CategoryProduct(ProductExternalReference, CategoryExternalReference, Sequence) VALUES(?,?,?)');
-        $insertProduct = $db->prepare('INSERT INTO Product(ExternalReference, Type, Code, Name, Price, ListPrice, TaxClass, Description, Enabled, StockControl, StockLevel, Weight, InStore) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $insertProduct = $db->prepare('INSERT INTO Product(ExternalReference, Type, Code, Name, Price, ListPrice, TaxClass, Description, Enabled, StockControl, StockLevel, Backorder, InStock, Weight, InStore) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $checkProduct = $db->prepare('SELECT CASE WHEN EXISTS(SELECT 1 FROM Product WHERE ExternalReference = ?) THEN 1 ELSE 0 END');
-        $insertSKU = $db->prepare('INSERT OR IGNORE INTO SKU(ExternalReference, Code, ProductExternalReference, Name, StockControl, StockLevel, Price, Enabled, InStore) VALUES(?,?,?,?,?,?,?,?,?)');
         $insertSKULink = $db->prepare('INSERT OR REPLACE INTO SKULink (SKUExternalReference, ProductExternalReference, Price) VALUES (?, ?, ?)');
         $insertSKUMatrix = $db->prepare('INSERT INTO SKUMatrix(SKUExternalReference, ProductExternalReference, Code, OptionName, OptionValue, ProductOptionExternalReference, ProductOptionValueExternalReference) VALUES(?,?,?,?,?,?,?)');
         $insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
@@ -354,7 +352,6 @@ class Codisto_Sync_Model_Sync
                 'db' => $db,
                 'preparedStatement' => $insertProduct,
                 'preparedcheckproductStatement' => $checkProduct,
-                'preparedskuStatement' => $insertSKU,
                 'preparedskulinkStatement' => $insertSKULink,
                 'preparedskumatrixStatement' => $insertSKUMatrix,
                 'preparedcategoryproductStatement' => $insertCategoryProduct,
@@ -417,7 +414,6 @@ class Codisto_Sync_Model_Sync
                 'db' => $db,
                 'preparedStatement' => $insertProduct,
                 'preparedcheckproductStatement' => $checkProduct,
-                'preparedskuStatement' => $insertSKU,
                 'preparedskulinkStatement' => $insertSKULink,
                 'preparedskumatrixStatement' => $insertSKUMatrix,
                 'preparedcategoryproductStatement' => $insertCategoryProduct,
@@ -458,7 +454,7 @@ class Codisto_Sync_Model_Sync
     {
         $db = $this->GetSyncDb($syncDb, 60 );
 
-        $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+        $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
         $db->exec('CREATE TABLE IF NOT EXISTS ProductDelete(ExternalReference text NOT NULL PRIMARY KEY)');
 
@@ -485,7 +481,6 @@ class Codisto_Sync_Model_Sync
             'DELETE FROM ProductQuestion WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted);'.
             'DELETE FROM SKULink WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted);'.
             'DELETE FROM SKUMatrix WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted);'.
-            'DELETE FROM SKU WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted);'.
             'DELETE FROM CategoryProduct WHERE ProductExternalReference IN (SELECT entity_id FROM TmpDeleted)'
         );
 
@@ -699,7 +694,6 @@ class Codisto_Sync_Model_Sync
         $store = $args['store'];
         $db = $args['db'];
 
-        $insertSQL = $args['preparedskuStatement'];
         $insertSKULinkSQL = $args['preparedskulinkStatement'];
         $insertCategorySQL = $args['preparedcategoryproductStatement'];
         $insertSKUMatrixSQL = $args['preparedskumatrixStatement'];
@@ -727,7 +721,6 @@ class Codisto_Sync_Model_Sync
                 'parent_product' => $product,
                 'attributes' => $configurableAttributes,
                 'db' => $db,
-                'preparedStatement' => $insertSQL,
                 'preparedskulinkStatement' => $insertSKULinkSQL,
                 'preparedskumatrixStatement' => $insertSKUMatrixSQL,
                 'preparedcategoryproductStatement' => $insertCategorySQL,
@@ -747,7 +740,6 @@ class Codisto_Sync_Model_Sync
         $store = $args['store'];
         $db = $args['db'];
 
-        $insertSQL = $args['preparedskuStatement'];
         $insertSKULinkSQL = $args['preparedskulinkStatement'];
         $insertSKUMatrixSQL = $args['preparedskumatrixStatement'];
 
@@ -1003,6 +995,9 @@ class Codisto_Sync_Model_Sync
         $data[] = $productData['status'] != 1 ? 0 : -1;
         $data[] = $stockItem->getManageStock() ? -1 : 0;
         $data[] = (int)$qty;
+        $data[] = $stockItem->getBackorders() == Mage_CatalogInventory_Model_Stock::BACKORDERS_YES_NONOTIFY ||
+                    $stockItem->getBackorders() == Mage_CatalogInventory_Model_Stock::BACKORDERS_YES_NOTIFY ? -1 : 0;
+        $data[] = $stockItem->getIsInStock() ? -1 : 0;
         $data[] = isset($productData['weight']) && is_numeric($productData['weight']) ? (float)$productData['weight'] : $productData['weight'];
         $data[] = $productData['codisto_in_store'];
 
@@ -1830,7 +1825,7 @@ class Codisto_Sync_Model_Sync
 
                 $db = $store['db'];
 
-                $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+                $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
                 if(!empty($productUpdateIds))
                 {
@@ -1844,14 +1839,12 @@ class Codisto_Sync_Model_Sync
                         'DELETE FROM ProductQuestion WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).');'.
                         'DELETE FROM SKULink WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).');'.
                         'DELETE FROM SKUMatrix WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).');'.
-                        'DELETE FROM SKU WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).');'.
                         'DELETE FROM CategoryProduct WHERE ProductExternalReference IN ('.implode(',', $productUpdateIds).')'
                     );
 
                     $insertCategoryProduct = $db->prepare('INSERT OR IGNORE INTO CategoryProduct(ProductExternalReference, CategoryExternalReference, Sequence) VALUES(?,?,?)');
-                    $insertProduct = $db->prepare('INSERT INTO Product(ExternalReference, Type, Code, Name, Price, ListPrice, TaxClass, Description, Enabled, StockControl, StockLevel, Weight, InStore) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                    $insertProduct = $db->prepare('INSERT INTO Product(ExternalReference, Type, Code, Name, Price, ListPrice, TaxClass, Description, Enabled, StockControl, StockLevel, Backorder, InStock, Weight, InStore) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
                     $checkProduct = $db->prepare('SELECT CASE WHEN EXISTS(SELECT 1 FROM Product WHERE ExternalReference = ?) THEN 1 ELSE 0 END');
-                    $insertSKU = $db->prepare('INSERT OR IGNORE INTO SKU(ExternalReference, Code, ProductExternalReference, Name, StockControl, StockLevel, Price, Enabled, InStore) VALUES(?,?,?,?,?,?,?,?,?)');
                     $insertSKULink = $db->prepare('INSERT OR REPLACE INTO SKULink (SKUExternalReference, ProductExternalReference, Price) VALUES (?, ?, ?)');
                     $insertSKUMatrix = $db->prepare('INSERT INTO SKUMatrix(SKUExternalReference, ProductExternalReference, Code, OptionName, OptionValue, ProductOptionExternalReference, ProductOptionValueExternalReference) VALUES(?,?,?,?,?,?,?)');
                     $insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
@@ -1934,7 +1927,6 @@ class Codisto_Sync_Model_Sync
                             'db' => $db,
                             'preparedStatement' => $insertProduct,
                             'preparedcheckproductStatement' => $checkProduct,
-                            'preparedskuStatement' => $insertSKU,
                             'preparedskulinkStatement' => $insertSKULink,
                             'preparedskumatrixStatement' => $insertSKUMatrix,
                             'preparedcategoryproductStatement' => $insertCategoryProduct,
@@ -1966,7 +1958,6 @@ class Codisto_Sync_Model_Sync
                             'db' => $db,
                             'preparedStatement' => $insertProduct,
                             'preparedcheckproductStatement' => $checkProduct,
-                            'preparedskuStatement' => $insertSKU,
                             'preparedskulinkStatement' => $insertSKULink,
                             'preparedskumatrixStatement' => $insertSKUMatrix,
                             'preparedcategoryproductStatement' => $insertCategoryProduct,
@@ -2187,7 +2178,7 @@ class Codisto_Sync_Model_Sync
 
         $db->exec('ATTACH DATABASE \''.$changeDb.'\' AS ChangeDb');
 
-        $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+        $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
         $qry = $db->query('SELECT CASE WHEN '.
                             'EXISTS(SELECT 1 FROM sqlite_master WHERE type = \'table\' AND name = \'ProductChange\') AND '.
@@ -2251,9 +2242,8 @@ class Codisto_Sync_Model_Sync
 
         $insertCategory = $db->prepare('INSERT OR REPLACE INTO Category(ExternalReference, Name, ParentExternalReference, LastModified, Enabled, Sequence) VALUES(?,?,?,?,?,?)');
         $insertCategoryProduct = $db->prepare('INSERT OR IGNORE INTO CategoryProduct(ProductExternalReference, CategoryExternalReference, Sequence) VALUES(?,?,?)');
-        $insertProduct = $db->prepare('INSERT INTO Product(ExternalReference, Type, Code, Name, Price, ListPrice, TaxClass, Description, Enabled, StockControl, StockLevel, Weight, InStore) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $insertProduct = $db->prepare('INSERT INTO Product(ExternalReference, Type, Code, Name, Price, ListPrice, TaxClass, Description, Enabled, StockControl, StockLevel, Backorder, InStock, Weight, InStore) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $checkProduct = $db->prepare('SELECT CASE WHEN EXISTS(SELECT 1 FROM Product WHERE ExternalReference = ?) THEN 1 ELSE 0 END');
-        $insertSKU = $db->prepare('INSERT OR IGNORE INTO SKU(ExternalReference, Code, ProductExternalReference, Name, StockControl, StockLevel, Price, Enabled, InStore) VALUES(?,?,?,?,?,?,?,?,?)');
         $insertSKULink = $db->prepare('INSERT OR REPLACE INTO SKULink (SKUExternalReference, ProductExternalReference, Price) VALUES (?, ?, ?)');
         $insertSKUMatrix = $db->prepare('INSERT INTO SKUMatrix(SKUExternalReference, ProductExternalReference, Code, OptionName, OptionValue, ProductOptionExternalReference, ProductOptionValueExternalReference) VALUES(?,?,?,?,?,?,?)');
         $insertImage = $db->prepare('INSERT INTO ProductImage(ProductExternalReference, URL, Tag, Sequence, Enabled) VALUES(?,?,?,?,?)');
@@ -2268,7 +2258,7 @@ class Codisto_Sync_Model_Sync
         $insertProductAnswer = $db->prepare('INSERT INTO ProductQuestionAnswer(ProductQuestionExternalReference, Value, PriceModifier, SKUModifier, Sequence) VALUES (?, ?, ?, ?, ?)');
         $insertOrders = $db->prepare('INSERT OR REPLACE INTO [Order] (ID, Status, PaymentDate, ShipmentDate, Carrier, TrackingNumber, ExternalReference, MerchantID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 
-        $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+        $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
         $qry = $db->query('SELECT entity_id FROM Progress');
 
@@ -2460,7 +2450,6 @@ class Codisto_Sync_Model_Sync
                     'db' => $db,
                     'preparedStatement' => $insertProduct,
                     'preparedcheckproductStatement' => $checkProduct,
-                    'preparedskuStatement' => $insertSKU,
                     'preparedskulinkStatement' => $insertSKULink,
                     'preparedskumatrixStatement' => $insertSKUMatrix,
                     'preparedcategoryproductStatement' => $insertCategoryProduct,
@@ -2508,7 +2497,6 @@ class Codisto_Sync_Model_Sync
                     'db' => $db,
                     'preparedStatement' => $insertProduct,
                     'preparedcheckproductStatement' => $checkProduct,
-                    'preparedskuStatement' => $insertSKU,
                     'preparedskulinkStatement' => $insertSKULink,
                     'preparedskumatrixStatement' => $insertSKUMatrix,
                     'preparedcategoryproductStatement' => $insertCategoryProduct,
@@ -2700,7 +2688,7 @@ class Codisto_Sync_Model_Sync
     {
         $db = $this->GetSyncDb($syncDb, 5 );
 
-        $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+        $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
         $db->exec('DELETE FROM StaticBlock');
 
@@ -2734,7 +2722,7 @@ class Codisto_Sync_Model_Sync
     {
         $db = $this->GetSyncDb($syncDb, 5 );
 
-        $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+        $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
         $db->exec('DELETE FROM TaxClass');
         $db->exec('DELETE FROM TaxCalculation');
@@ -2856,7 +2844,7 @@ class Codisto_Sync_Model_Sync
     {
         $db = $this->GetSyncDb($syncDb, 5 );
 
-        $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+        $db->exec('BEGIN IMMEDIATE TRANSACTION');
         $db->exec('DELETE FROM Store');
         $db->exec('DELETE FROM StoreMerchant');
 
@@ -2930,7 +2918,7 @@ class Codisto_Sync_Model_Sync
         $shipmentName = $coreResource->getTableName('sales/shipment');
         $shipmentTrackName = $coreResource->getTableName('sales/shipment_track');
 
-        $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+        $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
         $orders = Mage::getModel('sales/order')->getCollection()
                     ->addFieldToSelect(array('codisto_orderid', 'codisto_merchantid', 'status'))
@@ -2955,7 +2943,7 @@ class Codisto_Sync_Model_Sync
 
         Mage::helper('codistosync')->prepareSqliteDatabase( $db, $timeout );
 
-        $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+        $db->exec('BEGIN IMMEDIATE TRANSACTION');
         $db->exec('CREATE TABLE IF NOT EXISTS Progress(entity_id integer NOT NULL, State text NOT NULL, Sentinel integer NOT NULL PRIMARY KEY AUTOINCREMENT, CHECK(Sentinel=1))');
         $db->exec('CREATE TABLE IF NOT EXISTS Category(ExternalReference text NOT NULL PRIMARY KEY, ParentExternalReference text NOT NULL, '.
                             'Name text NOT NULL, LastModified datetime NOT NULL, Enabled bit NOT NULL, Sequence integer NOT NULL)');
@@ -2963,6 +2951,8 @@ class Codisto_Sync_Model_Sync
         $db->exec('CREATE TABLE IF NOT EXISTS Product (ExternalReference text NOT NULL PRIMARY KEY, Type text NOT NULL, Code text NULL, Name text NOT NULL, Price real NOT NULL, ListPrice real NOT NULL, TaxClass text NOT NULL, Description text NOT NULL, '.
                     'Enabled bit NOT NULL,  '.
                     'StockControl bit NOT NULL, StockLevel integer NOT NULL, '.
+                    'BackOrder bit NOT NULL, '.
+                    'InStock bit NOT NULL, '.
                     'Weight real NULL, '.
                     'InStore bit NOT NULL)');
 
@@ -2974,8 +2964,6 @@ class Codisto_Sync_Model_Sync
         $db->exec('CREATE TABLE IF NOT EXISTS ProductQuestionAnswer (ProductQuestionExternalReference text NOT NULL, Value text NOT NULL, PriceModifier text NOT NULL, SKUModifier text NOT NULL, Sequence integer NOT NULL)');
         $db->exec('CREATE INDEX IF NOT EXISTS IX_ProductQuestionAnswer_ProductQuestionExternalReference ON ProductQuestionAnswer(ProductQuestionExternalReference)');
 
-        $db->exec('CREATE TABLE IF NOT EXISTS SKU (ExternalReference text NOT NULL PRIMARY KEY, Code text NULL, ProductExternalReference text NOT NULL, Name text NOT NULL, StockControl bit NOT NULL, StockLevel integer NOT NULL, Price real NOT NULL, Enabled bit NOT NULL, InStore bit NOT NULL)');
-        $db->exec('CREATE INDEX IF NOT EXISTS IX_SKU_ProductExternalReference ON SKU(ProductExternalReference)');
         $db->exec('CREATE TABLE IF NOT EXISTS SKUMatrix (SKUExternalReference text NOT NULL, ProductExternalReference text NOT NULL, Code text NULL, OptionName text NOT NULL, OptionValue text NOT NULL, ProductOptionExternalReference text NOT NULL, ProductOptionValueExternalReference text NOT NULL)');
         $db->exec('CREATE INDEX IF NOT EXISTS IX_SKUMatrix_SKUExternalReference ON SKUMatrix(SKUExternalReference)');
 
@@ -3085,18 +3073,6 @@ class Codisto_Sync_Model_Sync
 
         try
         {
-            $db->exec('SELECT ProductExternalReference FROM SKUMatrix LIMIT 1');
-
-            $db->exec('ALTER TABLE SKUMatrix ADD COLUMN ProductExternalReference text NOT NULL DEFAULT \'\'');
-            $db->exec('UPDATE SKUMatrix SET ProductExternalReference = (SELECT ProductExternalReference FROM SKU WHERE SKUExternalReference = SKUMatrix.SKUExternalReference)');
-        }
-        catch (Exception $e)
-        {
-
-        }
-
-        try
-        {
             $db->exec('SELECT InStore FROM Product LIMIT 1');
         }
         catch(Exception $e)
@@ -3104,7 +3080,6 @@ class Codisto_Sync_Model_Sync
             try
             {
                 $db->exec('ALTER TABLE Product ADD COLUMN InStore bit NOT NULL DEFAULT -1');
-                $db->exec('ALTER TABLE SKU ADD COLUMN InStore bit NOT NULL DEFAULT -1');
             }
             catch(Exception $e2)
             {
@@ -3143,6 +3118,26 @@ class Codisto_Sync_Model_Sync
 
         }
 
+        try
+        {
+            $db->exec('ALTER TABLE Product ADD COLUMN Backorder bit NOT NULL DEFAULT 0');
+        }
+        catch(Exception $e)
+        {
+
+        }
+
+        try
+        {
+            $db->exec('ALTER TABLE Product ADD COLUMN InStock bit NOT NULL DEFAULT 0');
+        }
+        catch(Exception $e)
+        {
+
+        }
+
+        $db->exec("DROP TABLE IF EXISTS SKU");
+
         $db->exec('COMMIT TRANSACTION');
 
         return $db;
@@ -3154,7 +3149,7 @@ class Codisto_Sync_Model_Sync
 
         Mage::helper('codistosync')->prepareSqliteDatabase( $db, 60 );
 
-        $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+        $db->exec('BEGIN IMMEDIATE TRANSACTION');
         $db->exec('CREATE TABLE IF NOT EXISTS File(Name text NOT NULL PRIMARY KEY, Content blob NOT NULL, LastModified datetime NOT NULL, Changed bit NOT NULL DEFAULT -1)');
         $db->exec('COMMIT TRANSACTION');
 
