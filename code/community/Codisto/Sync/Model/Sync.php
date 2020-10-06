@@ -2964,6 +2964,7 @@ class Codisto_Sync_Model_Sync
         $db->exec('CREATE TABLE IF NOT EXISTS ProductQuestionAnswer (ProductQuestionExternalReference text NOT NULL, Value text NOT NULL, PriceModifier text NOT NULL, SKUModifier text NOT NULL, Sequence integer NOT NULL)');
         $db->exec('CREATE INDEX IF NOT EXISTS IX_ProductQuestionAnswer_ProductQuestionExternalReference ON ProductQuestionAnswer(ProductQuestionExternalReference)');
 
+        $db->exec('CREATE TABLE IF NOT EXISTS SKU (ExternalReference text NOT NULL PRIMARY KEY, Code text NULL, ProductExternalReference text NOT NULL, Name text NOT NULL, StockControl bit NOT NULL, StockLevel integer NOT NULL, Price real NOT NULL, Enabled bit NOT NULL, InStore bit NOT NULL)');
         $db->exec('CREATE TABLE IF NOT EXISTS SKUMatrix (SKUExternalReference text NOT NULL, ProductExternalReference text NOT NULL, Code text NULL, OptionName text NOT NULL, OptionValue text NOT NULL, ProductOptionExternalReference text NOT NULL, ProductOptionValueExternalReference text NOT NULL)');
         $db->exec('CREATE INDEX IF NOT EXISTS IX_SKUMatrix_SKUExternalReference ON SKUMatrix(SKUExternalReference)');
 
@@ -3135,8 +3136,6 @@ class Codisto_Sync_Model_Sync
         {
 
         }
-
-        $db->exec("DROP TABLE IF EXISTS SKU");
 
         $db->exec('COMMIT TRANSACTION');
 
