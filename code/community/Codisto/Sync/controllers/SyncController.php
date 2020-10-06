@@ -119,7 +119,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
                                 $db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
 
-                                $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+                                $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
                                 if($request->getQuery('categoryid')) {
                                     $db->exec('CREATE TABLE Category AS SELECT * FROM SyncDb.Category');
@@ -188,7 +188,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
                                     $db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
 
-                                    $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+                                    $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
                                     $qry = $db->query('SELECT CASE WHEN EXISTS(SELECT 1 FROM SyncDb.sqlite_master WHERE type = \'table\' AND name = \'Sync\') THEN -1 ELSE 0 END');
                                     $syncComplete = $qry->fetchColumn();
@@ -550,7 +550,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
                             $db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
 
-                            $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+                            $db->exec('BEGIN IMMEDIATE TRANSACTION');
                             $db->exec('CREATE TABLE TaxClass AS SELECT * FROM SyncDb.TaxClass');
                             $db->exec('CREATE TABLE TaxCalculation AS SELECT * FROM SyncDb.TaxCalculation');
                             $db->exec('CREATE TABLE TaxCalculationRule AS SELECT * FROM SyncDb.TaxCalculationRule');
@@ -589,7 +589,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
                             $db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
 
-                            $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+                            $db->exec('BEGIN IMMEDIATE TRANSACTION');
                             $db->exec('CREATE TABLE Store AS SELECT * FROM SyncDb.Store');
                             $db->exec('COMMIT TRANSACTION');
                             $db->exec('VACUUM');
@@ -653,7 +653,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
 
                             $db->exec('ATTACH DATABASE \''.$syncDb.'\' AS SyncDB');
 
-                            $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+                            $db->exec('BEGIN IMMEDIATE TRANSACTION');
                             $db->exec('CREATE TABLE [Order] AS SELECT * FROM SyncDb.[Order]');
                             $db->exec('COMMIT TRANSACTION');
                             $db->exec('VACUUM');
@@ -690,7 +690,7 @@ class Codisto_Sync_SyncController extends Mage_Core_Controller_Front_Action
                                         $files = $db->query('SELECT Name FROM File WHERE Changed != 0');
                                         $files->execute();
 
-                                        $db->exec('BEGIN EXCLUSIVE TRANSACTION');
+                                        $db->exec('BEGIN IMMEDIATE TRANSACTION');
 
                                         while($row = $files->fetch()) {
                                             $stat = stat(Mage::getBaseDir('design').'/ebay/'.$row['Name']);
