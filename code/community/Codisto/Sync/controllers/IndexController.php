@@ -1575,6 +1575,7 @@ class Codisto_Sync_IndexController extends Mage_Core_Controller_Front_Action
         if(($ordercontent->orderstate == 'inprogress' || $ordercontent->orderstate == 'processing') &&
             $ordercontent->paymentstatus == 'complete' &&
             $orderstatus!=Mage_Sales_Model_Order::STATE_PROCESSING &&
+            $orderstatus!=Mage_Sales_Model_Order::STATE_PENDING_PAYMENT &&
             $orderstatus!=Mage_Sales_Model_Order::STATE_COMPLETE)
         {
             $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
