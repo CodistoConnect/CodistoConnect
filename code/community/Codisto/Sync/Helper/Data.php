@@ -819,8 +819,8 @@ class Codisto_Sync_Helper_Data extends Mage_Core_Helper_Abstract
             if(is_array($requiredExtensions))
             {
                 $extensionScript = '<?php echo serialize(array('.implode(',',
-                                        array_map(create_function('$ext',
-                                            'return \'\\\'\'.$ext.\'\\\' => extension_loaded(\\\'\'.$ext.\'\\\')\';'),
+                                        array_map(function($ext) {
+                                            return "'".$ext."'".' => '. 'extension_loaded'."('".$ext."')";},
                                         $requiredExtensions)).'));';
 
                 $extensionSet = array();
